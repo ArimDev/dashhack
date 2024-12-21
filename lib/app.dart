@@ -11,8 +11,6 @@ class MyApp extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    // Nastavení barevného schématu pro aplikaci
-
     return MaterialApp(
       title: 'Flutter App',
       theme: ThemeData(
@@ -34,6 +32,10 @@ class AppPage extends StatefulWidget {
 class _AppPageState extends State<AppPage> {
   int _selectedIndex = 0;
 
+  String getDevice() {
+    return MediaQuery.of(context).size.width <= 800 ? "small" : "large";
+  }
+
   @override
   Widget build(BuildContext context) {
     final args = ModalRoute.of(context)?.settings.arguments as Map?;
@@ -46,10 +48,8 @@ class _AppPageState extends State<AppPage> {
     final projectPassword = args?['projectPassword'] ?? 'No password';
 
     final List<Widget> screens = [
-      HomeScreen(
-          projectName: projectName,
-          projectPassword: projectPassword), // Tady můžete mít obsah pro 'Home'
-      const TeamsScreen(), // A obsah pro 'Teams'
+      HomeScreen(projectName: projectName, projectPassword: projectPassword),
+      const TeamsScreen(),
     ];
 
     return Scaffold(
@@ -64,64 +64,94 @@ class _AppPageState extends State<AppPage> {
         ),
         centerTitle: true,
       ),
+      bottomNavigationBar: getDevice() == "small"
+          ? BottomNavigationBar(
+              currentIndex: _selectedIndex,
+              onTap: (index) {
+                if (index == 2) {
+                  Navigator.pop(
+                    context,
+                    '/',
+                  );
+                } else {
+                  setState(() {
+                    _selectedIndex = index;
+                  });
+                }
+              },
+              items: const [
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.home),
+                  label: 'Home',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.groups),
+                  label: 'Teams',
+                ),
+                BottomNavigationBarItem(
+                  icon: Icon(Icons.logout),
+                  label: 'Logout',
+                ),
+              ],
+            )
+          : null,
       body: Row(
         children: [
           SafeArea(
             child: Stack(
               children: [
-                // NavigationRail zůstává nahoře
-                NavigationRail(
-                  labelType: NavigationRailLabelType.all,
-                  destinations: const [
-                    NavigationRailDestination(
-                      icon: Icon(Icons.home),
-                      label: Text('Home'),
-                    ),
-                    NavigationRailDestination(
-                      icon: Icon(Icons.groups),
-                      label: Text('Teams'),
-                    ),
-                  ],
-                  selectedIndex: _selectedIndex,
-                  onDestinationSelected: (index) {
-                    setState(() {
-                      _selectedIndex = index;
-                    });
-                  },
-                ),
-                // Tlačítko umístíme na spodek
-                Positioned(
-                    bottom: 16.0, // Vzdálenost od spodní části
-                    left: 0,
-                    right: 0,
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.center,
-                      children: [
-                        IconButton(
-                          icon: const Icon(Icons.logout),
-                          onPressed: () {
-                            Navigator.pop(
-                              context,
-                              '/',
-                            );
-                          },
-                          iconSize: 24.0,
-                          color: Colors.black,
-                        ),
-                        const Text(
-                          'Logout',
-                          style: TextStyle(
+                if (getDevice() == "large")
+                  NavigationRail(
+                    labelType: NavigationRailLabelType.all,
+                    destinations: const [
+                      NavigationRailDestination(
+                        icon: Icon(Icons.home),
+                        label: Text('Home'),
+                      ),
+                      NavigationRailDestination(
+                        icon: Icon(Icons.groups),
+                        label: Text('Teams'),
+                      ),
+                    ],
+                    selectedIndex: _selectedIndex,
+                    onDestinationSelected: (index) {
+                      setState(() {
+                        _selectedIndex = index;
+                      });
+                    },
+                  ),
+                if (getDevice() == "large")
+                  Positioned(
+                      bottom: 16.0,
+                      left: 0,
+                      right: 0,
+                      child: Column(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          IconButton(
+                            icon: const Icon(Icons.logout),
+                            onPressed: () {
+                              Navigator.pop(
+                                context,
+                                '/',
+                              );
+                            },
+                            iconSize: 24.0,
                             color: Colors.black,
                           ),
-                        ),
-                      ],
-                    )),
+                          const Text(
+                            'Logout',
+                            style: TextStyle(
+                              color: Colors.black,
+                            ),
+                          ),
+                        ],
+                      )),
               ],
             ),
           ),
           Expanded(
-            child: screens[
-                _selectedIndex], // Zde zobrazíte správnou obrazovku podle vybraného indexu
+            child: screens[_selectedIndex],
           ),
         ],
       ),

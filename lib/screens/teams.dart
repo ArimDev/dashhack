@@ -130,6 +130,7 @@ class _TeamsScreenState extends State<TeamsScreen> {
           ),
         ),
         Padding(
+          //TODO: RIGHT ALLIGN WHEN ON SMALL
           padding: const EdgeInsets.all(8.0),
           child: FloatingActionButton.extended(
             onPressed: _addTeam,
