@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import '../widgets/teamCard.dart';
 import '../widgets/addTeam.dart';
 import '../widgets/editTeam.dart';
+import '../app.dart';
 
 class TeamsScreen extends StatefulWidget {
   const TeamsScreen({super.key});
@@ -65,7 +66,7 @@ class _TeamsScreenState extends State<TeamsScreen> {
     return Column(
       children: [
         Padding(
-          padding: const EdgeInsets.all(8.0),
+          padding: const EdgeInsets.only(top: 20, left: 8, right: 8, bottom: 8),
           child: SearchAnchor(
             builder: (BuildContext context, SearchController controller) {
               return SearchBar(
@@ -105,14 +106,9 @@ class _TeamsScreenState extends State<TeamsScreen> {
           ),
         ),
         Expanded(
-          child: GridView.builder(
-            padding: const EdgeInsets.all(8),
-            gridDelegate: const SliverGridDelegateWithFixedCrossAxisCount(
-              crossAxisCount: 3, // Tři sloupce
-              mainAxisSpacing: 8, // Vzdálenost mezi řádky
-              crossAxisSpacing: 8, // Vzdálenost mezi sloupci
-              childAspectRatio: 1.0, // Poměr stran (1:1 - čtvercové karty)
-            ),
+          child: ListView.separated(
+            padding:
+                const EdgeInsets.only(top: 20, left: 8, right: 8, bottom: 8),
             itemCount: _filteredTeams.length,
             itemBuilder: (context, index) {
               return TeamCard(
@@ -127,24 +123,38 @@ class _TeamsScreenState extends State<TeamsScreen> {
                 },
               );
             },
+            separatorBuilder: (context, index) => const SizedBox(height: 16.0),
           ),
         ),
         Padding(
-          //TODO: RIGHT ALLIGN WHEN ON SMALL
-          padding: const EdgeInsets.all(8.0),
-          child: FloatingActionButton.extended(
-            onPressed: _addTeam,
-            label: const Text("Add Team",
-                style: TextStyle(
-                  color: Colors.white,
-                )),
-            icon: const Icon(
-              Icons.add,
-              color: Colors.white,
-            ),
-            backgroundColor: Theme.of(context).colorScheme.primary,
-          ),
-        ),
+            padding: const EdgeInsets.all(8.0),
+            child: Align(
+                alignment: getDevice(context) == "small"
+                    ? Alignment.centerRight
+                    : Alignment.center,
+                child: getDevice(context) == "large"
+                    ? FloatingActionButton.extended(
+                        onPressed: _addTeam,
+                        label: const Text(
+                          "Add Team",
+                          style: TextStyle(
+                            color: Colors.white,
+                          ),
+                        ),
+                        icon: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                        ),
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                      )
+                    : FloatingActionButton(
+                        onPressed: _addTeam,
+                        backgroundColor: Theme.of(context).colorScheme.primary,
+                        child: const Icon(
+                          Icons.add,
+                          color: Colors.white,
+                        ),
+                      ))),
       ],
     );
   }

@@ -1,4 +1,5 @@
 import 'package:flutter/material.dart';
+import 'package:flutter_colorpicker/flutter_colorpicker.dart';
 import '../screens/teams.dart';
 
 class EditTeamDialog extends StatefulWidget {
@@ -14,6 +15,12 @@ class _EditTeamDialogState extends State<EditTeamDialog> {
   late TextEditingController _nameController;
   late TextEditingController _repositoryController;
   late Color _selectedColor;
+
+  void _changeColor(Color color) {
+    setState(() {
+      _selectedColor = color;
+    });
+  }
 
   @override
   void initState() {
@@ -43,31 +50,34 @@ class _EditTeamDialogState extends State<EditTeamDialog> {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text("Choose Team Color:"),
-              DropdownButton<Color>(
-                value: _selectedColor,
-                onChanged: (Color? newValue) {
-                  if (newValue != null) {
-                    setState(() {
-                      _selectedColor = newValue;
-                    });
-                  }
-                },
-                items: [
-                  Colors.red,
-                  Colors.blue,
-                  Colors.green,
-                  Colors.orange,
-                  Colors.purple,
-                ].map((color) {
-                  return DropdownMenuItem<Color>(
-                    value: color,
-                    child: Container(
-                      width: 24,
-                      height: 24,
-                      color: color,
+              IconButton(
+                icon: Icon(
+                  Icons.color_lens,
+                  color: _selectedColor,
+                ),
+                onPressed: () {
+                  showDialog(
+                    context: context,
+                    builder: (context) => AlertDialog(
+                      title: const Text("Pick a Color"),
+                      content: SingleChildScrollView(
+                        child: ColorPicker(
+                          pickerColor: _selectedColor,
+                          onColorChanged: _changeColor,
+                          pickerAreaHeightPercent: 0.8,
+                        ),
+                      ),
+                      actions: [
+                        TextButton(
+                          onPressed: () {
+                            Navigator.of(context).pop();
+                          },
+                          child: const Text("Close"),
+                        ),
+                      ],
                     ),
                   );
-                }).toList(),
+                },
               ),
             ],
           ),

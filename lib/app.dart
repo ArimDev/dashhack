@@ -29,12 +29,12 @@ class AppPage extends StatefulWidget {
   _AppPageState createState() => _AppPageState();
 }
 
+String getDevice(BuildContext context) {
+  return MediaQuery.of(context).size.width <= 800 ? "small" : "large";
+}
+
 class _AppPageState extends State<AppPage> {
   int _selectedIndex = 0;
-
-  String getDevice() {
-    return MediaQuery.of(context).size.width <= 800 ? "small" : "large";
-  }
 
   @override
   Widget build(BuildContext context) {
@@ -64,7 +64,7 @@ class _AppPageState extends State<AppPage> {
         ),
         centerTitle: true,
       ),
-      bottomNavigationBar: getDevice() == "small"
+      bottomNavigationBar: getDevice(context) == "small"
           ? BottomNavigationBar(
               currentIndex: _selectedIndex,
               onTap: (index) {
@@ -100,7 +100,7 @@ class _AppPageState extends State<AppPage> {
           SafeArea(
             child: Stack(
               children: [
-                if (getDevice() == "large")
+                if (getDevice(context) == "large")
                   NavigationRail(
                     labelType: NavigationRailLabelType.all,
                     destinations: const [
@@ -120,7 +120,7 @@ class _AppPageState extends State<AppPage> {
                       });
                     },
                   ),
-                if (getDevice() == "large")
+                if (getDevice(context) == "large")
                   Positioned(
                       bottom: 16.0,
                       left: 0,

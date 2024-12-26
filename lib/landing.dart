@@ -34,7 +34,7 @@ class _LandingPageState extends State<LandingPage> {
       );
     } else {
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Vyplňte název projektu.')),
+        const SnackBar(content: Text('Fill in the project name!')),
       );
     }
   }
