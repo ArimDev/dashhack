@@ -11,7 +11,7 @@
 					<input type="username" placeholder="Event Name" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4" />
 					<input type="password" placeholder="Password" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4" />
 				</div>
-				<button class="text-xl font-bold mt-10 rounded-full bg-bluey-500 text-white rounded w-72 h-16 hover:bg-bluey-600 transition-colors duration-300">Open Dashboard</button>
+				<button class="cursor-pointer text-xl font-bold mt-10 rounded-full bg-bluey-500 text-white w-72 h-16 hover:bg-bluey-600 transition-colors duration-300">Open Dashboard</button>
 			</div>
 		</div>
 
@@ -26,7 +26,7 @@
 				<a href="" class="hover:text-bluey-500 dark:hover:text-bluey-500 dark:text-white transition-colors duration-500">Terms of Use</a>
 			</div>
 			<div>
-				<p class="dark:text-white transition-colors duration-500">&copy; 2025 ArimDev</p>
+				<p class="dark:text-white transition-colors duration-500">&copy; 2025 <a href="" class="hover:text-bluey-500 dark:hover:text-bluey-500 dark:text-white transition-colors duration-500"	>ArimDev</a></p>
 			</div>
 		</footer>
 	</div>

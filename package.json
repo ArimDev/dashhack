@@ -1,6 +1,6 @@
 {
   "name": "dashhack",
-  "version": "0.0.5",
+  "version": "0.0.6",
   "private": true,
   "type": "module",
   "scripts": {
@@ -12,12 +12,13 @@
   },
   "dependencies": {
     "@nuxt/fonts": "^0.10.3",
+    "@tailwindcss/vite": "^4.0.7",
     "nuxt": "^3.15.4",
+    "tailwindcss": "^4.0.7",
     "vue": "latest",
     "vue-router": "latest"
   },
   "devDependencies": {
-    "@nuxtjs/color-mode": "^3.5.2",
-    "@nuxtjs/tailwindcss": "^6.13.1"
+    "@nuxtjs/color-mode": "^3.5.2"
   }
 }

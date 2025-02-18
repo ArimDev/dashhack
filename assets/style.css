@@ -1,0 +1,22 @@
+@import "tailwindcss";
+
+* {
+    font-family: "Public Sans", monospace;
+}
+
+@custom-variant dark (&:where(.dark, .dark *));
+
+@theme {
+    --font-sans: "Public Sans", monospace;
+    --color-bluey-50: #e3f4ff;
+    --color-bluey-100: #b3d9ff;
+    --color-bluey-200: #80bfff;
+    --color-bluey-300: #4da6ff;
+    --color-bluey-400: #338ee6;
+    --color-bluey-500: #3081E0;
+    --color-bluey-600: #2a6bb3;
+    --color-bluey-700: #24528d;
+    --color-bluey-800: #1e4170;
+    --color-bluey-900: #183357;
+    --color-bluey-950: #0f1d3a;
+}
