@@ -8,10 +8,10 @@
 			</div>
 			<form class="pt-10 flex items-center flex-col">
 				<div class="flex gap-10">
-					<input v-model="credentials.user" required type="username" placeholder="Event Name" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4" />
-					<input v-model="credentials.pass" type="password" autocomplete="current-password" placeholder="Password" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4" />
+					<input @input="checkEventFree" v-model="credentials.user" required type="username" placeholder="Event Name" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4" />
+					<input @focus="clearSubmit" v-model="credentials.pass" type="password" autocomplete="current-password" placeholder="Password" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4">
 				</div>
-				<button @click="open" type="submit" class="cursor-pointer text-xl font-bold mt-10 rounded-full bg-bluey-500 text-white w-72 h-16 hover:bg-bluey-600 transition-colors duration-300">Open Dashboard</button>
+				<button @click="open" :disabled="eventTaken" type="submit" :class="`cursor-pointer text-xl font-bold mt-10 rounded-full w-72 h-16 transition-colors duration-500 ${submitClass}`">{{ submitText }}</button>
 			</form>
 		</div>
 
@@ -37,9 +37,21 @@ definePageMeta({
 	layout: 'open',
 });
 
-import { ref } from "vue";
+import { onMounted, ref } from "vue";
 
 const credentials = ref({ user: "", pass: "" });
+
+const eventTaken = ref(false);
+const eventFree = ref(false);
+
+const submitRed = ref(false);
+const submitText = ref("Create New Event");
+
+const submitClass = computed(() =>
+	!submitRed.value
+		? "bg-bluey-500 text-white hover:bg-bluey-600"
+		: "bg-red-700 text-white hover:bg-red-800"
+);
 
 const colorMode = useColorMode();
 
@@ -48,9 +60,54 @@ function darkMode() {
 	else colorMode.preference = "dark";
 }
 
-function open() {
+function clearSubmit() {
+	submitRed.value = false;
+	submitText.value = "Create New Event";
+	return;
+}
+
+async function checkEventFree() {
+	submitText.value = "Create New Event";
+	submitRed.value = false;
+
+	if (!!credentials.value.user) {
+		const data = await $fetch(`/api/auth/check?username=${credentials.value.user}`);
+
+		if (data.exists) {
+			eventTaken.value = true;
+			eventFree.value = false;
+			submitText.value = "Open Dashboard";
+			return;
+		}
+	}
+
+	eventTaken.value = false;
+	eventFree.value = true;
+	submitText.value = "Create New Event";
+	return;
+}
+
+async function open() {
 	event.preventDefault();
+
 	console.log(credentials.value.user + " " + credentials.value.pass);
-	//TODO: Pass to middleware (auth)
+
+	if (eventFree.value) {
+		if (!credentials.value.user) {
+			submitText.value = "Enter the Event Name!";
+			return submitRed.value = true;
+		} else if (!credentials.value.pass) {
+			submitText.value = "Enter a new Password!";
+			return submitRed.value = true;
+		} else {
+			const data = await $fetch(`/api/auth/create`, {
+				method: "POST",
+				body: { username: credentials.value.user, password: credentials.value.pass }
+			});
+			console.log(data);
+		}
+	} else {
+
+	}
 }
 </script>
