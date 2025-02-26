@@ -1,13 +1,11 @@
 <template>
-  <nav>
-    <ul>
-      <li>Event</li>
-      <li>Logout</li>
-    </ul>
-  </nav>
+	<nav>
+		<ul>
+			<li>Event</li>
+			<li>Logout</li>
+		</ul>
+	</nav>
 
-  <body>
-    <!-- TODO: Complete Dashboard Layout (nav, sidebar, footer) -->
-    <slot />
-  </body>
+	<!-- TODO: Complete Dashboard Layout (nav, sidebar, footer) -->
+	<slot />
 </template>

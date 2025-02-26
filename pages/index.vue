@@ -3,7 +3,7 @@
 
 		<div class="m-auto">
 			<div class="p-6">
-				<h1 class="font-extrabold text-bluey-500 text-9xl text-center">dashhack</h1>
+				<h1 class="font-extrabold text-bluey-500 text-9xl text-center">DashHack</h1>
 				<h2 class="font-bold text-black text-6xl text-center dark:text-white transition-colors duration-500">Hackathon Monitoring</h2>
 			</div>
 			<form class="pt-10 flex items-center flex-col">
@@ -11,7 +11,7 @@
 					<input @input="checkEventFree" v-model="credentials.user" required type="username" placeholder="Event Name" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4" />
 					<input @focus="clearSubmit" v-model="credentials.pass" type="password" autocomplete="current-password" placeholder="Password" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4">
 				</div>
-				<button @click="open" :disabled="eventTaken" type="submit" :class="`cursor-pointer text-xl font-bold mt-10 rounded-full w-72 h-16 transition-colors duration-500 ${submitClass}`">{{ submitText }}</button>
+				<button @click="open" :disabled="eventTaken && !!credentials.pass" type="submit" :class="`cursor-pointer text-xl font-bold mt-10 rounded-full w-72 h-16 transition-colors duration-500 ${submitClass}`">{{ submitText }}</button>
 			</form>
 		</div>
 
@@ -34,10 +34,17 @@
 
 <script setup>
 definePageMeta({
-	layout: 'open',
+	layout: 'landing',
 });
 
-import { onMounted, ref } from "vue";
+useHead({
+	title: 'DashHack | Hackathon Monitoring',
+	meta: [
+		{ name: 'description', content: 'Hackathon Monitoring' }
+	],
+});
+
+import { ref } from "vue";
 
 const credentials = ref({ user: "", pass: "" });
 
@@ -106,8 +113,15 @@ async function open() {
 			});
 			console.log(data);
 		}
+	} else if (eventTaken.value) {
+		if (!credentials.value.pass) {
+			await navigateTo(`/app/${credentials.value.user}`);
+		} else {
+			//VSTUP DO DASH SE SESSION ID
+		}
 	} else {
-
+		submitText.value = "Enter the Event Name!";
+		return submitRed.value = true;
 	}
 }
 </script>
