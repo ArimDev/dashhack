@@ -11,7 +11,7 @@
 					<input @input="checkEventFree" v-model="credentials.user" required type="username" placeholder="Event Name" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4" />
 					<input @focus="clearSubmit" v-model="credentials.pass" type="password" autocomplete="current-password" placeholder="Password" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4">
 				</div>
-				<button @click="open" :disabled="eventTaken && !!credentials.pass" type="submit" :class="`cursor-pointer text-xl font-bold mt-10 rounded-full w-72 h-16 transition-colors duration-500 ${submitClass}`">{{ submitText }}</button>
+				<button @click="open" type="submit" :class="`cursor-pointer text-xl font-bold mt-10 rounded-full w-72 h-16 transition-colors duration-500 ${submitClass}`">{{ submitText }}</button>
 			</form>
 		</div>
 
@@ -68,9 +68,11 @@ function darkMode() {
 }
 
 function clearSubmit() {
-	submitRed.value = false;
-	submitText.value = "Create New Event";
-	return;
+	if (eventFree.value) {
+		submitRed.value = false;
+		submitText.value = "Create New Event";
+		return;
+	}
 }
 
 async function checkEventFree() {
@@ -107,17 +109,46 @@ async function open() {
 			submitText.value = "Enter a new Password!";
 			return submitRed.value = true;
 		} else {
-			const data = await $fetch(`/api/auth/create`, {
+			let data = await $fetch(`/api/auth/create`, {
 				method: "POST",
 				body: { username: credentials.value.user, password: credentials.value.pass }
 			});
-			console.log(data);
+
+			//AUTH API TODO: Check create status
+
+			eventTaken.value = true;
+			eventFree.value = false;
+			submitText.value = "Open Dashboard";
+
+			data = await $fetch(`/api/auth/login`, {
+				method: "POST",
+				body: { username: credentials.value.user, password: credentials.value.pass }
+			});
+
+			if (!data || !data.success) {
+				console.log(data);
+
+				//AUTH API TODO: What's the error?
+			} else {
+				await navigateTo(`/app/${credentials.value.user}`);
+			}
 		}
 	} else if (eventTaken.value) {
 		if (!credentials.value.pass) {
 			await navigateTo(`/app/${credentials.value.user}`);
 		} else {
-			//VSTUP DO DASH SE SESSION ID
+			const data = await $fetch(`/api/auth/login`, {
+				method: "POST",
+				body: { username: credentials.value.user, password: credentials.value.pass }
+			});
+
+			if (!data || !data.success) {
+				console.log(data);
+
+				//AUTH API TODO: What's the error?
+			} else {
+				await navigateTo(`/app/${credentials.value.user}`);
+			}
 		}
 	} else {
 		submitText.value = "Enter the Event Name!";
