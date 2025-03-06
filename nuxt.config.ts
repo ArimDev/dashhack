@@ -15,10 +15,7 @@ export default defineNuxtConfig({
     ],
   },
 
-  modules: [
-    '@nuxt/fonts',
-    '@nuxtjs/color-mode',
-  ],
+  modules: ['@nuxt/fonts', '@nuxtjs/color-mode', '@nuxt/icon'],
 
   ssr: true,
 
