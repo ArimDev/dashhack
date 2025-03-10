@@ -1,6 +1,6 @@
 <template>
 	<div class="font-sans flex min-h-screen bg-zinc-300 dark:bg-gray-900 dark:text-white transition-colors duration-500">
-		<sidebar class="bg-white text-black p-[2%] min-h-screen w-1/7 min-w-[215px] flex flex-col items-center text-center content-center align-center">
+		<sidebar class="z-10 fixed h-screen bg-white text-black p-[2%] min-h-screen w-1/7 min-w-[215px] flex flex-col items-center text-center content-center align-center">
 			<header class="min-h-1/3 flex flex-col justify-center items-center">
 				<NuxtLink to="/" class="min-h-1/3 flex flex-col justify-center items-center"><img src="/logo.png" width="60%"></NuxtLink>
 				<h1 class="font-bold text-2xl">DashHack</h1>
@@ -39,24 +39,24 @@
 		</sidebar>
 
 		<div class="p-[1%] flex flex-col flex-1 min-h-screen">
-			<nav class="flex justify-between">
+			<nav class="z-10 sticky top-[2%] w-6/7 ml-auto flex justify-between">
 				<div class="">
-					<button class="bg-white cursor-pointer px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
+					<span class="shadow-md bg-white px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
 						{{ currentPage }}
-					</button>
+					</span>
 				</div>
 				<div class="flex justify-end gap-3">
-					<button class="bg-white cursor-pointer px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
+					<span class="shadow-md bg-white px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
 						<Icon name="simple-icons:mcdonalds" size="30px" />
 						{{ eventName }}
-					</button>
-					<button class="bg-white cursor-pointer rounded-full w-[56px] h-[56px] flex items-center justify-center transition-colors duration-500">
+					</span>
+					<button class="shadow-md bg-white cursor-pointer rounded-full w-[56px] h-[56px] flex items-center justify-center transition-colors duration-500">
 						<Icon name="majesticons:logout-line" size="30px" />
 					</button>
 				</div>
 			</nav>
 
-			<content class="pt-[1%]">
+			<content class="w-6/7 ml-auto pt-[1%]">
 				<slot />
 			</content>
 		</div>

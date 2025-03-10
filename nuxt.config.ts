@@ -9,13 +9,20 @@ export default defineNuxtConfig({
     mongoUri: process.env.mongoUri
   },
 
+  components: [
+    {
+      path: '~/components',
+      pathPrefix: false,
+    },
+  ],
+
   vite: {
     plugins: [
       tailwindcss(),
     ],
   },
 
-  modules: ['@nuxt/fonts', '@nuxtjs/color-mode', '@nuxt/icon'],
+  modules: ['@nuxt/fonts', '@nuxtjs/color-mode', '@nuxt/icon', 'nuxt-color-picker'],
 
   ssr: true,
 
