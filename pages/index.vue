@@ -125,7 +125,7 @@ async function open() {
 				body: { username: credentials.value.user, password: credentials.value.pass }
 			});
 
-			if (!data || !data.success) {
+			if (!data || data.status !== 200) {
 				console.log(data);
 
 				//AUTH API TODO: What's the error?
@@ -142,8 +142,12 @@ async function open() {
 				body: { username: credentials.value.user, password: credentials.value.pass }
 			});
 
-			if (!data || !data.success) {
-				console.log(data);
+			if (!data || data?.status !== 200) {
+				if (data) console.log(data);
+				if (data?.status === 401) {
+					submitText.value = "Wrong password!";
+					return submitRed.value = true;
+				}
 
 				//AUTH API TODO: What's the error?
 			} else {

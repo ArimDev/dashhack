@@ -12,7 +12,7 @@
         const eventData = await Event.findOne({ event: eventName });
 
         if (!eventData) {
-            return { statusCode: 404, message: "Event not found" };
+            return { status: 404, message: "Event not found" };
         }
 
         if (eventData.settings && !!eventData.settings.needPassword) {

@@ -9,7 +9,7 @@ const eventName = route.params.event;
 const data = await $fetch(`/api/event/${eventName}`);
 
 useHead({
-    title: data.event + " | DashHack"
+    title: eventName + " | DashHack"
 });
 </script>
 

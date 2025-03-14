@@ -9,11 +9,11 @@ export default defineEventHandler(async (event) => {
 
 	const existingUser = await Event.findOne({ event: username });
 	if (existingUser) {
-		throw createError({ statusCode: 400, statusMessage: "Username already exists" });
+		throw createError({ status: 400, statusMessage: "Username already exists" });
 	}
 
 	const newEvent = new Event({ event: username, password });
 	await newEvent.save();
 
-	return { message: "Event registered successfully", eventID: newEvent._id };
+	return { status: 200, message: "Event registered successfully" };
 });

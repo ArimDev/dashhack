@@ -10,5 +10,5 @@ export default defineEventHandler(async (event) => {
 	let exists = false;
 	if (username) exists = await Event.exists({ event: username });
 
-	return { exists: !!exists };
+	return { status: !!exists ? 200 : 404, exists: !!exists };
 });

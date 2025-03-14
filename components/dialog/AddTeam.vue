@@ -22,7 +22,7 @@
 		</div>
 
 		<div class="flex justify-between gap-70 flex-row">
-			<button @click="emit('close')" class="cursor-pointer rounded-full bg-zinc-300 w-full h-[56px] text-xl font-bold text-black">
+			<button @click="emit('close', false)" class="cursor-pointer rounded-full bg-zinc-300 w-full h-[56px] text-xl font-bold text-black">
 				Cancel
 			</button>
 			<button type="submit" class="cursor-pointer rounded-full bg-bluey-500 w-full h-[56px] text-xl font-bold text-white">
@@ -37,6 +37,9 @@ import { ref } from "vue";
 
 const emit = defineEmits(["close"]);
 
+const route = useRoute();
+const eventName = route.params.event;
+
 const colorPicker = ref(false);
 
 const teamName = ref("");
@@ -44,21 +47,36 @@ const teamGithub = ref("");
 const teamColor = ref("#3081E0");
 const teamDescription = ref("");
 
-const addTeam = () => {
-	console.log("Formulář odeslán s daty:", {
+async function addTeam() {
+	console.log("Form data:", {
+		username: eventName,
 		teamName: teamName.value,
-		teamGithub: teamGithub.value,
 		teamColor: teamColor.value,
-		teamDescription: teamDescription.value
+		teamDescription: teamDescription.value,
+		teamGithub: teamGithub.value
 	});
 
-	// Např. odeslání na API
-	// await fetch("/api/teams", { method: "POST", body: JSON.stringify({ teamName, teamGithub, teamColor, teamDescription }) });
-	emit('close');
+	let data = await $fetch(`/api/team/add`, {
+		method: "POST",
+		body: {
+			username: eventName,
+			teamName: teamName.value,
+			teamColor: teamColor.value,
+			teamDescription: teamDescription.value,
+			teamGithub: teamGithub.value
+		}
+	});
 
-	teamName.value = "";
-	teamGithub.value = "";
-	teamColor.value = "";
-	teamDescription.value = "";
+	if (!data || data.status !== 200) {
+		console.log(data);
+
+		//TEAM API TODO: What's the error?
+	} else {
+		emit('close', true);
+
+		teamName.value = "";
+		teamGithub.value = "";
+		teamDescription.value = "";
+	}
 };
 </script>

@@ -15,10 +15,10 @@ export default defineEventHandler(async (_event) => {
     const { username, password } = await readBody(_event);
 
     const event = await Event.findOne({ event: username });
-    if (!event) return { success: false, message: "Event not found" };
+    if (!event) return { status: 404, message: "Event not found" };
 
     const passwordMatch = await bcrypt.compare(password, event.password);
-    if (!passwordMatch) return { success: false, message: "Wrong password" };
+    if (!passwordMatch) return { status: 401, message: "Wrong password" };
 
     const sessionID = uuidv4();
     await Session.create({ sessionID, username });
@@ -31,5 +31,5 @@ export default defineEventHandler(async (_event) => {
         path: "/"
     });
 
-    return { success: true, message: "Logged in" };
+    return { status: 200, message: "Logged in" };
 });
