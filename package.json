@@ -1,6 +1,6 @@
 {
   "name": "dashhack",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "private": true,
   "type": "module",
   "scripts": {
@@ -11,15 +11,18 @@
     "postinstall": "nuxt prepare"
   },
   "dependencies": {
+    "@iconify-json/heroicons": "^1.2.2",
     "@nuxt/fonts": "^0.11.0",
     "@tailwindcss/vite": "^4.0.14",
+    "apexcharts": "^4.5.0",
     "bcrypt": "^5.1.1",
     "mongoose": "^8.12.1",
     "nuxt": "^3.16.1",
     "nuxt-color-picker": "^1.2.7",
     "uuid": "^11.1.0",
     "vue": "latest",
-    "vue-router": "latest"
+    "vue-router": "latest",
+    "vue3-apexcharts": "^1.8.0"
   },
   "devDependencies": {
     "@nuxt/icon": "^1.11.0",

@@ -8,11 +8,15 @@
         <Confirm v-show="openConfirm" subject="Delete Team" :team="selectedTeam" @close="close" />
     </div>
 
-    <div class="overflow-y-auto">
-        <div v-if="!!data.teams.length" class="grid grid-cols-2 gap-4">
-            <Team v-for="(team, index) in data.teams" :key="index" :team="team" @edit="open" @delete="confirm" />
-        </div>
+    <div v-if="!!data.teams.length" class="grid grid-cols-2 gap-4">
+        <Icon style="display: none;" name="heroicons:magnifying-glass-plus-16-solid" />
+        <Icon style="display: none;" name="heroicons:magnifying-glass-minus-16-solid" />
+        <Icon style="display: none;" name="heroicons:arrows-pointing-out-16-solid" />
+        <Icon style="display: none;" name="heroicons:hand-raised-16-solid" />
+        <Icon style="display: none;" name="heroicons:arrow-path-16-solid" />
+        <Team v-for="(team, index) in data.teams" :key="index" :team="team" @edit="open" @delete="confirm" />
     </div>
+
     <button @click="open(false)" class="fixed bg-bluey-500 h-[80px] w-[80px] right-[30px] bottom-[30px] shadow-md cursor-pointer rounded-full flex items-center justify-center transition-colors duration-500">
         <Icon name="material-symbols:add-2-rounded" size="50px" class="text-white" />
     </button>
