@@ -99,8 +99,6 @@ async function checkEventFree() {
 async function open() {
 	event.preventDefault();
 
-	console.log(credentials.value.user + " " + credentials.value.pass);
-
 	if (eventFree.value) {
 		if (!credentials.value.user) {
 			submitText.value = "Enter the Event Name!";

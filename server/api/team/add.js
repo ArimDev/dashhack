@@ -3,6 +3,10 @@ import Event from "../../models/Event";
 import Session from "../../models/Session";
 
 export default defineEventHandler(async (event) => {
+    if (event.method !== "POST") {
+        throw createError({ status: 405, statusMessage: "Method Not Allowed" });
+    }
+
     await connectDB();
 
     const cookies = parseCookies(event)
