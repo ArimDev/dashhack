@@ -16,7 +16,7 @@
         }
 
         if (eventData.settings && !!eventData.settings.needPassword) {
-            //TODO: Need password to read
+            // TODO: Need password to read
         }
 
         const returnData = {

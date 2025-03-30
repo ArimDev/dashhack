@@ -4,7 +4,7 @@
             <div class="w-[30%]">
                 <div class="flex flex-row items-center gap-3 mb-2">
                     <h1 class="text-3xl font-bold">{{ team.name }}</h1>
-                    <div class="flex flex-row items-center gap-1">
+                    <div class="flex flex-row items-center gap-1 z-1">
                         <button @click="emit('edit', team)" class="cursor-pointer flex flex-row items-center transition-transform duration-300 ease-in-out hover:scale-120">
                             <Icon name="heroicons:pencil-square-20-solid" size="25px" :style="{ color: team.color }" />
                         </button>
@@ -48,13 +48,13 @@ if (props.team.github) {
     const event = await $fetch(`/api/event/${eventName}`);
 
     if (!event?.settings?.githubToken) {
-        console.error("Missing github token"); //TODO
+        console.error("Missing github token"); // TODO
         chartLoading.value = false;
     }
     else {
         const res = await githubSeries(props.team.github, event.settings.githubToken);
 
-        //TODO: if error, then "chartLoading.value = false;"
+        // TODO: if error, then "chartLoading.value = false;"
 
         const commitData = res.commits;
 

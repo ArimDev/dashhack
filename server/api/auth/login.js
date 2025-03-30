@@ -25,7 +25,15 @@ export default defineEventHandler(async (_event) => {
 
     setCookie(_event, "session", sessionID, {
         httpOnly: true,
-        secure: false, //FIX | FALSE FOR LOCALHOST
+        secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+        sameSite: "strict",
+        maxAge: 60 * 60,
+        path: "/"
+    });
+
+    setCookie(_event, "sessionExists", true, {
+        httpOnly: false,
+        secure: false, // TODO: FIX | FALSE FOR LOCALHOST
         sameSite: "strict",
         maxAge: 60 * 60,
         path: "/"

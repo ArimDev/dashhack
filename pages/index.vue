@@ -112,7 +112,7 @@ async function open() {
 				body: { username: credentials.value.user, password: credentials.value.pass }
 			});
 
-			//AUTH API TODO: Check create status
+			// TODO: Check create status AUTH API
 
 			eventTaken.value = true;
 			eventFree.value = false;
@@ -126,7 +126,7 @@ async function open() {
 			if (!data || data.status !== 200) {
 				console.log(data);
 
-				//AUTH API TODO: What's the error?
+				// TODO: What's the error? AUTH API
 			} else {
 				await navigateTo(`/app/${credentials.value.user}`);
 			}
@@ -147,7 +147,7 @@ async function open() {
 					return submitRed.value = true;
 				}
 
-				//AUTH API TODO: What's the error?
+				// TODO: What's the error? AUTH API
 			} else {
 				await navigateTo(`/app/${credentials.value.user}`);
 			}

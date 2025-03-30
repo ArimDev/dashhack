@@ -52,7 +52,7 @@ async function confirmed() {
         if (!data || data.status !== 200) {
             console.log(data);
 
-            //TEAM API TODO: What's the error?
+            // TODO: What's the error? TEAM API
         } else emit('close', true);
     };
 };
