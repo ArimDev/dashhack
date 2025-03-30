@@ -1,4 +1,8 @@
 <template>
+	<div v-show="openLogin || openConfirm" class="fixed inset-0 flex justify-center items-center z-[100]">
+		<Login v-show="openLogin" @close="openLogin = false" />
+		<Confirm v-show="openConfirm" subject="Log Off" message="Are you sure, that you want to log off?" @close="closeConfirm" />
+	</div>
 	<div class="font-sans flex bg-zinc-300 text-black dark:bg-gray-900 dark:text-white transition-colors duration-500">
 		<div class="fixed z-10 w-[15%] h-screen bg-white text-black dark:bg-gray-800 dark:text-white p-[2%] min-h-screen min-w-[215px] flex flex-col items-center text-center content-center align-center transition-colors duration-500">
 			<header class="min-h-1/3 flex flex-col justify-center items-center">
@@ -51,7 +55,9 @@
 				<div class="flex justify-end gap-3">
 					<span class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
 						<Icon v-if="!!loggedIn" name="i-heroicons:key-20-solid" size="30px" />
-						<Icon v-else name="i-heroicons:lock-closed-20-solid" size="30px" />
+						<button v-else @click="openLogin = true" class="cursor-pointer flex items-center transition-transform duration-300 ease-in-out transform hover:scale-115">
+							<Icon name="i-heroicons:lock-closed-20-solid" size="30px" />
+						</button>
 						<div class="text-xs font-normal text-center">
 							<div class="flex flex-row items-center justify-center gap-1">
 								<p v-if="!!loggedIn">Can make changes</p>
@@ -59,7 +65,7 @@
 
 								<div class="relative group">
 									<Icon name="i-heroicons:question-mark-circle-16-solid" size="15px" class="cursor-pointer focus:outline-none" tabindex="0" />
-									<div class="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-max max-w-[230px] bg-gray-800 text-white text-xs rounded-md px-2 py-1 opacity-0 invisible transition-opacity duration-300 group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible">
+									<div class="z-50 absolute left-1/2 -translate-x-1/2 top-full mt-2 w-max max-w-[230px] bg-gray-800 text-white text-xs rounded-md px-2 py-1 opacity-0 invisible transition-opacity duration-300 group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible">
 										<p v-if="!!loggedIn">You logged in with password successfully.</p>
 										<p v-else>To make changes on this event, you need to log in with password.</p>
 									</div>
@@ -74,7 +80,7 @@
 
 								<div class="relative group flex justify-center">
 									<Icon name="i-heroicons:question-mark-circle-16-solid" size="15px" class="cursor-pointer focus:outline-none" tabindex="0" />
-									<div class="absolute left-1/2 -translate-x-1/2 top-full mt-2 w-max max-w-[230px] bg-gray-800 text-white text-xs rounded-md px-2 py-1 opacity-0 invisible transition-opacity duration-300 group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible">
+									<div class="z-50 absolute left-1/2 -translate-x-1/2 top-full mt-2 w-max max-w-[230px] bg-gray-800 text-white text-xs rounded-md px-2 py-1 opacity-0 invisible transition-opacity duration-300 group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible">
 										You have limited number of API requests per hour through the GitHub API.
 									</div>
 								</div>
@@ -85,7 +91,7 @@
 						<Icon name="simple-icons:mcdonalds" size="30px" />
 						{{ eventName }}
 					</span>
-					<button class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white cursor-pointer rounded-full w-[56px] h-[56px] flex items-center justify-center transition-colors duration-500">
+					<button @click="openConfirm = true" class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white cursor-pointer rounded-full w-[56px] h-[56px] flex items-center justify-center transition-colors duration-500">
 						<Icon name="majesticons:logout-line" size="30px" />
 					</button>
 				</div>
@@ -99,14 +105,19 @@
 </template>
 
 <script setup>
-import { ref, watchEffect } from "vue";
+import { ref } from "vue";
 import { useRoute } from "vue-router";
 
-const currentPage = ref("Home");
 const rate = ref("?");
-console.log(useCookie("sessionExists").value);
-console.log(!!useCookie("sessionExists").value);
-const loggedIn = ref(useCookie("sessionExists").value);
+const openLogin = ref(false);
+const openConfirm = ref(false);
+
+const currentPage = computed(() => {
+	const pathParts = route.path.split("/");
+	const path = pathParts[3] || "home";
+	return path.charAt(0).toUpperCase() + path.slice(1);
+});
+const loggedIn = computed(() => !!useCookie("sessionExists").value);
 
 const route = useRoute();
 const colorMode = useColorMode();
@@ -127,14 +138,13 @@ function getPath(subpath = "") {
 	return subpath ? `${basePath}/${subpath}` : basePath;
 };
 
-watchEffect(() => {
-	const pathParts = route.path.split("/");
-	const path = pathParts[3] || "home";
-	currentPage.value = path.charAt(0).toUpperCase() + path.slice(1);
-});
+async function closeConfirm(success) {
+	if (!!success) {
+		await navigateTo(`/`);
+	} else openConfirm.value = false;
+}
 
 if (event?.settings?.githubToken) {
 	rate.value = (await githubRateLimit(event?.settings?.githubToken)).rate.remaining;
-
 }
 </script>

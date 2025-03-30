@@ -5,7 +5,7 @@
     </div>
     <div v-show="data.teams.length && (openAddTeam || openConfirm)" class="fixed inset-0 flex justify-center items-center z-[100]">
         <AddTeam v-show="openAddTeam" :team="selectedTeam || false" @close="close" />
-        <Confirm v-show="openConfirm" subject="Delete Team" :team="selectedTeam" @close="close" />
+        <Confirm v-show="openConfirm" subject="Delete Team" message="Are you sure, that you want to delete team $var?" :team="selectedTeam" @close="close" />
     </div>
 
     <div v-if="!!data.teams.length" class="grid grid-cols-2 gap-4">

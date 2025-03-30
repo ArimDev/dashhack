@@ -31,7 +31,7 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
+import { ref, onMounted } from "vue";
 
 const emit = defineEmits(["edit", "delete"]);
 const props = defineProps({
@@ -44,72 +44,75 @@ const series = ref(null),
     chartOptions = ref(null),
     chartLoading = ref(true);
 
-if (props.team.github) {
-    const event = await $fetch(`/api/event/${eventName}`);
+onMounted(async () => {
+    if (props.team.github) {
+        const event = await $fetch(`/api/event/${eventName}`);
 
-    if (!event?.settings?.githubToken) {
-        console.error("Missing github token"); // TODO
-        chartLoading.value = false;
-    }
-    else {
-        const res = await githubSeries(props.team.github, event.settings.githubToken);
+        if (!event?.settings?.githubToken) {
+            console.error("Missing github token"); // TODO
+            chartLoading.value = false;
+        }
+        else {
+            const res = await githubSeries(props.team.github, event.settings.githubToken);
 
-        // TODO: if error, then "chartLoading.value = false;"
+            // TODO: if error, then "chartLoading.value = false;"
 
-        const commitData = res.commits;
+            const commitData = res.commits;
+            const diffData = res.diff;
 
-        // 24 element array with times (11:00, 12:00, ...)
-        const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
+            // 24 element array with times (11:00, 12:00, ...)
+            const hours = Array.from({ length: 24 }, (_, i) => `${i}:00`);
 
-        series.value = [
-            {
-                name: "Commits",
-                data: commitData,
-            },
-        ];
+            series.value = [
+                {
+                    name: "Commits",
+                    type: "line",
+                    data: commitData,
+                },
+                {
+                    name: "Lines",
+                    type: "area",
+                    data: diffData,
+                },
+            ];
 
-        chartOptions.value = {
-            colors: [props.team.color],
-            chart: {
-                zoom: { enabled: true },
-                toolbar: {
-                    show: true,
-                    offsetX: 0,
-                    offsetY: 0,
-                    tools: {
-                        download: false,
-                        selection: true,
-                        zoom: `<span class="iconify i-heroicons:arrows-pointing-out-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
-                        zoomin: `<span class="iconify i-heroicons:magnifying-glass-plus-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
-                        zoomout: `<span class="iconify i-heroicons:magnifying-glass-minus-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
-                        pan: `<span class="iconify i-heroicons:hand-raised-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
-                        reset: `<span class="iconify i-heroicons:arrow-path-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
-                    },
+            chartOptions.value = {
+                colors: [props.team.color],
+                chart: {
+                    zoom: { enabled: true },
+                    toolbar: {
+                        show: true,
+                        offsetX: 0,
+                        offsetY: 0,
+                        tools: {
+                            download: false,
+                            selection: true,
+                            zoom: `<span class="z-1 relative iconify i-heroicons:arrows-pointing-out-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
+                            zoomin: `<span class="z-1 relative iconify i-heroicons:magnifying-glass-plus-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
+                            zoomout: `<span class="z-1 relative iconify i-heroicons:magnifying-glass-minus-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
+                            pan: `<span class="z-1 relative iconify i-heroicons:hand-raised-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
+                            reset: `<span class="z-1 relative iconify i-heroicons:arrow-path-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
+                        }
+                    }
+                },
+                dataLabels: {
+                    enabled: false,
+                },
+                xaxis: {
+                    categories: hours,
+                },
+                legend: {
+                    show: false,
+                },
+                tooltip: {
+                    enabled: true,
                 }
-            },
-            dataLabels: {
-                enabled: false,
-            },
-            plotOptions: {
-                bar: {
-                    columnWidth: "50%",
-                },
-            },
-            xaxis: {
-                categories: hours,
-                labels: {
-                    style: {
-                        fontStyle: "normal",
-                    },
-                },
-            },
-            tooltip: {
-            },
-        };
+            };
 
-        chartLoading.value = false;
-    }
-} else chartLoading.value = false
+            chartLoading.value = false;
+        }
+    } else chartLoading.value = false;
+});
 </script>
 
 <style>

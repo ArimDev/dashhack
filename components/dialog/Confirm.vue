@@ -7,9 +7,7 @@
                     <h1 class="text-left text-3xl font-bold">{{ props.subject }}</h1>
                 </div>
 
-                <div>
-                    <p v-if="!!props.team" class="text-xl">Are you sure, that you want to delete team "<strong>{{ team.name }}</strong>"?</p>
-                </div>
+                <div class="text-xl" v-html="message"></div>
 
                 <div class="flex justify-between gap-70 flex-row">
                     <button @click="emit('close', false)" class="cursor-pointer rounded-full bg-zinc-300 w-full h-[56px] text-xl font-bold text-black">
@@ -28,17 +26,25 @@
 const emit = defineEmits(["close"]);
 const props = defineProps({
     subject: String,
+    message: String,
     team: {
         type: [Object, Boolean],
         required: false
     },
 });
 
+const message = computed(() => {
+    if (!!props.team)
+        return props.message.replace("$var", `<strong>${props.team.name}</strong>`);
+    else
+        return props.message;
+});
+
 const route = useRoute();
 const eventName = route.params.event;
 
 async function confirmed() {
-    if (!!props.team) {
+    if (!!props.team) { //or if (props.subject === "Delete Team")
         const teamData = {
             username: eventName,
             teamName: props.team.name
@@ -54,6 +60,19 @@ async function confirmed() {
 
             // TODO: What's the error? TEAM API
         } else emit('close', true);
-    };
+    } else if (props.subject === "Log Off") {
+        let data = await $fetch(`/api/auth/logout/`, {
+            method: "DELETE"
+        });
+
+        if (!data || ![200, 204].includes(data.status)) {
+            console.log(data);
+
+            // TODO: What's the error? TEAM API
+        } else {
+            if (data.status === 204) console.log(data);
+            emit('close', true);
+        }
+    }
 };
 </script>
