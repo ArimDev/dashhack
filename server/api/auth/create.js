@@ -12,7 +12,7 @@ export default defineEventHandler(async (event) => {
 		throw createError({ status: 400, statusMessage: "Username already exists" });
 	}
 
-	const newEvent = new Event({ event: username, password });
+	const newEvent = new Event({ event: username, settings: { password } });
 	await newEvent.save();
 
 	return { status: 200, message: "Event registered successfully" };

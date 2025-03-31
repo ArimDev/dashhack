@@ -46,15 +46,14 @@ const series = ref(null),
 
 onMounted(async () => {
     if (props.team.github) {
-        const event = await $fetch(`/api/event/${eventName}`);
+        const event = (await $fetch(`/api/event/${eventName}`)).data;
 
         if (!event?.settings?.githubToken) {
             console.error("Missing github token"); // TODO
             chartLoading.value = false;
         }
         else {
-            const res = await githubSeries(props.team.github, event.settings.githubToken);
-
+            const res = await $fetch(`/api/github/series?url=${encodeURIComponent(props.team.github)}&event=${encodeURIComponent(eventName)}`);
             // TODO: if error, then "chartLoading.value = false;"
 
             const commitData = res.commits;

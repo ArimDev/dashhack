@@ -17,7 +17,7 @@ export default defineEventHandler(async (_event) => {
     const event = await Event.findOne({ event: username });
     if (!event) return { status: 404, message: "Event not found" };
 
-    const passwordMatch = await bcrypt.compare(password, event.password);
+    const passwordMatch = await bcrypt.compare(password, event.settings.password);
     if (!passwordMatch) return { status: 401, message: "Wrong password" };
 
     const sessionID = uuidv4();

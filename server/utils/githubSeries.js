@@ -1,4 +1,15 @@
-export default async function githubSeries(_url, token) {
+import { connectDB } from "./db";
+import Event from "../models/Event";
+
+export default async function githubSeries(_url, event) {
+    await connectDB();
+
+    const data = await Event.findOne({ event });
+    if (!data || !data.settings.githubToken) {
+        return { status: 401, message: `Missing GitHub token! (event ${event})` };
+    }
+    const token = data.settings.githubToken;
+
     let reqs = 0;
 
     async function getRequest(url, headers) {

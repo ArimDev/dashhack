@@ -3,11 +3,10 @@ import bcrypt from 'bcrypt';
 
 const EventSchema = new mongoose.Schema({
 	event: { type: String, unique: true, required: true },
-	password: { type: String, required: true },
 	logo: { type: String, required: false },
 	color: { type: String, required: false },
 	settings: {
-		needPassword: { type: Boolean, required: false },
+		password: { type: String, required: true },
 		githubToken: { type: String, required: false }
 	},
 	teams: [
@@ -22,7 +21,7 @@ const EventSchema = new mongoose.Schema({
 
 EventSchema.pre('save', async function (next) {
 	if (this.isModified('password')) {
-		this.password = await bcrypt.hash(this.password, 10);
+		this.settings.password = await bcrypt.hash(this.settings.password, 10);
 	}
 	next();
 });

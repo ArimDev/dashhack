@@ -32,11 +32,11 @@ definePageMeta({
 const route = useRoute();
 const eventName = route.params.event;
 
-const data = ref(await $fetch(`/api/event/${eventName}`));
-
 useHead({
     title: eventName + " | DashHack"
 });
+
+const data = ref((await $fetch(`/api/event/${eventName}`)).data);
 
 const openAddTeam = ref(false);
 const openConfirm = ref(false);
@@ -57,6 +57,6 @@ async function close(added) {
     openAddTeam.value = false;
     openConfirm.value = false;
     selectedTeam.value = false;
-    if (added) data.value = await $fetch(`/api/event/${eventName}`);
+    if (added) data.value = (await $fetch(`/api/event/${eventName}`)).data;
 };
 </script>

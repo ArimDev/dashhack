@@ -6,7 +6,7 @@ definePageMeta({
 const route = useRoute();
 const eventName = route.params.event;
 
-const data = await $fetch(`/api/event/${eventName}`);
+const event = (await $fetch(`/api/event/${eventName}`)).data;
 
 useHead({
     title: eventName + " | DashHack"
@@ -16,6 +16,6 @@ useHead({
 <template>
     <div>
         <h1>Home</h1>
-        Event name: {{ data.event }}
+        Event name: {{ event.event }}
     </div>
 </template>

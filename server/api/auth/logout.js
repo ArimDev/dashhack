@@ -9,7 +9,7 @@ export default defineEventHandler(async (_event) => {
 
     const sessionID = getCookie(_event, "session");
     if (!sessionID) {
-        if (getCookie(_event, "sessionExists")) deleteCookie(_event, "sessionExists", {
+        deleteCookie(_event, "sessionExists", {
             httpOnly: false,
             secure: false, // TODO: FIX | FALSE FOR LOCALHOST
             sameSite: "strict",

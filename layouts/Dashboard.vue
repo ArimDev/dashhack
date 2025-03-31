@@ -122,7 +122,7 @@ const loggedIn = computed(() => !!useCookie("sessionExists").value);
 const route = useRoute();
 const colorMode = useColorMode();
 const eventName = route.params.event;
-const event = await $fetch(`/api/event/${eventName}`);
+const event = (await $fetch(`/api/event/${eventName}`)).data;
 
 function darkMode() {
 	if (colorMode.preference === "dark") colorMode.preference = "light";
@@ -145,6 +145,6 @@ async function closeConfirm(success) {
 }
 
 if (event?.settings?.githubToken) {
-	rate.value = (await githubRateLimit(event?.settings?.githubToken)).rate.remaining;
+	rate.value = (await $fetch(`/api/github/rateLimit?event=${encodeURIComponent(eventName)}`)).rate.remaining;
 }
 </script>
