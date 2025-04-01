@@ -119,9 +119,9 @@ const currentPage = computed(() => {
 });
 const loggedIn = computed(() => !!useCookie("sessionExists").value);
 
-const route = useRoute();
 const colorMode = useColorMode();
-const eventName = route.params.event;
+const route = useRoute();
+const eventName = computed(() => route.params.event);
 const event = (await $fetch(`/api/event/${eventName}`)).data;
 
 function darkMode() {

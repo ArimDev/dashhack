@@ -1,21 +1,25 @@
+<template>
+    <div class="flex flex-wrap gap-8">
+        <EventName />
+        <Password />
+        <EventLogo />
+        <Token />
+    </div>
+</template>
+
 <script setup>
 definePageMeta({
     layout: 'dashboard',
 });
 
-const route = useRoute();
-const eventName = route.params.event;
+const eventName = computed(() => {
+    const route = useRoute();
+    return route.params.event;
+});
 
-const data = await $fetch(`/api/event/${eventName}`);
-
-useHead({
-    title: eventName + " | DashHack"
+watchEffect(() => {
+    useHead({
+        title: eventName.value + " | DashHack"
+    });
 });
 </script>
-
-<template>
-    <div>
-        <h1>Settings</h1>
-        Event name: {{ data.event }}
-    </div>
-</template>

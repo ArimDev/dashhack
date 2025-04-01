@@ -1,0 +1,61 @@
+import { connectDB } from "../../utils/db";
+import Event from "../../models/Event";
+import Session from "../../models/Session";
+
+export default defineEventHandler(async (_event) => {
+    await connectDB();
+
+    const sessionID = getCookie(_event, "session");
+    let session;
+    if (!sessionID) {
+        if (getCookie(_event, "sessionExists")) deleteCookie(_event, "sessionExists", {
+            httpOnly: false,
+            secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+            sameSite: "strict",
+            path: "/"
+        });
+
+        return { status: 401, message: "Not logged in" };
+    } else {
+        session = await Session.findOne({ sessionID });
+        if (!session) {
+            deleteCookie(_event, "sessionExists", {
+                httpOnly: false,
+                secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+                sameSite: "strict",
+                path: "/"
+            });
+            deleteCookie(_event, "session", {
+                httpOnly: true,
+                secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+                sameSite: "strict",
+                path: "/"
+            });
+
+            return { status: 401, message: "Not logged in" };
+        }
+    }
+
+    const body = await readBody(_event);
+    const { setting, value } = body;
+
+    if (setting === "event") {
+        const occupiedEvent = await Event.findOne({ event: value });
+        if (occupiedEvent) return { status: 400, message: "Event name is occupied" };
+
+        let existingEvent = await Event.findOne({ event: session.username });
+        if (!existingEvent) return { status: 404, message: "Event not found" };
+
+        const oldUsername = existingEvent.event;
+        existingEvent.event = value;
+        await existingEvent.save();
+
+        session.username = value;
+        await session.save();
+
+        await Session.deleteMany({ username: oldUsername });
+
+        return { status: 200, message: "Event name changed successfully" };
+    }
+    // TODO: Add more settings
+});
