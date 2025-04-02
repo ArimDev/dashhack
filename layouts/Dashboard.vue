@@ -121,8 +121,13 @@ const loggedIn = computed(() => !!useCookie("sessionExists").value);
 
 const colorMode = useColorMode();
 const route = useRoute();
-const eventName = computed(() => route.params.event);
-const event = (await $fetch(`/api/event/${eventName}`)).data;
+const eventName = ref(route.params.event);
+
+const event = (await $fetch(`/api/event/${eventName.value}`)).data;
+
+if (event?.settings?.githubToken) {
+	rate.value = (await $fetch(`/api/github/rateLimit?event=${encodeURIComponent(eventName.value)}`)).rate.remaining;
+}
 
 function darkMode() {
 	if (colorMode.preference === "dark") colorMode.preference = "light";
@@ -142,9 +147,5 @@ async function closeConfirm(success) {
 	if (!!success) {
 		await navigateTo(`/`);
 	} else openConfirm.value = false;
-}
-
-if (event?.settings?.githubToken) {
-	rate.value = (await $fetch(`/api/github/rateLimit?event=${encodeURIComponent(eventName)}`)).rate.remaining;
 }
 </script>

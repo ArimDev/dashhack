@@ -15,9 +15,9 @@
 
 <script setup>
 const route = useRoute();
-const eventName = route.params.event;
+const eventName = ref(route.params.event);
 
-const data = (await $fetch(`/api/event/${eventName}`)).data;
+const data = (await $fetch(`/api/event/${eventName.value}`)).data;
 
 const value = ref(data.settings.githubToken)
 

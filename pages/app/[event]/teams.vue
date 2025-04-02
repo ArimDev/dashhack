@@ -30,13 +30,13 @@ definePageMeta({
 });
 
 const route = useRoute();
-const eventName = route.params.event;
+const eventName = ref(route.params.event);
 
 useHead({
-    title: eventName + " | DashHack"
+    title: eventName.value + " | DashHack"
 });
 
-const data = ref((await $fetch(`/api/event/${eventName}`)).data);
+const data = ref((await $fetch(`/api/event/${eventName.value}`)).data);
 
 const openAddTeam = ref(false);
 const openConfirm = ref(false);

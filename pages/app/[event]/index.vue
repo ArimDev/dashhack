@@ -4,9 +4,9 @@ definePageMeta({
 });
 
 const route = useRoute();
-const eventName = route.params.event;
+const eventName = ref(route.params.event);
 
-const event = (await $fetch(`/api/event/${eventName}`)).data;
+const event = (await $fetch(`/api/event/${eventName.value}`)).data;
 
 useHead({
     title: eventName + " | DashHack"

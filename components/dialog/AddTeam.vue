@@ -47,7 +47,7 @@ const props = defineProps({
 });
 
 const route = useRoute();
-const eventName = route.params.event;
+const eventName = ref(route.params.event);
 
 const colorPicker = ref(false);
 
@@ -76,7 +76,7 @@ watch(() => props.team, function (newTeam) {
 
 async function teamSubmit() {
 	const teamData = {
-		username: eventName,
+		username: eventName.value,
 		teamName: teamName.value,
 		teamColor: teamColor.value,
 		teamDescription: teamDescription.value,

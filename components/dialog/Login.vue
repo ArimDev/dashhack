@@ -31,7 +31,7 @@ import { ref } from "vue";
 const emit = defineEmits(["close"]);
 
 const route = useRoute();
-const eventName = route.params.event;
+const eventName = ref(route.params.event);
 
 const buttonText = ref("Log In");
 const buttonDisable = ref(false);
@@ -41,7 +41,7 @@ const buttonClass = computed(() =>
         : ("bg-red-700 text-white" + (buttonDisable.value ? "" : " hover:bg-red-800"))
 );
 
-const credentials = ref({ user: eventName, pass: "" });
+const credentials = ref({ user: eventName.value, pass: "" });
 
 async function login() {
     const data = await $fetch(`/api/auth/login`, {

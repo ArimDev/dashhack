@@ -38,7 +38,7 @@ const props = defineProps({
     team: Object,
 });
 const route = useRoute();
-const eventName = route.params.event;
+const eventName = ref(route.params.event);
 
 const series = ref(null),
     chartOptions = ref(null),
@@ -46,14 +46,14 @@ const series = ref(null),
 
 onMounted(async () => {
     if (props.team.github) {
-        const event = (await $fetch(`/api/event/${eventName}`)).data;
+        const event = (await $fetch(`/api/event/${eventName.value}`)).data;
 
         if (!event?.settings?.githubToken) {
             console.error("Missing github token"); // TODO
             chartLoading.value = false;
         }
         else {
-            const res = await $fetch(`/api/github/series?url=${encodeURIComponent(props.team.github)}&event=${encodeURIComponent(eventName)}`);
+            const res = await $fetch(`/api/github/series?url=${encodeURIComponent(props.team.github)}&event=${encodeURIComponent(eventName.value)}`);
             // TODO: if error, then "chartLoading.value = false;"
 
             const commitData = res.commits;

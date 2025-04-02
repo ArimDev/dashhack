@@ -12,10 +12,8 @@ definePageMeta({
     layout: 'dashboard',
 });
 
-const eventName = computed(() => {
-    const route = useRoute();
-    return route.params.event;
-});
+const route = useRoute();
+const eventName = ref(route.params.event);
 
 watchEffect(() => {
     useHead({

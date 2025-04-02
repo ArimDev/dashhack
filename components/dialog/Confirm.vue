@@ -41,12 +41,12 @@ const message = computed(() => {
 });
 
 const route = useRoute();
-const eventName = route.params.event;
+const eventName = ref(route.params.event);
 
 async function confirmed() {
     if (!!props.team) { //or if (props.subject === "Delete Team")
         const teamData = {
-            username: eventName,
+            username: eventName.value,
             teamName: props.team.name
         };
 
