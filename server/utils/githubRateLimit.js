@@ -17,10 +17,15 @@ export default async function githubRateLimit(event) {
         "Accept": "application/vnd.github+json"
     };
 
-    const response = await $fetch(url, {
-        method: "GET",
-        headers
-    });
+    try {
+        const rateData = await $fetch(url, {
+            method: "GET",
+            headers,
+        });
 
-    return { status: 200, rate: response.rate };
+        if (rateData?.rate) return { status: 200, rate: rateData.rate };
+        else return { status: 502, rate: rateData?.rate || { remaining: 0 } };
+    } catch (error) {
+        return { status: error?.response?.status || 502, message: error?.response?.statusText || "Undefined error" };
+    }
 }

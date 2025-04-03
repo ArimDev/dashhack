@@ -1,5 +1,5 @@
 <template>
-    <form class="rounded-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-50 max-h-50 p-5 flex flex-col justify-between transition-colors duration-500">
+    <form @submit.prevent class="rounded-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-50 max-h-50 p-5 flex flex-col justify-between transition-colors duration-500">
         <div class="flex flex-row items-center gap-3 mb-4">
             <h1 class="text-3xl font-bold">GitHub Token</h1>
         </div>
@@ -21,7 +21,12 @@ const data = (await $fetch(`/api/event/${eventName.value}`)).data;
 
 const value = ref(data.settings.githubToken)
 
-function autosave() {
-    // TODO: Token setup
+async function autosave() {
+	let data = await $fetch(`/api/auth/update`, {
+		method: "POST",
+		body: { setting: "githubToken", value: value.value },
+	});
+
+	if (data.status !== 200) return console.log(data); // TODO: What's the error? AUTH API
 }
 </script>

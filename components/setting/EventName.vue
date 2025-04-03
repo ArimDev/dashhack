@@ -24,7 +24,9 @@ async function autosave() {
 		method: "POST",
 		body: { setting: "event", value: value.value },
 	});
-	console.log(data);
+
+	if (data.status !== 200) return console.log(data); // TODO: What's the error? AUTH API
+
 	await navigateTo(`/app/${value.value}/settings`);
 }
 </script>

@@ -56,6 +56,15 @@ export default defineEventHandler(async (_event) => {
         await Session.deleteMany({ username: oldUsername });
 
         return { status: 200, message: "Event name changed successfully" };
+    } else if (setting === "githubToken") {
+        let existingEvent = await Event.findOne({ event: session.username });
+        if (!existingEvent) return { status: 404, message: "Event not found" };
+
+        // ! TODO: Check if the value is a valid token
+
+        existingEvent.settings.githubToken = value;
+        await existingEvent.save();
+
+        return { status: 200, message: "GitHub token changed successfully" };
     }
-    // TODO: Add more settings
 });

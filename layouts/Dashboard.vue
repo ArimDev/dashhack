@@ -74,14 +74,16 @@
 
 							<div class="flex flex-row items-center justify-center gap-1">
 								<ClientOnly>
-									<p v-if="event?.settings?.githubToken">{{ rate }}/5000 requests</p>
-									<p v-else>{{ rate }}/60 requests</p> <!-- Is this needed? -->
+									<p v-if="!!rateError" class="text-red-500">{{ rateError }}</p>
+									<p v-else-if="event?.settings?.githubToken">{{ rate }}/5000 requests</p>
+									<p v-else>{{ rate }}/60 requests</p> <!-- TODO: Is this needed? -->
 								</ClientOnly>
 
 								<div class="relative group flex justify-center">
-									<Icon name="i-heroicons:question-mark-circle-16-solid" size="15px" class="cursor-pointer focus:outline-none" tabindex="0" />
+									<Icon :class="rateError ? `text-red-500` : `text-black`" name="i-heroicons:question-mark-circle-16-solid" size="15px" class="cursor-pointer focus:outline-none" tabindex="0" />
 									<div class="z-50 absolute left-1/2 -translate-x-1/2 top-full mt-2 w-max max-w-[230px] bg-gray-800 text-white text-xs rounded-md px-2 py-1 opacity-0 invisible transition-opacity duration-300 group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible">
-										You have limited number of API requests per hour through the GitHub API.
+										<p v-if="!!rateError">Settings contains invalid token. Please update it to make new requests.</p>
+										<p v-else>You have limited number of API requests per hour through the GitHub API.</p>
 									</div>
 								</div>
 							</div>
@@ -109,6 +111,7 @@ import { ref } from "vue";
 import { useRoute } from "vue-router";
 
 const rate = ref("?");
+const rateError = ref(false);
 const openLogin = ref(false);
 const openConfirm = ref(false);
 
@@ -126,7 +129,9 @@ const eventName = ref(route.params.event);
 const event = (await $fetch(`/api/event/${eventName.value}`)).data;
 
 if (event?.settings?.githubToken) {
-	rate.value = (await $fetch(`/api/github/rateLimit?event=${encodeURIComponent(eventName.value)}`)).rate.remaining;
+	const rateData = await $fetch(`/api/github/rateLimit?event=${encodeURIComponent(eventName.value)}`);
+	if (!rateData || rateData?.status !== 200) rate.value = "Error", rateError.value = "Invalid GitHub token";
+	else rate.value = rateData.rate.remaining;
 }
 
 function darkMode() {
