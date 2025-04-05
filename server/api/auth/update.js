@@ -66,5 +66,15 @@ export default defineEventHandler(async (_event) => {
         await existingEvent.save();
 
         return { status: 200, message: "GitHub token changed successfully" };
+    } else if (setting === "logo") {
+        let existingEvent = await Event.findOne({ event: session.username });
+        if (!existingEvent) return { status: 404, message: "Event not found" };
+
+        // ! TODO: Check if the URL is valid
+
+        existingEvent.logo = value;
+        await existingEvent.save();
+
+        return { status: 200, message: "Logo URL changed successfully" };
     }
 });

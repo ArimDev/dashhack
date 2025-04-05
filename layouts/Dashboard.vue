@@ -91,7 +91,8 @@
 						</div>
 					</span>
 					<span class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
-						<Icon name="simple-icons:mcdonalds" size="30px" />
+						<img v-if="!!event.logo" :src="event.logo" :alt="`${event.event} logo`" width="30px" height="30px">
+						<Icon v-else name="simple-icons:mcdonalds" size="30px" />
 						{{ eventName }}
 					</span>
 					<button @click="openConfirm = true" class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white cursor-pointer rounded-full w-[56px] h-[56px] flex items-center justify-center transition-colors duration-500">
@@ -127,6 +128,7 @@ const loggedIn = computed(() => !!useCookie("sessionExists").value);
 const colorMode = useColorMode();
 const route = useRoute();
 const eventName = ref(route.params.event);
+// TODO: Update eventName on every change
 
 const event = (await $fetch(`/api/event/${eventName.value}`)).data;
 

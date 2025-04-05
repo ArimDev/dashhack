@@ -5,13 +5,25 @@
         </div>
         <div>
             <label for="url" class="mb-1">Change event logo icon:</label>
-            <input v-model="value" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300" type="url" placeholder="Valid Image URL">
+            <input v-model="value" required @change="autosave" class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300" type="url" placeholder="Valid Image URL">
         </div>
     </form>
 </template>
 
 <script setup>
-const value = ref(undefined);
+const route = useRoute();
+const eventName = ref(route.params.event);
 
-// TODO: Event logo setup
+const data = (await $fetch(`/api/event/${eventName.value}`)).data;
+
+const value = ref(data.logo)
+
+async function autosave() {
+	let data = await $fetch(`/api/auth/update`, {
+		method: "POST",
+		body: { setting: "logo", value: value.value },
+	});
+
+	if (data.status !== 200) return console.log(data); // TODO: What's the error? AUTH API
+}
 </script>

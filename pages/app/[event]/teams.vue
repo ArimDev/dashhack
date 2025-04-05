@@ -9,11 +9,13 @@
     </div>
 
     <div v-if="!!data.teams.length" class="grid grid-cols-2 gap-4">
+        <!-- https://github.com/nuxt/icon/issues/376 -->
         <Icon style="display: none;" name="heroicons:magnifying-glass-plus-16-solid" />
         <Icon style="display: none;" name="heroicons:magnifying-glass-minus-16-solid" />
         <Icon style="display: none;" name="heroicons:arrows-pointing-out-16-solid" />
         <Icon style="display: none;" name="heroicons:hand-raised-16-solid" />
         <Icon style="display: none;" name="heroicons:arrow-path-16-solid" />
+        <!-- https://github.com/nuxt/icon/issues/376 -->
         <Team v-for="(team, index) in data.teams" :key="index" :team="team" @edit="open" @delete="confirm" />
     </div>
 
@@ -57,6 +59,7 @@ async function close(added) {
     openAddTeam.value = false;
     openConfirm.value = false;
     selectedTeam.value = false;
-    if (added) data.value = (await $fetch(`/api/event/${eventName}`)).data;
+    if (added) data.value = (await $fetch(`/api/event/${eventName.value}`)).data;
+    // TODO: Also update the chart color
 };
 </script>
