@@ -1,4 +1,4 @@
-import { defineEventHandler, getCookie, deleteCookie } from "h3";
+import { getCookie, deleteCookie } from "h3";
 
 import Session from "../../models/Session";
 

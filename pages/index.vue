@@ -80,7 +80,7 @@ async function checkEventFree() {
 	submitRed.value = false;
 
 	if (!!credentials.value.user) {
-		const data = await $fetch(`/api/auth/check?username=${credentials.value.user}`);
+		const data = await $fetch(`/api/auth/available?username=${credentials.value.user}`);
 
 		if (data.exists) {
 			eventTaken.value = true;

@@ -2,6 +2,9 @@ import { connectDB } from "../../utils/db";
 import Event from "../../models/Event";
 import Session from "../../models/Session";
 
+import bcrypt from "bcrypt";
+import { v4 as uuidv4 } from "uuid";
+
 export default defineEventHandler(async (_event) => {
     await connectDB();
 
@@ -76,5 +79,54 @@ export default defineEventHandler(async (_event) => {
         await existingEvent.save();
 
         return { status: 200, message: "Logo URL changed successfully" };
+    } else if (setting === "password") {
+        const oldPass = body.oldPassword,
+            newPass = value;
+
+        let existingEvent = await Event.findOne({ event: session.username });
+        if (!existingEvent) return { status: 404, message: "Event not found" };
+
+        const passwordMatch = await bcrypt.compare(oldPass, existingEvent.settings.password);
+        if (!passwordMatch) return { status: 401, message: "Wrong password" };
+
+        existingEvent.settings.password = newPass;
+        await existingEvent.save();
+
+        await Session.deleteMany({ username: existingEvent.event });
+
+        deleteCookie(_event, "session", {
+            httpOnly: true,
+            secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+            sameSite: "strict",
+            path: "/"
+        });
+
+        deleteCookie(_event, "sessionExists", {
+            httpOnly: false,
+            secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+            sameSite: "strict",
+            path: "/"
+        });
+
+        const sessionID = uuidv4();
+        await Session.create({ sessionID, username: existingEvent.event });
+
+        setCookie(_event, "session", sessionID, {
+            httpOnly: true,
+            secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+            sameSite: "strict",
+            maxAge: 60 * 60,
+            path: "/"
+        });
+
+        setCookie(_event, "sessionExists", true, {
+            httpOnly: false,
+            secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+            sameSite: "strict",
+            maxAge: 60 * 60,
+            path: "/"
+        });
+
+        return { status: 200, message: "Password changed successfully" };
     }
 });

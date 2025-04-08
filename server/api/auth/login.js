@@ -1,12 +1,9 @@
-import { defineEventHandler, readBody, setCookie } from "h3";
-
-import bcrypt from "bcrypt";
-
+import { setCookie } from "h3";
+import { connectDB } from "../../utils/db";
 import Event from "../../models/Event";
 import Session from "../../models/Session";
 
-import { connectDB } from "../../utils/db";
-
+import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
 
 export default defineEventHandler(async (_event) => {

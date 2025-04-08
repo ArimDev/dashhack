@@ -10,7 +10,7 @@
                     <input v-model="oldPassword" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300" type="password" autocomplete="current-password" placeholder="Current Password">
                 </div>
                 <div class="w-full">
-                    <input v-model="newPassword" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300" type="password" autocomplete="new-password" placeholder="New Password">
+                    <input v-model="newPassword" @change="autosave" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300" type="password" autocomplete="new-password" placeholder="New Password">
                 </div>
             </div>
 
@@ -19,8 +19,28 @@
 </template>
 
 <script setup>
+const route = useRoute();
+const eventName = ref(route.params.event);
+
 const oldPassword = ref(undefined),
     newPassword = ref(undefined);
 
-// TODO: Password setup
+async function autosave() {
+    if (!oldPassword.value) return console.log("Old password not filled");
+
+    const passCheck = await $fetch(`/api/auth/password`, {
+        method: "POST",
+        body: { username: eventName.value, password: oldPassword.value }
+    });
+
+    if (!passCheck || passCheck.status !== 200) return console.log("Old password is not correct!");
+
+    let data = await $fetch(`/api/auth/update`, {
+        method: "POST",
+        body: { setting: "password", value: newPassword.value, oldPassword: oldPassword.value },
+    });
+
+    if (data.status !== 200) return console.log(data); // TODO: What's the error? AUTH API
+    else console.log(data); // ! DELETE
+}
 </script>

@@ -20,7 +20,7 @@ const EventSchema = new mongoose.Schema({
 }, { timestamps: true });
 
 EventSchema.pre('save', async function (next) {
-	if (this.isModified('password')) {
+	if (this.isModified('settings.password')) {
 		this.settings.password = await bcrypt.hash(this.settings.password, 10);
 	}
 	next();
