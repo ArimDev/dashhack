@@ -3,7 +3,7 @@
         <div class="flex flex-row items-center gap-3 mb-4">
             <h1 class="text-3xl font-bold">Event Password</h1>
         </div>
-        <div>
+        <div class="relative">
             <p class="mb-1">Change login access password:</p>
             <div class="flex flex-row gap-5">
                 <div class="w-full">
@@ -21,6 +21,7 @@
 <script setup>
 const route = useRoute();
 const eventName = ref(route.params.event);
+const error = ref(false);
 
 const oldPassword = ref(undefined),
     newPassword = ref(undefined);
@@ -41,6 +42,5 @@ async function autosave() {
     });
 
     if (data.status !== 200) return console.log(data); // TODO: What's the error? AUTH API
-    else console.log(data); // ! DELETE
 }
 </script>

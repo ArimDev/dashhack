@@ -80,7 +80,7 @@
 									<p v-else>{{ rate }}/60 requests</p> <!-- TODO: Is this needed? -->
 
 									<div class="relative group flex justify-center">
-										<Icon :class="rateError ? `text-red-500` : `text-black`" name="i-heroicons:question-mark-circle-16-solid" size="15px" class="cursor-pointer focus:outline-none" tabindex="0" />
+										<Icon :class="rateError ? `text-red-500` : `text-black dark:text-white`" name="i-heroicons:question-mark-circle-16-solid" size="15px" class="cursor-pointer focus:outline-none transition-colors duration-500" tabindex="0" />
 										<div class="z-50 absolute left-1/2 -translate-x-1/2 top-full mt-2 w-max max-w-[230px] bg-gray-800 text-white text-xs rounded-md px-2 py-1 opacity-0 invisible transition-opacity duration-300 group-hover:opacity-100 group-hover:visible group-focus-within:opacity-100 group-focus-within:visible">
 											<p v-if="!!rateError">Settings contains invalid token. Please update it to make new requests.</p>
 											<p v-else>You have limited number of API requests per hour through the GitHub API.</p>

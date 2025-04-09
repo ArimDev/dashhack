@@ -3,9 +3,13 @@
 		<div class="flex flex-row items-center gap-3 mb-4">
 			<h1 class="text-3xl font-bold">Event Name</h1>
 		</div>
-		<div>
+		<div class="relative">
 			<label for="username" class="mb-1">Change login username and display name of the event:</label>
-			<input v-model="value" type="username" placeholder="Event Name" autocomplete="username" @change="autosave" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300">
+			<input v-model="value" type="username" placeholder="Event Name" autocomplete="username" @change="autosave" @input="error = false" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300">
+			<div v-if="error" class="bg-white text-red-500 absolute top-[35px] right-0 text-right mr-1 pl-2 inline-flex items-center justify-end font-bold">
+				{{ error }}
+				<Icon name="i-heroicons:x-mark-16-solid" size="30px" class="cursor-pointer focus:outline-none" tabindex="0" />
+			</div>
 		</div>
 	</form>
 </template>
@@ -13,7 +17,7 @@
 <script setup>
 const route = useRoute();
 const value = ref(route.params.event);
-const occupied = ref(false);
+const error = ref(false);
 
 watch(value, (newValue) => {
 	// TODO: Check if the username is available
@@ -25,7 +29,7 @@ async function autosave() {
 		body: { setting: "event", value: value.value },
 	});
 
-	if (data.status !== 200) return console.log(data); // TODO: What's the error? AUTH API
+	if (data.status !== 200) return error.value = data.message + "!";
 
 	await navigateTo(`/app/${value.value}/settings`);
 }
