@@ -1,0 +1,19 @@
+services:
+  dashhack:
+    image: dashhack
+    build:
+      context: .
+      args:
+        webPort: ${webPort}
+    container_name: dashhack
+    restart: always
+    env_file:
+      - .env
+    ports:
+      - "${webPort}:${webPort}"
+    networks:
+      - NuxtEr
+
+networks:
+  NuxtEr:
+    external: true
