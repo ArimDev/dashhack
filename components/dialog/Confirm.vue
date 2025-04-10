@@ -58,7 +58,7 @@ async function confirmed() {
         if (!data || data.status !== 200) {
             console.log(data);
 
-            // TODO: What's the error? TEAM API
+            // TODO: Display Toast (Auth Logout)
         } else emit('close', true);
     } else if (props.subject === "Log Off") {
         let data = await $fetch(`/api/auth/logout/`, {
@@ -68,7 +68,7 @@ async function confirmed() {
         if (!data || ![200, 204].includes(data.status)) {
             console.log(data);
 
-            // TODO: What's the error? TEAM API
+            // TODO: Display Toast (Auth Logout)
         } else {
             if (data.status === 204) console.log(data);
             emit('close', true);

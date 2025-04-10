@@ -92,7 +92,7 @@ async function teamSubmit() {
 		if (!data || data.status !== 200) {
 			console.log(data);
 
-			// TODO: What's the error? TEAM API
+			// TODO: Display Toast (Team)
 		} else {
 			emit('close', true);
 
@@ -109,7 +109,7 @@ async function teamSubmit() {
 		if (!data || data.status !== 200) {
 			console.log(data);
 
-			// TODO: What's the error? TEAM API 
+			// TODO: Display Toast (Team)
 		} else {
 			emit('close', true);
 

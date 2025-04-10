@@ -8,10 +8,14 @@
                 <u><a href="https://github.com/settings/tokens" target="_blank">GitHub personal access token</a></u>
                 <br>to access private repos and increase API requests limit:
             </label>
-            <input v-model="value" type="password" autocomplete="off" required @change="autosave" class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300" placeholder="Valid (classic) GitHub token">
-            <div v-if="error" class="bg-white text-red-500 absolute top-[58px] right-0 text-right mr-1 pl-2 inline-flex items-center justify-end font-bold">
+            <input v-model="value" type="password" autocomplete="off" required @change="autosave" @input="error = false, success = false" class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300" placeholder="Valid (classic) GitHub token">
+            <div v-if="!!error" class="bg-white dark:bg-gray-800 text-red-500 absolute top-[58px] right-0 text-right mr-1 pl-2 inline-flex items-center justify-end font-bold transition-colors duration-500">
                 {{ error }}
                 <Icon name="i-heroicons:x-mark-16-solid" size="30px" class="cursor-pointer focus:outline-none" tabindex="0" />
+            </div>
+            <div v-if="!!success" class="bg-white dark:bg-gray-800 text-green-500 absolute top-[58px] right-0 text-right mr-1 pl-2 inline-flex items-center justify-end font-bold transition-colors duration-500">
+                Updated!
+                <Icon name="i-heroicons:check-16-solid" size="30px" class="cursor-pointer focus:outline-none" tabindex="0" />
             </div>
         </div>
     </form>
@@ -21,6 +25,7 @@
 const route = useRoute();
 const eventName = ref(route.params.event);
 const error = ref(false);
+const success = ref(false);
 
 const data = (await $fetch(`/api/event/${eventName.value}`)).data;
 
@@ -33,5 +38,6 @@ async function autosave() {
     });
 
     if (data.status !== 200) return error.value = data.message + "!";
+    else return success.value = true;
 }
 </script>

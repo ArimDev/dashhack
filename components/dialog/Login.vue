@@ -54,7 +54,7 @@ async function login() {
         buttonDisable.value = true;
         console.log(data);
 
-        // TODO: What's the error? AUTH API
+        // TODO: Display Toast (Auth Login)
     } else close();
 };
 

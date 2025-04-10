@@ -10,7 +10,7 @@
                     <input v-model="oldPassword" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300" type="password" autocomplete="current-password" placeholder="Current Password">
                 </div>
                 <div class="w-full">
-                    <input v-model="newPassword" @change="autosave" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300" type="password" autocomplete="new-password" placeholder="New Password">
+                    <input v-model="newPassword" @change="autosave" @input="error = false, success = false" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300" type="password" autocomplete="new-password" placeholder="New Password">
                 </div>
             </div>
 
@@ -22,6 +22,7 @@
 const route = useRoute();
 const eventName = ref(route.params.event);
 const error = ref(false);
+const success = ref(false);
 
 const oldPassword = ref(undefined),
     newPassword = ref(undefined);
