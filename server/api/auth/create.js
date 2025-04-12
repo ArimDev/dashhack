@@ -9,7 +9,7 @@ export default defineEventHandler(async (event) => {
 
 	const existingUser = await Event.findOne({ event: username });
 	if (existingUser) {
-		return { status: 400, statusMessage: "Username already exists" };
+		return { status: 400, message: "Username already exists" };
 	}
 
 	const newEvent = new Event({ event: username, settings: { password } });

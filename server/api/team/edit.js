@@ -4,7 +4,7 @@ import Session from "../../models/Session";
 
 export default defineEventHandler(async (event) => {
     if (event.method !== "PUT" && event.method !== "POST") {
-        return { status: 405, statusMessage: "Method Not Allowed" };
+        return { status: 405, message: "Method Not Allowed" };
     }
 
     await connectDB();
@@ -13,13 +13,13 @@ export default defineEventHandler(async (event) => {
     const sessionId = cookies.session;
 
     if (!sessionId) {
-        return { status: 401, statusMessage: "Unauthorized" };
+        return { status: 401, message: "Unauthorized" };
     }
 
     const session = await Session.findOne({ sessionID: sessionId });
 
     if (!session) {
-        return { status: 401, statusMessage: "Session not found or expired" };
+        return { status: 401, message: "Session not found or expired" };
     }
 
     const body = await readBody(event);
@@ -28,17 +28,17 @@ export default defineEventHandler(async (event) => {
     const existingEvent = await Event.findOne({ event: username });
 
     if (!existingEvent) {
-        return { status: 404, statusMessage: "Event not found" };
+        return { status: 404, message: "Event not found" };
     }
 
     if (existingEvent.event !== session.username) {
-        return { status: 403, statusMessage: "Forbidden: You do not have permission to modify this event" };
+        return { status: 403, message: "Forbidden: You do not have permission to modify this event" };
     }
 
     const team = existingEvent.teams.find(t => t.name === oldName);
 
     if (!team) {
-        return { status: 404, statusMessage: "Team not found" };
+        return { status: 404, message: "Team not found" };
     }
 
     team.name = teamName;

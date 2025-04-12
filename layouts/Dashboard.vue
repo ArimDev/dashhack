@@ -104,6 +104,7 @@
 			<div class="mt-[1%]">
 				<slot />
 			</div>
+			<Toast :visible="show" :title="title" :message="message"/>
 		</div>
 	</div>
 </template>
@@ -117,6 +118,10 @@ const rateLoading = ref(true);
 const rateError = ref(false);
 const openLogin = ref(false);
 const openConfirm = ref(false);
+
+import Toast from "@/components/Toast.vue";
+import { showToast } from "@/composables/showToast";
+const { show, title, message } = showToast();
 
 const currentPage = computed(() => {
 	const pathParts = route.path.split("/");
