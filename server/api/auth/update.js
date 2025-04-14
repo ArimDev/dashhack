@@ -13,7 +13,7 @@ export default defineEventHandler(async (_event) => {
     if (!sessionID) {
         if (getCookie(_event, "sessionExists")) deleteCookie(_event, "sessionExists", {
             httpOnly: false,
-            secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+            secure: !import.meta.dev,
             sameSite: "strict",
             path: "/"
         });
@@ -24,13 +24,13 @@ export default defineEventHandler(async (_event) => {
         if (!session) {
             deleteCookie(_event, "sessionExists", {
                 httpOnly: false,
-                secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+                secure: !import.meta.dev,
                 sameSite: "strict",
                 path: "/"
             });
             deleteCookie(_event, "session", {
                 httpOnly: true,
-                secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+                secure: !import.meta.dev,
                 sameSite: "strict",
                 path: "/"
             });
@@ -96,14 +96,14 @@ export default defineEventHandler(async (_event) => {
 
         deleteCookie(_event, "session", {
             httpOnly: true,
-            secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+            secure: !import.meta.dev,
             sameSite: "strict",
             path: "/"
         });
 
         deleteCookie(_event, "sessionExists", {
             httpOnly: false,
-            secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+            secure: !import.meta.dev,
             sameSite: "strict",
             path: "/"
         });
@@ -113,7 +113,7 @@ export default defineEventHandler(async (_event) => {
 
         setCookie(_event, "session", sessionID, {
             httpOnly: true,
-            secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+            secure: !import.meta.dev,
             sameSite: "strict",
             maxAge: 60 * 60,
             path: "/"
@@ -121,7 +121,7 @@ export default defineEventHandler(async (_event) => {
 
         setCookie(_event, "sessionExists", true, {
             httpOnly: false,
-            secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+            secure: !import.meta.dev,
             sameSite: "strict",
             maxAge: 60 * 60,
             path: "/"

@@ -22,7 +22,7 @@ export default defineEventHandler(async (_event) => {
 
     setCookie(_event, "session", sessionID, {
         httpOnly: true,
-        secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+        secure: !import.meta.dev,
         sameSite: "strict",
         maxAge: 60 * 60,
         path: "/"
@@ -30,7 +30,7 @@ export default defineEventHandler(async (_event) => {
 
     setCookie(_event, "sessionExists", true, {
         httpOnly: false,
-        secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+        secure: !import.meta.dev,
         sameSite: "strict",
         maxAge: 60 * 60,
         path: "/"

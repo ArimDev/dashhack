@@ -34,7 +34,7 @@ export default defineEventHandler(async (_event) => {
     if (!sessionID) {
         if (getCookie(_event, "sessionExists")) deleteCookie(_event, "sessionExists", {
             httpOnly: false,
-            secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+            secure: !import.meta.dev,
             sameSite: "strict",
             path: "/"
         });
@@ -45,13 +45,13 @@ export default defineEventHandler(async (_event) => {
         if (!session) {
             deleteCookie(_event, "sessionExists", {
                 httpOnly: false,
-                secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+                secure: !import.meta.dev,
                 sameSite: "strict",
                 path: "/"
             });
             deleteCookie(_event, "session", {
                 httpOnly: true,
-                secure: false, // TODO: FIX | FALSE FOR LOCALHOST
+                secure: !import.meta.dev,
                 sameSite: "strict",
                 path: "/"
             });

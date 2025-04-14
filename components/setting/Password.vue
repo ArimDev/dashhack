@@ -19,6 +19,7 @@
 </template>
 
 <script setup>
+const { showToast } = useToast();
 const route = useRoute();
 const eventName = ref(route.params.event);
 const error = ref(false);
@@ -35,13 +36,19 @@ async function autosave() {
         body: { username: eventName.value, password: oldPassword.value }
     });
 
-    if (!passCheck || passCheck.status !== 200) return console.log("Old password is not correct!");
+    if (!passCheck || passCheck.status !== 200) {
+        if (passCheck) console.warn("Error while updating password:", passCheck);
+        return showToast("Failed to update password!", passCheck?.message);
+    }
 
     let data = await $fetch(`/api/auth/update`, {
         method: "POST",
         body: { setting: "password", value: newPassword.value, oldPassword: oldPassword.value },
     });
 
-    if (data.status !== 200) return console.log(data); // TODO: What's the error? AUTH API
+    if (data && data?.status !== 200) {
+        console.warn("Error while updating password:", data);
+        showToast("Failed to update password!", data.message);
+    }
 }
 </script>

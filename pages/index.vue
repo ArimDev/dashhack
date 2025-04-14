@@ -44,8 +44,6 @@ useHead({
 	],
 });
 
-import { ref } from "vue";
-
 const credentials = ref({ user: "", pass: "" });
 
 const eventTaken = ref(false);
@@ -124,7 +122,7 @@ async function open() {
 			});
 
 			if (!data || data.status !== 200) {
-				console.warn("Failed to log in!", data);
+				console.warn("Failed to log in:", data);
 			} else {
 				await navigateTo(`/app/${credentials.value.user}`);
 			}
@@ -139,7 +137,7 @@ async function open() {
 			});
 
 			if (!data || data?.status !== 200) {
-				console.warn("Failed to log in!", data || "No data");
+				console.warn("Failed to log in:", data || "No data");
 				if (data?.status === 401) {
 					submitText.value = "Wrong password!";
 					return submitRed.value = true;

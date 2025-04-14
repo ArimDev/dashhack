@@ -31,8 +31,7 @@
 </template>
 
 <script setup>
-import { ref, onMounted } from "vue";
-
+const { showToast } = useToast();
 const emit = defineEmits(["edit", "delete"]);
 const props = defineProps({
     team: Object,
@@ -49,10 +48,9 @@ onMounted(async () => {
         const event = (await $fetch(`/api/event/${eventName.value}`)).data;
 
         if (!event?.settings?.githubToken) {
-            console.error("Missing github token"); // TODO
+            showToast("Failed contact GitHub API!", "GitHub Token is missing to fetch charts.");
             chartLoading.value = false;
-        }
-        else {
+        } else {
             const res = await $fetch(`/api/github/series?url=${encodeURIComponent(props.team.github)}&event=${encodeURIComponent(eventName.value)}`);
             // TODO: if error, then "chartLoading.value = false;"
 

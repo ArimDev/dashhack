@@ -112,9 +112,6 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-import { useRoute } from "vue-router";
-
 const rate = ref("?");
 const rateLoading = ref(true);
 const rateError = ref(false);
