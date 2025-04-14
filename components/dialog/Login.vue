@@ -26,10 +26,8 @@
 </template>
 
 <script setup>
-import { ref } from "vue";
-
+const { showToast } = useToast();
 const emit = defineEmits(["close"]);
-
 const route = useRoute();
 const eventName = ref(route.params.event);
 
@@ -52,9 +50,9 @@ async function login() {
     if (!data || data.status !== 200) {
         buttonText.value = "Wrong Password!";
         buttonDisable.value = true;
-        console.log(data);
+        console.log("Failed to log in: " + data);
 
-        // TODO: Display Toast (Auth Login)
+        showToast("Failed to log in!", data?.message);
     } else close();
 };
 

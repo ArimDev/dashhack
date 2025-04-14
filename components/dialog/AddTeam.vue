@@ -36,7 +36,7 @@
 </template>
 
 <script setup>
-import { ref, watch } from "vue";
+const { showToast } = useToast();
 
 const emit = defineEmits(["close"]);
 const props = defineProps({
@@ -92,7 +92,7 @@ async function teamSubmit() {
 		if (!data || data.status !== 200) {
 			console.log(data);
 
-			// TODO: Display Toast (Team)
+			showToast("Failed to edit the team!", data?.message);
 		} else {
 			emit('close', true);
 
@@ -109,7 +109,7 @@ async function teamSubmit() {
 		if (!data || data.status !== 200) {
 			console.log(data);
 
-			// TODO: Display Toast (Team)
+			showToast("Failed to add a team!", data?.message);
 		} else {
 			emit('close', true);
 

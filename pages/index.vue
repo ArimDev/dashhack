@@ -124,9 +124,7 @@ async function open() {
 			});
 
 			if (!data || data.status !== 200) {
-				console.log(data);
-
-				// TODO: What's the error? AUTH API
+				console.warn("Failed to log in!", data);
 			} else {
 				await navigateTo(`/app/${credentials.value.user}`);
 			}
@@ -141,13 +139,11 @@ async function open() {
 			});
 
 			if (!data || data?.status !== 200) {
-				if (data) console.log(data);
+				console.warn("Failed to log in!", data || "No data");
 				if (data?.status === 401) {
 					submitText.value = "Wrong password!";
 					return submitRed.value = true;
 				}
-
-				// TODO: What's the error? AUTH API
 			} else {
 				await navigateTo(`/app/${credentials.value.user}`);
 			}
