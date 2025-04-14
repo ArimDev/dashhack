@@ -1,5 +1,5 @@
 <template>
-	<div v-show="display" :class="animationClass" class="z-200 min-w-50 min-h-22 absolute bottom-0 right-0 mr-7 mb-7 rounded-3xl bg-white text-black dark:bg-gray-800 dark:text-white p-4 shadow-lg flex items-center">
+	<div v-show="display" :class="[animationClass, 'min-w-50 min-h-22 rounded-3xl bg-white text-black dark:bg-gray-800 dark:text-white p-4 shadow-lg flex items-center']">
 		<div>
 			<h1 class="font-bold">{{ title }}</h1>
 			<p>{{ message }}</p>
@@ -27,27 +27,21 @@ const props = defineProps({
 	}
 });
 
-const display = ref(false);
-const animationClass = ref("");
+const display = ref(props.visible);
+const animationClass = ref("toastIn");
 
 watch(() => props.visible, (newValue) => {
 	if (newValue) {
-		displayToast();
-	}
-});
-
-function displayToast() {
-	display.value = true;
-	animationClass.value = "toastIn";
-
-	setTimeout(() => {
+		display.value = true;
+		animationClass.value = "toastIn";
+	} else {
 		animationClass.value = "toastOut";
 
 		setTimeout(() => {
 			display.value = false;
 		}, 300);
-	}, props.duration);
-}
+	}
+}, { immediate: true });
 </script>
 
 <style scoped>

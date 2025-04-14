@@ -104,7 +104,9 @@
 			<div class="mt-[1%]">
 				<slot />
 			</div>
-			<Toast :visible="show" :title="title" :message="message"/>
+			<div class="z-200 toast-container fixed bottom-0 right-0 mr-7 mb-7 flex flex-col-reverse gap-4">
+				<Toast v-for="toast in toasts" :key="toast.id" v-bind="toast" class="relative" />
+			</div>
 		</div>
 	</div>
 </template>
@@ -118,10 +120,7 @@ const rateLoading = ref(true);
 const rateError = ref(false);
 const openLogin = ref(false);
 const openConfirm = ref(false);
-
-import Toast from "@/components/Toast.vue";
-import { showToast } from "@/composables/showToast";
-const { show, title, message } = showToast();
+const { toasts } = useToast();
 
 const currentPage = computed(() => {
 	const pathParts = route.path.split("/");
