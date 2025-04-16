@@ -22,6 +22,20 @@ export default defineNuxtConfig({
     ],
   },
 
+  icon: {
+    serverBundle: 'remote',
+    clientBundle: {
+      icons: [
+        'heroicons:magnifying-glass-plus-16-solid',
+        'heroicons:magnifying-glass-minus-16-solid',
+        'heroicons:arrows-pointing-out-16-solid',
+        'heroicons:hand-raised-16-solid',
+        'heroicons:arrow-path-16-solid',
+      ],
+      scan: true,
+    }
+  },
+
   modules: ['@nuxt/fonts', '@nuxtjs/color-mode', '@nuxt/icon', 'nuxt-color-picker'],
 
   ssr: true,
@@ -42,5 +56,6 @@ export default defineNuxtConfig({
     fallback: 'light',
     storage: 'localStorage',
     classSuffix: '',
+    storageKey: 'colorMode'
   },
 })

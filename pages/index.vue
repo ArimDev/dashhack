@@ -17,16 +17,22 @@
 
 		<footer class="pb-16 text-black text-center font-mono">
 			<div class="flex gap-5 justify-center">
-				<span @click.prevent="darkMode" class="cursor-pointer text-bluey-500 hover:text-bluey-600 dark:hover:text-bluey-400 dark:text-bluey-300 transition-colors duration-500">
-					{{ colorMode.preference === "dark" ? "Light" : "Dark" }} Mode
-				</span>
+				<ClientOnly>
+					<span @click.prevent="darkMode" class="cursor-pointer text-bluey-500 hover:text-bluey-600 dark:hover:text-bluey-400 dark:text-bluey-300 transition-colors duration-500">
+						{{ colorMode.value === "dark" ? "Light" : "Dark" }} Mode
+					</span>
+
+					<template #fallback>
+						<span class="text-black dark:text-white font-normal font-mono italic">Loading color mode…</span>
+					</template>
+				</ClientOnly>
 			</div>
 			<div class="flex gap-5 justify-center underline">
 				<a href="" class="hover:text-bluey-500 dark:hover:text-bluey-500 dark:text-white transition-colors duration-500">Privacy Policy</a>
 				<a href="" class="hover:text-bluey-500 dark:hover:text-bluey-500 dark:text-white transition-colors duration-500">Terms of Use</a>
 			</div>
 			<div>
-				<p class="dark:text-white transition-colors duration-500">&copy; 2025 <a href="" class="hover:text-bluey-500 dark:hover:text-bluey-500 dark:text-white transition-colors duration-500">ArimDev</a></p>
+				<p class="dark:text-white transition-colors duration-500">&copy; 2025 <a href="" class="hover:text-bluey-500">ArimDev</a></p> <!-- TODO: Add URL -->
 			</div>
 		</footer>
 	</div>
@@ -61,8 +67,8 @@ const submitClass = computed(() =>
 const colorMode = useColorMode();
 
 function darkMode() {
-	if (colorMode.preference === "dark") colorMode.preference = "light";
-	else colorMode.preference = "dark";
+	if (colorMode.value === "dark") colorMode.value = "light";
+	else colorMode.value = "dark";
 }
 
 function clearSubmit() {

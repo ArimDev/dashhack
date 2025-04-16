@@ -35,7 +35,7 @@
 				</button>
 				<button @click.prevent="darkMode" class="cursor-pointer bg-bluey-500 rounded-full w-12 h-12 flex items-center justify-center transition-colors duration-500">
 					<ClientOnly>
-						<Icon v-if="colorMode.preference === 'light'" name="i-heroicons:moon-20-solid" size="23px" style="color: white" />
+						<Icon v-if="colorMode.value === 'light'" name="i-heroicons:moon-20-solid" size="23px" style="color: white" />
 						<Icon v-else name="i-heroicons:sun-20-solid" size="23px" style="color: white" />
 					</ClientOnly>
 				</button>
@@ -144,8 +144,8 @@ if (event?.settings?.githubToken) {
 } else rateLoading.value = false;
 
 function darkMode() {
-	if (colorMode.preference === "dark") colorMode.preference = "light";
-	else colorMode.preference = "dark";
+	if (colorMode.value === "dark") colorMode.value = "light";
+	else colorMode.value = "dark";
 }
 
 function isActive(path) {
