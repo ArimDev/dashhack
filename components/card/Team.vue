@@ -20,7 +20,7 @@
                     <p class="text-xs font-normal italic">Loading chart...</p>
                 </div>
                 <ClientOnly v-else-if="!!team.github">
-                    <apexchart height="180" width="510" type="area" :options="chartOptions" :series="series"></apexchart>
+                    <apexchart height="180" width="510" type="area" :options="{ ...chartOptions, colors: [team.color] }" :series="series"></apexchart>
                 </ClientOnly>
                 <div v-else class="w-full h-full flex text-center justify-center items-center">
                     <p class="text-xs font-normal italic">Include GitHub URL to see activity chart.</p>

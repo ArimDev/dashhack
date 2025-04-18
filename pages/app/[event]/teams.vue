@@ -58,6 +58,5 @@ async function close(added) {
     openConfirm.value = false;
     selectedTeam.value = false;
     if (added) data.value = (await $fetch(`/api/event/${eventName.value}`)).data;
-    // TODO: Also update the chart color
 };
 </script>
