@@ -1,15 +1,20 @@
 import tailwindcss from "@tailwindcss/vite";
+import packageJson from "./package.json";
 
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
 	compatibilityDate: '2024-11-01',
 	devtools: { enabled: true },
 	devServer: {
-		port: 5002
+		port: 5002,
 	},
 
 	runtimeConfig: {
-		mongoUri: process.env.mongoUri
+		mongoUri: process.env.mongoUri,
+		public: {
+			appVersion: packageJson.version,
+			buildTimestamp: new Date().toISOString(),
+		},
 	},
 
 	components: [
@@ -36,7 +41,7 @@ export default defineNuxtConfig({
 				'heroicons:arrow-path-16-solid',
 			],
 			scan: true,
-		}
+		},
 	},
 
 	modules: ['@nuxt/fonts', '@nuxtjs/color-mode', '@nuxt/icon', 'nuxt-color-picker'],
@@ -44,7 +49,7 @@ export default defineNuxtConfig({
 	ssr: true,
 
 	css: [
-		"@/assets/style.css"
+		"@/assets/style.css",
 	],
 
 	fonts: {
