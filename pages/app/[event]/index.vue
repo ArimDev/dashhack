@@ -1,7 +1,7 @@
 <script setup>
 definePageMeta({
     layout: 'dashboard',
-	middleware: ["routes"],
+    middleware: ["routes"],
 });
 
 const currentEvent = useState('currentEvent');
@@ -10,13 +10,11 @@ watchEffect(() => {
         title: currentEvent.value + " | DashHack"
     });
 });
-
-const event = (await $fetch(`/api/event/${currentEvent.value}`)).data;
 </script>
 
 <template>
     <div>
         <h1>Home</h1>
-        Event name: {{ event.event }}
+        Event name: {{ currentEvent }}
     </div>
 </template>

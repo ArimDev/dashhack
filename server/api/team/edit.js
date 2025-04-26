@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const body = await readBody(event);
-    const { username, oldName, teamName, teamColor, teamDescription, teamGithub } = body;
+    const { username, oldName, teamName, teamColor, teamGithub, teamDescription, teamNotes } = body;
 
     const existingEvent = await Event.findOne({ event: username });
 
@@ -41,10 +41,11 @@ export default defineEventHandler(async (event) => {
         return { status: 404, message: "Team not found" };
     }
 
-    team.name = teamName;
-    team.color = teamColor;
-    team.description = teamDescription;
-    team.github = teamGithub;
+    team.name = teamName,
+        team.color = teamColor,
+        team.github = teamGithub,
+        team.description = teamDescription,
+        team.notes = teamNotes;
 
     await existingEvent.save();
 

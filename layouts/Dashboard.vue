@@ -77,7 +77,7 @@
 									<p v-if="!!rateLoading"><i>Fetching API...</i></p>
 									<p v-else-if="!!rateError" class="text-red-500">{{ rateError }}</p>
 									<p v-else-if="event?.settings?.githubToken">{{ rate }}/5000 requests</p>
-									<p v-else>{{ rate }}/60 requests</p> <!-- TODO: Is this needed? -->
+									<p v-else>Token is missing</p>
 
 									<div class="relative group flex justify-center">
 										<Icon :class="rateError ? `text-red-500` : `text-black dark:text-white`" name="i-heroicons:question-mark-circle-16-solid" size="15px" class="cursor-pointer focus:outline-none transition-colors duration-500" tabindex="0" />
@@ -93,7 +93,7 @@
 					<span class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
 						<ClientOnly>
 							<img v-if="!!event.logo" :src="event.logo" :alt="`${event.event} logo`" width="30px" height="30px">
-							<Icon v-else name="simple-icons:mcdonalds" size="30px" />
+							<img v-else :src="`/logo.png`" width="30px" height="30px" />
 						</ClientOnly>
 						{{ currentEvent }}
 					</span>
@@ -104,7 +104,7 @@
 			</nav>
 
 			<div class="mt-[1%]">
-				<slot />
+				<slot v-if="event" />
 			</div>
 			<div class="z-200 toast-container fixed bottom-0 right-0 mr-7 mb-7 flex flex-col-reverse gap-4">
 				<Toast v-for="toast in toasts" :key="toast.id" v-bind="toast" class="relative" />
@@ -115,6 +115,7 @@
 
 <script setup>
 const currentEvent = useState('currentEvent');
+const event = useState('eventData');
 const rate = ref("?");
 const rateLoading = ref(true);
 const rateError = ref(false);
@@ -131,8 +132,6 @@ const loggedIn = computed(() => !!useCookie("sessionExists").value);
 
 const { toasts } = useToast();
 const colorMode = useColorMode();
-
-const event = (await $fetch(`/api/event/${currentEvent.value}`)).data;
 
 if (event?.settings?.githubToken) {
 	const rateData = await $fetch(`/api/github/rateLimit?event=${encodeURIComponent(currentEvent.value)}`);

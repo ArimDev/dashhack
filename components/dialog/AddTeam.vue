@@ -2,7 +2,7 @@
 	<div>
 		<div @click="emit('close', false)" class="absolute inset-0 bg-black opacity-45"></div>
 		<div class="relative inset-0 flex justify-center items-center z-[100]">
-			<form @submit.prevent="teamSubmit" class="fixed bg-white text-black dark:bg-gray-800 dark:text-white rounded-3xl w-[50%] h-[50%] p-[2%] flex justify-between flex-col">
+			<form @submit.prevent="teamSubmit" class="fixed bg-white text-black dark:bg-gray-800 dark:text-white rounded-3xl w-[50%] h-[60%] p-[2%] flex justify-between flex-col">
 				<div>
 					<h1 class="text-left text-3xl font-bold">{{ edit ? "Edit Team" : "Add Team" }}</h1>
 				</div>
@@ -18,7 +18,10 @@
 						</div>
 					</div>
 					<div>
-						<textarea v-model="teamDescription" class="mb-4 p-3 border-2 min-h-[50px] h-[100px] max-h-[190px] border-black dark:border-white rounded-xl text-sm font-semibold w-full trans-all-linear dark:placeholder-slate-300" name="teamDescription" placeholder="Team Description"></textarea>
+						<input v-model="teamDescription" class="mb-4 p-3 border-2 h-[50px] border-black dark:border-white rounded-xl text-sm font-semibold w-full trans-all-linear dark:placeholder-slate-300" name="teamDescription" placeholder="Team Description" />
+					</div>
+					<div>
+						<textarea v-model="teamNotes" class="mb-4 p-3 border-2 min-h-[50px] h-[150px] max-h-[200px] border-black dark:border-white rounded-xl text-sm font-semibold w-full trans-all-linear dark:placeholder-slate-300" name="teamNotes" placeholder="Team Notes"></textarea>
 					</div>
 				</div>
 
@@ -51,26 +54,29 @@ const eventName = ref(route.params.event);
 
 const colorPicker = ref(false);
 
-const oldName = ref("");
-const teamName = ref(props.team?.name || "");
-const teamGithub = ref(props.team?.github || "");
-const teamColor = ref(props.team?.color || "#3081E0");
-const teamDescription = ref(props.team?.description || "");
+const oldName = ref(""),
+	teamName = ref(props.team?.name || ""),
+	teamGithub = ref(props.team?.github || ""),
+	teamColor = ref(props.team?.color || "#3081E0"),
+	teamDescription = ref(props.team?.description || ""),
+	teamNotes = ref(props.team?.notes || "");
 
 const edit = computed(() => !!props.team);
 
 watch(() => props.team, function (newTeam) {
 	if (newTeam) {
-		oldName.value = newTeam.name || "";
-		teamName.value = newTeam.name || "";
-		teamGithub.value = newTeam.github || "";
-		teamColor.value = newTeam.color || "#3081E0";
-		teamDescription.value = newTeam.description || "";
+		oldName.value = newTeam.name || "",
+			teamName.value = newTeam.name || "",
+			teamGithub.value = newTeam.github || "",
+			teamColor.value = newTeam.color || "#3081E0",
+			teamDescription.value = newTeam.description || "",
+			teamNotes.value = newTeam.notes || "";
 	} else {
-		teamName.value = "";
-		teamGithub.value = "";
-		teamColor.value = "#3081E0";
-		teamDescription.value = "";
+		teamName.value = "",
+			teamGithub.value = "",
+			teamColor.value = "#3081E0",
+			teamDescription.value = "",
+			teamNotes.value = "";
 	}
 }, { immediate: true });
 
@@ -78,9 +84,10 @@ async function teamSubmit() {
 	const teamData = {
 		username: eventName.value,
 		teamName: teamName.value,
+		teamGithub: teamGithub.value,
 		teamColor: teamColor.value,
 		teamDescription: teamDescription.value,
-		teamGithub: teamGithub.value,
+		teamNotes: teamNotes.value,
 	};
 
 	if (edit.value) {
@@ -96,9 +103,10 @@ async function teamSubmit() {
 		} else {
 			emit('close', true);
 
-			teamName.value = "";
-			teamGithub.value = "";
-			teamDescription.value = "";
+			teamName.value = "",
+				teamGithub.value = "",
+				teamDescription.value = "",
+				teamNotes.value = "";
 		}
 	} else {
 		let data = await $fetch(`/api/team/add`, {
@@ -113,9 +121,10 @@ async function teamSubmit() {
 		} else {
 			emit('close', true);
 
-			teamName.value = "";
-			teamGithub.value = "";
-			teamDescription.value = "";
+			teamName.value = "",
+				teamGithub.value = "",
+				teamDescription.value = "",
+				teamNotes.value = "";
 		};
 	};
 };

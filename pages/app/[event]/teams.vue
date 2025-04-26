@@ -1,9 +1,8 @@
 <template>
     <div v-if="!data.teams.length" class="text-center flex justify-center items-center min-h-[81vh]">
         <h1 class="mt-[-10px] text-3xl">No team found!<br>Let's add a new one!</h1>
-        <AddTeam v-show="openAddTeam" @close="close" class="z-20" />
     </div>
-    <div v-show="data.teams.length && (openAddTeam || openConfirm)" class="fixed inset-0 flex justify-center items-center z-[100]">
+    <div v-show="(openAddTeam || openConfirm)" class="fixed inset-0 flex justify-center items-center z-[100]">
         <AddTeam v-show="openAddTeam" :team="selectedTeam || false" @close="close" />
         <Confirm v-show="openConfirm" subject="Delete Team" message="Are you sure, that you want to delete team $var?" :team="selectedTeam" @close="close" />
     </div>
@@ -27,17 +26,16 @@
 <script setup>
 definePageMeta({
     layout: 'dashboard',
-	middleware: ["routes"],
+    middleware: ["routes"],
 });
 
-const currentEvent = useState('currentEvent');
+const currentEvent = useState('currentEvent'),
+    data = useState('eventData');
 watchEffect(() => {
     useHead({
         title: currentEvent.value + " | DashHack"
     });
 });
-
-const data = ref((await $fetch(`/api/event/${currentEvent.value}`)).data);
 
 const openAddTeam = ref(false);
 const openConfirm = ref(false);

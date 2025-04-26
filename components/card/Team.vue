@@ -19,11 +19,12 @@
                 <div v-if="chartLoading" class="w-full h-full flex text-center justify-center items-center">
                     <p class="text-xs font-normal italic">Loading chart...</p>
                 </div>
-                <ClientOnly v-else-if="!!team.github">
+                <ClientOnly v-else-if="!!team.github && !!chartDisplay">
                     <apexchart height="180" width="510" type="area" :options="{ ...chartOptions, colors: [team.color] }" :series="series"></apexchart>
                 </ClientOnly>
                 <div v-else class="w-full h-full flex text-center justify-center items-center">
-                    <p class="text-xs font-normal italic">Include GitHub URL to see activity chart.</p>
+                    <p v-if="!team.github" class="text-xs font-normal italic">Include GitHub URL to see activity chart.</p>
+                    <p v-else-if="!chartDisplay" class="text-xs font-normal italic">Invalid GitHub token.</p>
                 </div>
             </div>
         </div>
@@ -41,7 +42,8 @@ const eventName = ref(route.params.event);
 
 const series = ref(null),
     chartOptions = ref(null),
-    chartLoading = ref(true);
+    chartLoading = ref(true),
+    chartDisplay = ref(false);
 
 onMounted(async () => {
     if (props.team.github) {
@@ -49,10 +51,15 @@ onMounted(async () => {
 
         if (!event?.settings?.githubToken) {
             showToast("Failed contact GitHub API!", "GitHub Token is missing to fetch charts.");
-            chartLoading.value = false;
+            return chartDisplay.value = false,
+                chartLoading.value = false;
         } else {
             const res = await $fetch(`/api/github/series?url=${encodeURIComponent(props.team.github)}&event=${encodeURIComponent(eventName.value)}`);
-            // TODO: if error, then "chartLoading.value = false;"
+            if (res.status !== 200) {
+                console.log("x");
+                return chartDisplay.value = false,
+                    chartLoading.value = false;
+            }
 
             const commitData = res.commits;
             const diffData = res.diff;
@@ -106,9 +113,11 @@ onMounted(async () => {
                 }
             };
 
-            chartLoading.value = false;
+            return chartDisplay.value = true,
+                chartLoading.value = false;
         }
-    } else chartLoading.value = false;
+    } else return chartDisplay.value = false,
+        chartLoading.value = false;
 });
 </script>
 

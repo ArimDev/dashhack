@@ -5,7 +5,7 @@
         </div>
         <div class="relative">
             <label class="mb-1">
-                <u><a href="https://github.com/settings/tokens" target="_blank">GitHub personal access token</a></u>
+                <u><a href="https://github.com/settings/tokens" target="_blank" class="hover:text-bluey-500">GitHub personal access token<Icon name="i-humbleicons:external-link" size="14px" tabindex="0" /></a></u>
                 <br>to access private repos and increase API requests limit:
             </label>
             <input v-model="value" type="password" autocomplete="off" required @change="autosave" @input="error = false, success = false" class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300" placeholder="Valid (classic) GitHub token">
@@ -29,7 +29,7 @@ const success = ref(false);
 
 const data = (await $fetch(`/api/event/${eventName.value}`)).data;
 
-const value = ref(data.settings.githubToken);
+const value = ref(data.settings.githubToken || "");
 
 async function autosave() {
     let data = await $fetch(`/api/auth/update`, {
