@@ -67,8 +67,8 @@ const submitClass = computed(() =>
 const colorMode = useColorMode();
 
 function darkMode() {
-	if (colorMode.value === "dark") colorMode.value = "light";
-	else colorMode.value = "dark";
+	if (colorMode.value === "dark") colorMode.preference = "light";
+	else colorMode.preference = "dark";
 }
 
 function clearSubmit() {

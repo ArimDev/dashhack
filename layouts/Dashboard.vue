@@ -145,8 +145,8 @@ if (event?.settings?.githubToken) {
 } else rateLoading.value = false;
 
 function darkMode() {
-	if (colorMode.value === "dark") colorMode.value = "light";
-	else colorMode.value = "dark";
+	if (colorMode.value === "dark") colorMode.preference = "light";
+	else colorMode.preference = "dark";
 }
 
 function isActive(path) {
