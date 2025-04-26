@@ -1,16 +1,17 @@
 <script setup>
 definePageMeta({
     layout: 'dashboard',
+	middleware: ["routes"],
 });
 
-const route = useRoute();
-const eventName = ref(route.params.event);
-
-const event = (await $fetch(`/api/event/${eventName.value}`)).data;
-
-useHead({
-    title: eventName + " | DashHack"
+const currentEvent = useState('currentEvent');
+watchEffect(() => {
+    useHead({
+        title: currentEvent.value + " | DashHack"
+    });
 });
+
+const event = (await $fetch(`/api/event/${currentEvent.value}`)).data;
 </script>
 
 <template>

@@ -91,9 +91,11 @@
 						</div>
 					</span>
 					<span class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
-						<img v-if="!!event.logo" :src="event.logo" :alt="`${event.event} logo`" width="30px" height="30px">
-						<Icon v-else name="simple-icons:mcdonalds" size="30px" />
-						{{ eventName }}
+						<ClientOnly>
+							<img v-if="!!event.logo" :src="event.logo" :alt="`${event.event} logo`" width="30px" height="30px">
+							<Icon v-else name="simple-icons:mcdonalds" size="30px" />
+						</ClientOnly>
+						{{ currentEvent }}
 					</span>
 					<button @click="openConfirm = true" class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white cursor-pointer rounded-full w-[56px] h-[56px] flex items-center justify-center transition-colors duration-500">
 						<Icon name="majesticons:logout-line" size="30px" />
@@ -112,29 +114,28 @@
 </template>
 
 <script setup>
+const currentEvent = useState('currentEvent');
 const rate = ref("?");
 const rateLoading = ref(true);
 const rateError = ref(false);
 const openLogin = ref(false);
 const openConfirm = ref(false);
-const { toasts } = useToast();
 
 const currentPage = computed(() => {
+	const route = useRoute();
 	const pathParts = route.path.split("/");
 	const path = pathParts[3] || "home";
 	return path.charAt(0).toUpperCase() + path.slice(1);
 });
 const loggedIn = computed(() => !!useCookie("sessionExists").value);
 
+const { toasts } = useToast();
 const colorMode = useColorMode();
-const route = useRoute();
-const eventName = ref(route.params.event);
-// TODO: Update eventName on every change
 
-const event = (await $fetch(`/api/event/${eventName.value}`)).data;
+const event = (await $fetch(`/api/event/${currentEvent.value}`)).data;
 
 if (event?.settings?.githubToken) {
-	const rateData = await $fetch(`/api/github/rateLimit?event=${encodeURIComponent(eventName.value)}`);
+	const rateData = await $fetch(`/api/github/rateLimit?event=${encodeURIComponent(currentEvent.value)}`);
 	if (!rateData || rateData?.status !== 200)
 		rate.value = "Error",
 			rateError.value = "Invalid GitHub token",
@@ -149,17 +150,18 @@ function darkMode() {
 }
 
 function isActive(path) {
+	const route = useRoute();
 	return route.path === path;
 };
 
 function getPath(subpath = "") {
-	const basePath = `/app/${route.params.event}`;
+	const basePath = `/app/${currentEvent.value}`;
 	return subpath ? `${basePath}/${subpath}` : basePath;
 };
 
 async function closeConfirm(success) {
 	if (!!success) {
-		await navigateTo(`/`);
+		return await navigateTo({ path: `/` });
 	} else openConfirm.value = false;
 }
 </script>

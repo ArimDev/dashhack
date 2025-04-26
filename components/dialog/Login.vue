@@ -50,7 +50,7 @@ async function login() {
     if (!data || data.status !== 200) {
         buttonText.value = "Wrong Password!";
         buttonDisable.value = true;
-        console.log("Failed to log in: " + data);
+        console.log("Failed to log in: ", data);
 
         showToast("Failed to log in!", data?.message);
     } else close();

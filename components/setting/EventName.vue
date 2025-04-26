@@ -36,7 +36,7 @@ async function autosave() {
 
 	if (data.status !== 200) return error.value = data.message + "!";
 
-	await navigateTo(`/app/${value.value}/settings`);
 	success.value = true;
+	return await navigateTo({ path: `/app/${value.value}/settings`});
 }
 </script>

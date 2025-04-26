@@ -10,14 +10,13 @@
 <script setup>
 definePageMeta({
     layout: 'dashboard',
+	middleware: ["routes"],
 });
 
-const route = useRoute();
-const eventName = ref(route.params.event);
-
+const currentEvent = useState('currentEvent');
 watchEffect(() => {
     useHead({
-        title: eventName.value + " | DashHack"
+        title: currentEvent.value + " | DashHack"
     });
 });
 </script>

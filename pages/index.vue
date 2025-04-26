@@ -6,12 +6,12 @@
 				<h1 class="font-extrabold text-bluey-500 text-9xl text-center">DashHack</h1>
 				<h2 class="font-bold text-black text-6xl text-center dark:text-white transition-colors duration-500">Hackathon Monitoring</h2>
 			</div>
-			<form class="pt-10 flex items-center flex-col">
+			<form @submit="open" class="pt-10 flex items-center flex-col">
 				<div class="flex gap-10">
 					<input @input="checkEventFree" v-model="credentials.user" required type="username" placeholder="Event Name" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4" />
 					<input @focus="clearSubmit" v-model="credentials.pass" type="password" autocomplete="current-password" placeholder="Password" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4">
 				</div>
-				<button @click="open" type="submit" :class="`cursor-pointer text-xl font-bold mt-10 rounded-full w-72 h-16 transition-colors duration-500 ${submitClass}`">{{ submitText }}</button>
+				<button type="submit" :class="`cursor-pointer text-xl font-bold mt-10 rounded-full w-72 h-16 transition-colors duration-500 ${submitClass}`">{{ submitText }}</button>
 			</form>
 		</div>
 
@@ -100,7 +100,7 @@ async function checkEventFree() {
 	return;
 }
 
-async function open() {
+async function open(event) {
 	event.preventDefault();
 
 	if (eventFree.value) {
@@ -130,12 +130,12 @@ async function open() {
 			if (!data || data.status !== 200) {
 				console.warn("Failed to log in:", data);
 			} else {
-				await navigateTo(`/app/${credentials.value.user}`);
+				return await navigateTo(`/app/${credentials.value.user}`);
 			}
 		}
 	} else if (eventTaken.value) {
 		if (!credentials.value.pass) {
-			await navigateTo(`/app/${credentials.value.user}`);
+			return await navigateTo(`/app/${credentials.value.user}`);
 		} else {
 			const data = await $fetch(`/api/auth/login`, {
 				method: "POST",
@@ -149,7 +149,7 @@ async function open() {
 					return submitRed.value = true;
 				}
 			} else {
-				await navigateTo(`/app/${credentials.value.user}`);
+				return await navigateTo(`/app/${credentials.value.user}`);
 			}
 		}
 	} else {

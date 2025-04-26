@@ -27,16 +27,17 @@
 <script setup>
 definePageMeta({
     layout: 'dashboard',
+	middleware: ["routes"],
 });
 
-const route = useRoute();
-const eventName = ref(route.params.event);
-
-useHead({
-    title: eventName.value + " | DashHack"
+const currentEvent = useState('currentEvent');
+watchEffect(() => {
+    useHead({
+        title: currentEvent.value + " | DashHack"
+    });
 });
 
-const data = ref((await $fetch(`/api/event/${eventName.value}`)).data);
+const data = ref((await $fetch(`/api/event/${currentEvent.value}`)).data);
 
 const openAddTeam = ref(false);
 const openConfirm = ref(false);
@@ -57,6 +58,6 @@ async function close(added) {
     openAddTeam.value = false;
     openConfirm.value = false;
     selectedTeam.value = false;
-    if (added) data.value = (await $fetch(`/api/event/${eventName.value}`)).data;
+    if (added) data.value = (await $fetch(`/api/event/${currentEvent.value}`)).data;
 };
 </script>
