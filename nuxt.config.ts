@@ -4,30 +4,36 @@ import packageJson from "./package.json";
 // https://nuxt.com/docs/api/configuration/nuxt-config
 export default defineNuxtConfig({
 	compatibilityDate: '2024-11-01',
+
+	modules: [
+		'@nuxt/fonts',
+		'@nuxtjs/color-mode',
+		'@nuxt/icon',
+		'nuxt-color-picker',
+		'@nuxtjs/seo',
+	],
+
+	ssr: true,
 	devtools: { enabled: true },
 	devServer: {
 		port: 5002,
 	},
 
+	site: {
+		url: process.env.url,
+		name: 'DashHack',
+	},
 	runtimeConfig: {
 		mongoUri: process.env.mongoUri,
 		public: {
 			appVersion: packageJson.version,
 			buildTimestamp: new Date().toISOString(),
+			color: "#3081E0",
 		},
 	},
 
-	components: [
-		{
-			path: '~/components',
-			pathPrefix: false,
-		},
-	],
-
-	vite: {
-		plugins: [
-			tailwindcss(),
-		],
+	seo: {
+		automaticDefaults: false,
 	},
 
 	icon: {
@@ -44,14 +50,6 @@ export default defineNuxtConfig({
 		},
 	},
 
-	modules: ['@nuxt/fonts', '@nuxtjs/color-mode', '@nuxt/icon', 'nuxt-color-picker'],
-
-	ssr: true,
-
-	css: [
-		"@/assets/style.css",
-	],
-
 	fonts: {
 		provider: 'google',
 		families: [
@@ -65,5 +63,15 @@ export default defineNuxtConfig({
 		classSuffix: '',
 		storage: 'localStorage',
 		storageKey: 'colorMode',
+	},
+
+	css: [
+		"@/assets/style.css",
+	],
+
+	vite: {
+		plugins: [
+			tailwindcss(),
+		],
 	},
 })

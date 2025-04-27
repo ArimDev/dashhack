@@ -30,11 +30,20 @@ definePageMeta({
 });
 
 const currentEvent = useState('currentEvent'),
-    data = useState('eventData');
+    data = useState('eventData'),
+    config = useRuntimeConfig();
+
 watchEffect(() => {
     useHead({
         title: currentEvent.value + " | DashHack"
     });
+});
+
+defineOgImageComponent('NuxtSeo', {
+    title: currentEvent,
+    description: "Teams page",
+    theme: config.public.color,
+    colorMode: 'dark',
 });
 
 const openAddTeam = ref(false);
