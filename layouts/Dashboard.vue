@@ -104,7 +104,7 @@
 			</nav>
 
 			<div class="mt-[1%]">
-				<slot v-if="event" />
+				<slot />
 			</div>
 			<div class="z-200 toast-container fixed bottom-0 right-0 mr-7 mb-7 flex flex-col-reverse gap-4">
 				<Toast v-for="toast in toasts" :key="toast.id" v-bind="toast" class="relative" />

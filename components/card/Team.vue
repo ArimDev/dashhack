@@ -1,7 +1,7 @@
 <template>
     <div class="rounded-3xl h-50 max-h-50" :style="{ backgroundColor: team.color }">
-        <div class="rounded-r-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-full ml-5 font-bold text-2xl px-[2%] py-[3%] flex transition-colors duration-500">
-            <div class="w-[30%]">
+        <div class="rounded-r-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-full ml-5 font-bold text-2xl px-[2%] flex transition-colors duration-500">
+            <div class="w-[30%] py-[3%]">
                 <div class="flex flex-row items-center gap-3 mb-2">
                     <h1 class="text-3xl font-bold">{{ team.name }}</h1>
                     <div class="flex flex-row items-center gap-1 z-1">
@@ -15,12 +15,41 @@
                 </div>
                 <p class="text-sm font-normal w-full break-words">{{ team.description }}</p>
             </div>
-            <div class="w-[70%] h-full">
+            <div class="w-[70%] h-full flex items-center justify-center">
                 <div v-if="chartLoading" class="w-full h-full flex text-center justify-center items-center">
                     <p class="text-xs font-normal italic">Loading chart...</p>
                 </div>
                 <ClientOnly v-else-if="!!team.github && !!chartDisplay">
-                    <apexchart height="180" width="510" type="area" :options="{ ...chartOptions, colors: [team.color] }" :series="series"></apexchart>
+                    <div class="w-full h-full pt-8 pb-1 px-1">
+                        <apexchart 
+                            height="100%" 
+                            width="100%" 
+                            type="area" 
+                            :options="{ 
+                                ...chartOptions, 
+                                colors: [team.color],
+                                chart: {
+                                    ...chartOptions.chart,
+                                    height: '100%',
+                                    width: '100%',
+                                    parentHeightOffset: 0
+                                },
+                                plotOptions: {
+                                    ...chartOptions.plotOptions
+                                },
+                                grid: {
+                                    ...chartOptions.grid,
+                                    padding: {
+                                        top: 5,
+                                        right: 5,
+                                        bottom: 5,
+                                        left: 5
+                                    }
+                                }
+                            }" 
+                            :series="series">
+                        </apexchart>
+                    </div>
                 </ClientOnly>
                 <div v-else class="w-full h-full flex text-center justify-center items-center">
                     <p v-if="!team.github" class="text-xs font-normal italic">Include GitHub URL to see activity chart.</p>

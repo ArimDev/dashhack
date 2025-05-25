@@ -7,7 +7,7 @@
         <Confirm v-show="openConfirm" subject="Delete Team" message="Are you sure, that you want to delete team $var?" :team="selectedTeam" @close="close" />
     </div>
 
-    <div v-if="!!data.teams.length" class="grid grid-cols-2 gap-4">
+    <div v-if="!!data.teams.length" class="grid grid-cols-1 xl:grid-cols-2 gap-4">
         <!-- https://github.com/nuxt/icon/issues/376 -->
         <Icon style="display: none;" name="heroicons:magnifying-glass-plus-16-solid" />
         <Icon style="display: none;" name="heroicons:magnifying-glass-minus-16-solid" />
