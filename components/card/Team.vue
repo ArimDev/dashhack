@@ -1,6 +1,6 @@
 <template>
-    <div class="rounded-3xl h-50 max-h-50" :style="{ backgroundColor: team.color }">
-        <div class="rounded-r-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-full ml-5 font-bold text-2xl px-[2%] flex transition-colors duration-500">
+    <div :class="['max-h-100 rounded-3xl', { 'h-75': notes, 'h-50': !notes }]" :style="{ backgroundColor: team.color }">
+        <div :class="[{ 'max-h-50 h-50 rounded-tr-3xl': notes, 'h-full rounded-r-3xl': !notes }]" class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-full ml-5 font-bold text-2xl px-[2%] flex transition-colors duration-500">
             <div class="w-[30%] py-[3%]">
                 <div class="flex flex-row items-center gap-3 mb-2">
                     <h1 class="text-3xl font-bold">{{ team.name }}</h1>
@@ -13,7 +13,7 @@
                         </button>
                     </div>
                 </div>
-                <p class="text-sm font-normal w-full break-words">{{ team.description }}</p>
+                <MDC class="text-base font-normal w-full break-words max-h-[132px] h-[132px] overflow-hidden" :value="team.description" />
             </div>
             <div class="w-[70%] h-full flex items-center justify-center">
                 <div v-if="chartLoading" class="w-full h-full flex text-center justify-center items-center">
@@ -21,33 +21,28 @@
                 </div>
                 <ClientOnly v-else-if="!!team.github && !!chartDisplay">
                     <div class="w-full h-full pt-8 pb-1 px-1">
-                        <apexchart 
-                            height="100%" 
-                            width="100%" 
-                            type="area" 
-                            :options="{ 
-                                ...chartOptions, 
-                                colors: [team.color],
-                                chart: {
-                                    ...chartOptions.chart,
-                                    height: '100%',
-                                    width: '100%',
-                                    parentHeightOffset: 0
-                                },
-                                plotOptions: {
-                                    ...chartOptions.plotOptions
-                                },
-                                grid: {
-                                    ...chartOptions.grid,
-                                    padding: {
-                                        top: 5,
-                                        right: 5,
-                                        bottom: 5,
-                                        left: 5
-                                    }
+                        <apexchart height="100%" width="100%" type="area" :options="{
+                            ...chartOptions,
+                            colors: [team.color],
+                            chart: {
+                                ...chartOptions.chart,
+                                height: '100%',
+                                width: '100%',
+                                parentHeightOffset: 0
+                            },
+                            plotOptions: {
+                                ...chartOptions.plotOptions
+                            },
+                            grid: {
+                                ...chartOptions.grid,
+                                padding: {
+                                    top: 5,
+                                    right: 5,
+                                    bottom: 5,
+                                    left: 5
                                 }
-                            }" 
-                            :series="series">
+                            }
+                        }" :series="series">
                         </apexchart>
                     </div>
                 </ClientOnly>
@@ -55,6 +50,12 @@
                     <p v-if="!team.github" class="text-xs font-normal italic">Include GitHub URL to see activity chart.</p>
                     <p v-else-if="!chartDisplay" class="text-xs font-normal italic">Invalid GitHub token.</p>
                 </div>
+            </div>
+        </div>
+        <div v-if="notes" class="rounded-br-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-25 ml-5 font-normal text-lg px-[2%] transition-colors duration-500">
+            <div style="position: relative; top: -40px;">
+                <h2 class="text-xl font-bold">Notes:</h2>
+                <MDC class="text-sm font-normal w-full break-words" :value="team.notes" />
             </div>
         </div>
     </div>
@@ -65,6 +66,7 @@ const { showToast } = useToast();
 const emit = defineEmits(["edit", "delete"]);
 const props = defineProps({
     team: Object,
+    notes: Boolean
 });
 const route = useRoute();
 const eventName = ref(route.params.event);
@@ -151,6 +153,11 @@ onMounted(async () => {
 </script>
 
 <style>
+p a {
+    color: var(--color-bluey-500);
+    text-decoration: underline;
+}
+
 .apexcharts-selected * {
     color: #3081e0 !important;
     background-color: #3081e0 !important;

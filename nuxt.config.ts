@@ -11,6 +11,7 @@ export default defineNuxtConfig({
 		'@nuxt/icon',
 		'nuxt-color-picker',
 		'@nuxtjs/seo',
+		'@nuxtjs/mdc',
 	],
 
 	ssr: true,

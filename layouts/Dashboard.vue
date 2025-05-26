@@ -47,10 +47,11 @@
 
 		<div style="margin-left: max(15%, 215px);" class="p-[1%] flex flex-col w-full min-h-screen h-full">
 			<nav class="z-10 sticky flex justify-between">
-				<div class="">
+				<div class="flex gap-3">
 					<span class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
 						{{ currentPage }}
 					</span>
+					<div id="tools" />
 				</div>
 				<div class="flex justify-end gap-3">
 					<span class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
@@ -133,7 +134,7 @@ const loggedIn = computed(() => !!useCookie("sessionExists").value);
 const { toasts } = useToast();
 const colorMode = useColorMode();
 
-if (event?.settings?.githubToken) {
+if (event?.value?.settings?.githubToken) {
 	const rateData = await $fetch(`/api/github/rateLimit?event=${encodeURIComponent(currentEvent.value)}`);
 	if (!rateData || rateData?.status !== 200)
 		rate.value = "Error",
