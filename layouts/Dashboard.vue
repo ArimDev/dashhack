@@ -4,7 +4,7 @@
 		<Confirm v-show="openConfirm" subject="Log Off" message="Are you sure, that you want to log off?" @close="closeConfirm" />
 	</div>
 	<div class="font-sans flex bg-zinc-300 text-black dark:bg-gray-900 dark:text-white transition-colors duration-500">
-		<div class="fixed z-10 w-[15%] h-screen bg-white text-black dark:bg-gray-800 dark:text-white p-[2%] min-h-screen min-w-[215px] flex flex-col items-center text-center content-center align-center transition-colors duration-500">
+		<div class="fixed z-10 w-[15%] h-screen bg-white text-black dark:bg-gray-800 dark:text-white p-[2%] min-h-screen min-w-[240px] flex flex-col items-center text-center content-center align-center transition-colors duration-500">
 			<header class="min-h-1/3 flex flex-col justify-center items-center">
 				<NuxtLink to="/" class="min-h-1/3 flex flex-col justify-center items-center"><img src="/logo.png" width="60%"></NuxtLink>
 				<h1 class="font-bold text-2xl">DashHack</h1>
@@ -39,13 +39,13 @@
 						<Icon v-else name="i-heroicons:sun-20-solid" size="23px" style="color: white" />
 					</ClientOnly>
 				</button>
-				<button class="cursor-pointer bg-bluey-500 rounded-full w-12 h-12 flex items-center justify-center transition-colors duration-500">
+				<a :href="`${config.public.discordInvite}`" target="_blank" class="cursor-pointer bg-bluey-500 rounded-full w-12 h-12 flex items-center justify-center transition-colors duration-500">
 					<Icon name="akar-icons:discord-fill" size="23px" style="color: white" />
-				</button>
+				</a>
 			</footer>
 		</div>
 
-		<div style="margin-left: max(15%, 215px);" class="p-[1%] flex flex-col w-full min-h-screen h-full">
+		<div style="margin-left: max(15%, 240px);" class="p-[1%] flex flex-col w-full min-h-screen h-full">
 			<nav class="z-10 sticky flex justify-between">
 				<div class="flex gap-3">
 					<span class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
@@ -124,6 +124,7 @@ const rateLoading = ref(true);
 const rateError = ref(false);
 const openLogin = ref(false);
 const openConfirm = ref(false);
+const config = useRuntimeConfig();
 
 const currentPage = computed(() => {
 	const route = useRoute();

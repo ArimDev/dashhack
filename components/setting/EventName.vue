@@ -5,7 +5,7 @@
 		</div>
 		<div class="relative">
 			<label for="username" class="mb-1">Change login username and display name of the event:</label>
-			<input v-model="value" type="username" placeholder="Event Name" autocomplete="username" @change="autosave" @input="error = false, success = false" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300">
+			<input v-model="value" type="username" placeholder="Event Name" autocomplete="username" @change="autosave" @input="error = false, success = false" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300 transition-colors duration-500">
 			<div v-if="error" class="bg-white dark:bg-gray-800 text-red-500 absolute top-[35px] right-0 text-right mr-1 pl-2 inline-flex items-center justify-end font-bold transition-colors duration-500">
 				{{ error }}
 				<Icon name="i-heroicons:x-mark-16-solid" size="30px" class="cursor-pointer focus:outline-none" tabindex="0" />

@@ -1,5 +1,5 @@
 <template>
-    <div class="flex flex-wrap gap-8">
+    <div class="grid grid-cols-2 md:grid-cols-1 lg:grid-cols-2 xl:grid-cols-3 gap-4">
         <EventName />
         <Password />
         <EventLogo />

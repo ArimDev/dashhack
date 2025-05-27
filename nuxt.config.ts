@@ -30,6 +30,7 @@ export default defineNuxtConfig({
 			appVersion: packageJson.version,
 			buildTimestamp: new Date().toISOString(),
 			color: "#3081E0",
+			discordInvite: process.env.discord,
 		},
 	},
 
