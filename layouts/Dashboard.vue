@@ -51,7 +51,9 @@
 					<span class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
 						{{ currentPage }}
 					</span>
-					<div id="tools" />
+					<ClientOnly>
+						<div id="tools" />
+					</ClientOnly>
 				</div>
 				<div class="flex justify-end gap-3">
 					<span class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white px-4 py-2 flex gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
