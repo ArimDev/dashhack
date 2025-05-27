@@ -4,13 +4,14 @@
         <Password />
         <EventLogo />
         <Token />
+        <Backup />
     </div>
 </template>
 
 <script setup>
 definePageMeta({
     layout: 'dashboard',
-	middleware: ["routes"],
+    middleware: ["routes"],
 });
 
 const currentEvent = useState('currentEvent'),
