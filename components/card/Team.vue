@@ -1,8 +1,8 @@
 <template>
     <ClientOnly>
-    <div :class="['max-h-100 rounded-3xl', { 'h-75': notes, 'h-50': !notes }]" :style="{ backgroundColor: team.color }">
-        <div :class="[{ 'max-h-50 h-50 rounded-tr-3xl': notes, 'h-full rounded-r-3xl': !notes }]" class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-full ml-5 font-bold text-2xl px-[2%] flex transition-colors duration-500">
-            <div class="w-[30%] py-[3%]">
+    <div :class="['max-h-100 rounded-3xl', { 'h-75': notes, 'h-50': !notes && !compact, 'h-45': !notes && compact }]" :style="{ backgroundColor: team.color }">
+        <div :class="notes ? 'max-h-50 h-50 rounded-tr-3xl' : 'h-full rounded-r-3xl'" class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white ml-5 font-bold text-2xl px-[2%] flex transition-colors duration-500">
+            <div :class="compact ? 'w-[100%]' : 'w-[30%]'" class="py-[3%]">
                 <div class="flex flex-row items-center gap-3 mb-2">
                     <h1 class="text-3xl font-bold">{{ team.name }}</h1>
                     <div class="flex flex-row items-center gap-1 z-1">
@@ -16,7 +16,7 @@
                 </div>
                 <MDC class="text-base font-normal w-full break-words max-h-[132px] h-[132px] overflow-hidden" :value="team.description" />
             </div>
-            <div class="w-[70%] h-full flex items-center justify-center">
+            <div v-show="!compact" class="w-[70%] h-full flex items-center justify-center">
                 <div v-if="chartLoading" class="w-full h-full flex text-center justify-center items-center">
                     <p class="text-xs font-normal italic">Loading chart...</p>
                 </div>
@@ -56,7 +56,7 @@
         <div v-show="notes" class="rounded-br-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-25 ml-5 font-normal text-lg px-[2%] transition-colors duration-500">
             <div class="h-full" style="position: relative; top: -40px;">
                 <h2 class="text-xl font-bold">Notes:</h2>
-                <MDC class="text-sm font-normal w-full break-words h-full bg-zinc-300 rounded-2xl p-2" :value="team.notes" />
+                <MDC class="text-sm font-normal w-full break-words h-full bg-zinc-300 dark:bg-gray-900 rounded-2xl p-2 transition-colors duration-500" :value="team.notes" />
             </div>
         </div>
     </div>
@@ -68,7 +68,8 @@ const { showToast } = useToast();
 const emit = defineEmits(["edit", "delete"]);
 const props = defineProps({
     team: Object,
-    notes: Boolean
+    notes: Boolean,
+    compact: Boolean,
 });
 const route = useRoute();
 const eventName = ref(route.params.event);

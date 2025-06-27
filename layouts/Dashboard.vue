@@ -52,7 +52,7 @@
 						{{ currentPage }}
 					</span>
 					<ClientOnly>
-						<div id="tools" />
+						<div id="tools" class="flex gap-3" />
 					</ClientOnly>
 				</div>
 				<div class="flex justify-end gap-3">
