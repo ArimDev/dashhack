@@ -53,7 +53,7 @@
                 </div>
             </div>
         </div>
-        <div v-if="notes" class="rounded-br-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-25 ml-5 font-normal text-lg px-[2%] transition-colors duration-500">
+        <div v-show="notes" class="rounded-br-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-25 ml-5 font-normal text-lg px-[2%] transition-colors duration-500">
             <div class="h-full" style="position: relative; top: -40px;">
                 <h2 class="text-xl font-bold">Notes:</h2>
                 <MDC class="text-sm font-normal w-full break-words h-full bg-zinc-300 rounded-2xl p-2" :value="team.notes" />
