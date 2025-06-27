@@ -25,7 +25,7 @@ watchEffect(() => {
 
 defineOgImageComponent('NuxtSeo', {
     title: currentEvent,
-    description: "Settings page",
+    description: "Settings",
     theme: config.public.color,
     colorMode: 'dark',
 });

@@ -51,7 +51,7 @@ watchEffect(() => {
 
 defineOgImageComponent('NuxtSeo', {
     title: currentEvent,
-    description: "Teams page",
+    description: "Teams",
     theme: config.public.color,
     colorMode: 'dark',
 });

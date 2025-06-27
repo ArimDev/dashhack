@@ -11,15 +11,15 @@
 			</header>
 			<ul class="min-h-1/3 flex flex-col justify-center gap-9 w-full">
 				<li class="text-left justify-center">
-					<NuxtLink :to="getPath()" class="text-black dark:text-white cursor-pointer px-4 py-2 flex gap-2 text-2xl font-bold text-left justify-start items-center rounded-full w-full transition-colors duration-500" :class="isActive(getPath()) ? 'bg-bluey-500 text-white' : 'hover:text-bluey-500'">
-						<Icon name="ph:house-fill" size="40px" />
-						Home
-					</NuxtLink>
-				</li>
-				<li class="text-left justify-center items-center">
 					<NuxtLink :to="getPath('teams')" class="text-black dark:text-white cursor-pointer px-4 py-2 flex gap-2 text-2xl font-bold text-left justify-start items-center rounded-full w-full transition-colors duration-500" :class="isActive(getPath('teams')) ? 'bg-bluey-500 text-white' : 'hover:text-bluey-500'">
 						<Icon name="fluent:people-team-20-filled" size="40px" />
 						Teams
+					</NuxtLink>
+				</li>
+				<li class="text-left justify-center items-center">
+					<NuxtLink :to="getPath('log')" class="text-black dark:text-white cursor-pointer px-4 py-2 flex gap-2 text-2xl font-bold text-left justify-start items-center rounded-full w-full transition-colors duration-500" :class="isActive(getPath('log')) ? 'bg-bluey-500 text-white' : 'hover:text-bluey-500'">
+						<Icon name="fluent:document-bullet-list-20-filled" size="40px" />
+						Log
 					</NuxtLink>
 				</li>
 				<li class="text-left justify-center">

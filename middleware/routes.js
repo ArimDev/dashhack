@@ -12,4 +12,8 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
 
     const eventData = useState('eventData', () => eventFetch);
     eventData.value = eventFetch;
+
+    if (to.path.endsWith("/") || to.path.endsWith(eventParam)) {
+        return navigateTo("/app/" + eventParam + "/teams");
+    }
 });
