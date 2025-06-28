@@ -39,10 +39,15 @@ export default async function githubSeries(_url, event) {
     };
 
     const now = new Date();
-    const last24Hours = new Date(now - 24 * 60 * 60 * 1000); // 24 hours in ms
+    now.setMinutes(0, 0, 0); //Rounding down (15:30 -> 15:00)
 
-    // 24 element array with objects ready
-    const hourlyStats = Array.from({ length: 24 }, () => ({ commits: 0, lines: 0 }));
+    //Custom array with 24 buckets for the last 24 hours
+    const buckets = Array.from({ length: 24 }, (_, i) => ({
+        from: new Date(now.getTime() - i * 60 * 60 * 1000),
+        to: new Date(now.getTime() - (i - 1) * 60 * 60 * 1000),
+        commits: 0,
+        lines: 0,
+    }));
 
     try {
         const commitsData = await getRequest(url, headers);
@@ -53,27 +58,37 @@ export default async function githubSeries(_url, event) {
 
         for (const commit of commitsData) {
             const commitTime = new Date(commit.commit.committer.date);
-            if (commitTime >= last24Hours) {
-                const hour = commitTime.getHours();
-                hourlyStats[hour].commits++;
 
-                const sha = commit.sha;
-                const commitUrl = `https://api.github.com/repos/${owner}/${repo}/commits/${sha}`;
-                const commitDetails = await getRequest(commitUrl, headers);
+            for (let i = 0; i < 24; i++) {
+                if (commitTime >= buckets[i].from && commitTime < buckets[i].to) {
+                    buckets[i].commits++;
+                    const sha = commit.sha;
+                    const commitUrl = `https://api.github.com/repos/${owner}/${repo}/commits/${sha}`;
 
-                if (commitDetails.files) {
-                    commitDetails.files.forEach(file => {
-                        if (file.changes) {
-                            hourlyStats[hour].lines += file.changes;
-                        }
-                    });
+                    const commitDetails = await getRequest(commitUrl, headers);
+                    if (commitDetails.files) {
+                        commitDetails.files.forEach(file => {
+                            if (file.changes) {
+                                buckets[i].lines += file.changes;
+                            }
+                        });
+                    }
+                    break;
                 }
             }
         }
 
-        const commits = hourlyStats.map(item => item.commits);
-        const diff = hourlyStats.map(item => item.lines);
-        return { status: 200, commits, diff, reqs };
+        //Index 0 is the most recent hour, index 23 is the oldest
+        const commits = buckets.map(b => b.commits);
+        const diff = buckets.map(b => b.lines);
+
+        //Hours in format HH:00 for chart
+        const hours = buckets.map(b => {
+            const h = b.from.getHours();
+            return `${h.toString().padStart(2, "0")}:00`;
+        });
+
+        return { status: 200, commits, diff, hours, reqs };
     } catch (error) {
         console.error("Error occurred:", error);
         return { status: 500, message: "Something went wrong!", reqs };
