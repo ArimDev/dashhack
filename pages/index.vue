@@ -2,20 +2,20 @@
 	<div class="font-sans flex min-h-screen bg-white dark:bg-gray-900 flex-col transition-colors duration-500">
 
 		<div class="m-auto">
-			<div class="p-6">
-				<h1 class="font-extrabold text-bluey-500 text-9xl text-center">DashHack</h1>
-				<h2 class="font-bold text-black text-6xl text-center dark:text-white transition-colors duration-500">Hackathon Monitoring</h2>
+			<div class="p-1 sm:p-6">
+				<h1 class="font-extrabold text-bluey-500 text-7xl sm:text-9xl text-center">DashHack</h1>
+				<h2 class="font-bold text-black text-2xl sm:text-6xl text-center dark:text-white transition-colors duration-500">Hackathon Monitoring</h2>
 			</div>
 			<form @submit="open" class="pt-10 flex items-center flex-col">
-				<div class="flex gap-10">
+				<div class="flex gap-3 sm:gap-10 flex-col sm:flex-row">
 					<input @input="checkEventFree" v-model="credentials.user" required type="username" placeholder="Event Name" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4" />
 					<input @focus="clearSubmit" v-model="credentials.pass" type="password" autocomplete="current-password" placeholder="Password" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4">
 				</div>
-				<button type="submit" :class="`cursor-pointer text-xl font-bold mt-10 rounded-full w-72 h-16 transition-colors duration-500 ${submitClass}`">{{ submitText }}</button>
+				<button type="submit" :class="`cursor-pointer text-xl font-bold mt-10 rounded-full w-85 sm:w-72 h-16 transition-colors duration-500 ${submitClass}`">{{ submitText }}</button>
 			</form>
 		</div>
 
-		<footer class="pb-16 text-black text-center font-mono">
+		<footer class="pb-30 sm:pb-16 text-black text-center font-mono">
 			<div class="flex gap-5 justify-center">
 				<ClientOnly>
 					<span @click.prevent="darkMode" class="cursor-pointer text-bluey-500 hover:text-bluey-600 dark:hover:text-bluey-400 dark:text-bluey-300 transition-colors duration-500">
