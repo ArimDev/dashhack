@@ -5,7 +5,7 @@
                 <div :class="compact ? 'w-[100%]' : 'w-[30%]'" class="py-[3%]">
                     <div class="flex flex-row items-center gap-3 mb-2">
                         <h1 class="text-3xl font-bold">{{ team.name }}</h1>
-                        <div class="flex flex-row items-center gap-1 z-1">
+                        <div class="flex flex-row items-center gap-1 z-[1]">
                             <button @click="emit('edit', team)" class="cursor-pointer flex flex-row items-center transition-transform duration-300 ease-in-out hover:scale-120">
                                 <Icon name="heroicons:pencil-square-20-solid" size="25px" :style="{ color: team.color }" />
                             </button>
@@ -131,7 +131,10 @@ onMounted(async () => {
                             zoomout: `<span class="z-1 relative iconify i-heroicons:magnifying-glass-minus-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
                             pan: `<span class="z-1 relative iconify i-heroicons:hand-raised-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
                             reset: `<span class="z-1 relative iconify i-heroicons:arrow-path-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
-                        }
+                        },
+                        style: {
+                            z: 1,
+                        },
                     }
                 },
                 dataLabels: {

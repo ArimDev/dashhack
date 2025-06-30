@@ -33,7 +33,7 @@
             <Team v-for="(team, index) in data.teams" :key="index" :team="team" :notes="notes" :compact="compact" @edit="open" @delete="confirm" />
         </div>
 
-        <button @click="open(false)" class="fixed bg-bluey-500 h-[80px] w-[80px] right-[30px] bottom-[30px] shadow-md cursor-pointer rounded-full flex items-center justify-center transition-colors duration-500">
+        <button @click="open(false)" class="fixed bg-bluey-500 h-[80px] w-[80px] lg:right-[30px] lg:bottom-[30px] shadow-md cursor-pointer rounded-full flex items-center justify-center transition-colors duration-500 z-99 bottom-23 right-5">
             <Icon name="material-symbols:add-2-rounded" size="50px" class="text-white" />
         </button>
     </ClientOnly>
