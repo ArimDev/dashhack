@@ -1,26 +1,23 @@
 # Build Stage 1
 
-FROM node:22-alpine AS build
+FROM oven/bun:latest AS build
 WORKDIR /app
 
-# Enable corepack (npm is included by default)
-RUN corepack enable
-
-# Copy package.json and package-lock.json (lock file)
-COPY package.json package-lock.json ./
+# Copy package.json and bun.lock (lock file)
+COPY package.json bun.lock ./
 
 # Install dependencies using npm
-RUN npm install
+RUN bun install
 
 # Copy the entire project
 COPY . ./
 
 # Build the project
-RUN npm run build
+RUN bun --bun run build
 
 # Build Stage 2
 
-FROM node:22-alpine
+FROM oven/bun:latest AS production
 WORKDIR /app
 
 # Only `.output` folder is needed from the build stage
@@ -32,4 +29,4 @@ ENV HOST 0.0.0.0
 
 EXPOSE 1020
 
-CMD ["node", "/app/server/index.mjs"]
+ENTRYPOINT ["bun", "--bun", "run", "/app/server/index.mjs"]

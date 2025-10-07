@@ -14,6 +14,7 @@ export default defineNuxtConfig({
 		'@nuxtjs/mdc',
 	],
 
+	srcDir: 'src/app/',
 	ssr: true,
 	devtools: { enabled: true },
 	devServer: {
@@ -68,7 +69,7 @@ export default defineNuxtConfig({
 	},
 
 	css: [
-		"@/assets/style.css",
+		"@/assets/css/main.css",
 	],
 
 	vite: {

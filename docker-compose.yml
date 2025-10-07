@@ -6,7 +6,7 @@ services:
       args:
         webPort: ${webPort}
     container_name: dashhack
-    restart: always
+    restart: unless-stopped
     env_file:
       - .env
     ports:
