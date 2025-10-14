@@ -96,7 +96,7 @@
 					<span class="hidden lg:flex shadow-md bg-white text-black dark:bg-gray-800 dark:text-white px-4 py-2 gap-2 h-[56px] text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
 						<ClientOnly>
 							<img v-if="!!event.logo" :src="event.logo" :alt="`${event.event} logo`" width="30px" height="30px">
-							<img v-else :src="`/logo.png`" width="30px" height="30px" />
+							<img v-else src="/logo.png" width="30px" height="30px" />
 						</ClientOnly>
 						{{ currentEvent }}
 					</span>

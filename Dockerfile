@@ -13,7 +13,7 @@ RUN bun install
 COPY . ./
 
 # Build the project
-RUN bun --bun run build
+RUN bun run build
 
 # Build Stage 2
 
@@ -21,7 +21,7 @@ FROM oven/bun:latest AS production
 WORKDIR /app
 
 # Only `.output` folder is needed from the build stage
-COPY --from=build /app/.output/ ./
+COPY --from=build /app/src/.output/ ./
 
 # Change the port and host
 ENV PORT 1020
@@ -29,4 +29,4 @@ ENV HOST 0.0.0.0
 
 EXPOSE 1020
 
-ENTRYPOINT ["bun", "--bun", "run", "/app/server/index.mjs"]
+ENTRYPOINT ["bun", "run", "/app/server/index.mjs"]
