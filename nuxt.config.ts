@@ -26,7 +26,7 @@ export default defineNuxtConfig({
 		name: 'DashHack',
 	},
 	runtimeConfig: {
-		mongoUri: process.env.mongoUri,
+		mongoUri: process.env.mongoUri || process.env.MONGO_URI_LOCAL || 'mongodb://mongo:27017/dashhack_dev',
 		public: {
 			appVersion: packageJson.version,
 			buildTimestamp: new Date().toISOString(),
