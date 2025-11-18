@@ -30,7 +30,16 @@
             <Icon style="display: none;" name="heroicons:hand-raised-16-solid" />
             <Icon style="display: none;" name="heroicons:arrow-path-16-solid" />
             <!-- https://github.com/nuxt/icon/issues/376 -->
-            <Team v-for="(team, index) in data.teams" :key="index" :team="team" :notes="notes" :compact="compact" @edit="open" @delete="confirm" />
+            <Team v-for="(team, index) in data.teams" :key="index" 
+                :team="team" 
+                :notes="notes" 
+                :compact="compact" 
+                @edit="open" 
+                @delete="confirm"
+                @add-note="addStickyNote"
+                @update-note="updateStickyNote"
+                @delete-note="deleteStickyNote"
+            />
         </div>
 
         <button @click="open(false)" class="fixed bg-bluey-500 h-[80px] w-[80px] lg:right-[30px] lg:bottom-[30px] shadow-md cursor-pointer rounded-full flex items-center justify-center transition-colors duration-500 z-99 bottom-23 right-5">
@@ -40,6 +49,8 @@
 </template>
 
 <script setup>
+import { v4 as uuidv4 } from 'uuid';
+
 definePageMeta({
     layout: 'dashboard',
     middleware: ["routes"],
@@ -61,6 +72,8 @@ defineOgImageComponent('NuxtSeo', {
     theme: config.public.color,
     colorMode: 'dark',
 });
+
+const { showToast } = useToast();
 
 const openAddTeam = ref(false),
     openConfirm = ref(false),
@@ -90,6 +103,85 @@ async function close(added) {
     openAddTeam.value = false;
     openConfirm.value = false;
     selectedTeam.value = false;
-    if (added) data.value = (await $fetch(`/api/event/${currentEvent.value}`)).data;
+    if (added) {
+        const freshData = await $fetch(`/api/event/${currentEvent.value}`);
+        if (freshData && freshData.data) {
+            data.value = freshData.data;
+        }
+    }
+};
+
+const findTeamIndex = (teamName) => {
+    if (!data.value || !data.value.teams) return -1;
+    return data.value.teams.findIndex(t => t.name === teamName);
+}
+
+const saveTeamChanges = async (teamIndex, successMessage) => {
+    const team = data.value.teams[teamIndex];
+    if (!team) return;
+
+    try {
+        const response = await $fetch(`/api/team/edit`, {
+            method: 'PUT',
+            body: {
+                username: currentEvent.value,
+                oldName: team.name,
+                teamName: team.name,
+                teamColor: team.color,
+                teamGithub: team.github,
+                teamDescription: team.description,
+                stickyNotes: team.stickyNotes
+            }
+        });
+        if (response.status !== 200) {
+            throw new Error(response.message || 'Failed to save changes');
+        }
+        showToast("Success", successMessage, 2000);
+    } catch (error) {
+        console.error("Error saving team changes:", error);
+        showToast("Error saving changes!", error.message);
+        
+        const freshData = await $fetch(`/api/event/${currentEvent.value}`);
+        if (freshData && freshData.data) data.value = freshData.data;
+    }
+}
+
+const addStickyNote = (teamName) => {
+    const teamIndex = findTeamIndex(teamName);
+    if (teamIndex === -1) return;
+
+    const newNote = {
+        id: uuidv4(),
+        content: '',
+        color: '#ffeb3b',
+        priority: 'medium',
+        status: 'To Do'
+    };
+
+    if (!data.value.teams[teamIndex].stickyNotes) {
+        data.value.teams[teamIndex].stickyNotes = [];
+    }
+
+    data.value.teams[teamIndex].stickyNotes.push(newNote);
+    saveTeamChanges(teamIndex, "Note added.");
+};
+
+const updateStickyNote = ({ teamName, note: updatedNote }) => {
+    const teamIndex = findTeamIndex(teamName);
+    if (teamIndex === -1) return;
+
+    const noteIndex = data.value.teams[teamIndex].stickyNotes.findIndex(n => n.id === updatedNote.id);
+    if (noteIndex === -1) return;
+
+    data.value.teams[teamIndex].stickyNotes[noteIndex] = updatedNote;
+    saveTeamChanges(teamIndex, "Note updated.");
+};
+
+const deleteStickyNote = ({ teamName, noteId }) => {
+    const teamIndex = findTeamIndex(teamName);
+    if (teamIndex === -1) return;
+
+    data.value.teams[teamIndex].stickyNotes = data.value.teams[teamIndex].stickyNotes.filter(n => n.id !== noteId);
+    saveTeamChanges(teamIndex, "Note deleted.");
 };
 </script>

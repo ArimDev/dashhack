@@ -1,6 +1,6 @@
 <template>
     <ClientOnly>
-        <div :class="['max-h-100 rounded-3xl', { 'h-75': notes, 'h-50': !notes && !compact, 'h-45': !notes && compact }]" :style="{ backgroundColor: team.color }">
+        <div :class="['rounded-3xl', { 'h-50': !notes && !compact, 'h-45': !notes && compact }]" :style="{ backgroundColor: team.color }">
             <div :class="notes ? 'max-h-50 h-50 rounded-tr-3xl' : 'h-full rounded-r-3xl'" class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white ml-5 font-bold text-2xl px-[2%] flex transition-colors duration-500">
                 <div :class="compact ? 'w-[100%]' : 'w-[30%]'" class="py-[3%]">
                     <div class="flex flex-row items-center gap-3 mb-2">
@@ -35,7 +35,7 @@
                                     ...chartOptions.plotOptions
                                 },
                                 grid: {
-                                    ...chartOptions.grid,
+                                    ...chartOptions?.grid,
                                     padding: {
                                         top: 5,
                                         right: 5,
@@ -53,10 +53,25 @@
                     </div>
                 </div>
             </div>
-            <div v-show="notes" class="rounded-br-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-25 ml-5 font-normal text-lg px-[2%] transition-colors duration-500">
+            <div v-show="notes" class="rounded-br-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white min-h-[theme(spacing.25)] ml-5 font-normal text-lg px-[2%] py-4 transition-colors duration-500">
                 <div class="h-full" style="position: relative; top: -40px;">
                     <h2 class="text-xl font-bold">Notes:</h2>
-                    <MDC class="text-sm font-normal w-full break-words h-full bg-zinc-300 dark:bg-gray-900 rounded-2xl p-2 transition-colors duration-500" :value="team.notes" />
+                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
+                        <StickyNote
+                            v-for="note in team.stickyNotes || []"
+                            :key="note.id"
+                            :note="note"
+                            @update="note => $emit('update-note', { teamName: team.name, note })"
+                            @delete="noteId => $emit('delete-note', { teamName: team.name, noteId })"
+                        />
+                        <button 
+                            @click="emit('add-note', team.name)" 
+                            class="h-32 p-3 rounded-lg border-2 border-dashed border-gray-400 dark:border-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-bluey-500 dark:hover:text-bluey-400 hover:border-bluey-500 dark:hover:border-bluey-400 transition-colors duration-200"
+                            title="Add new note"
+                        >
+                            <Icon name="heroicons:plus-20-solid" size="40px" />
+                        </button>
+                    </div>
                 </div>
             </div>
         </div>
@@ -65,7 +80,7 @@
 
 <script setup>
 const { showToast } = useToast();
-const emit = defineEmits(["edit", "delete"]);
+const emit = defineEmits(["edit", "delete", "add-note", "update-note", "delete-note"]);
 const props = defineProps({
     team: Object,
     notes: Boolean,
