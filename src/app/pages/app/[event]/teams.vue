@@ -114,7 +114,7 @@ async function close(added) {
 const findTeamIndex = (teamName) => {
     if (!data.value || !data.value.teams) return -1;
     return data.value.teams.findIndex(t => t.name === teamName);
-}
+};
 
 const saveTeamChanges = async (teamIndex, successMessage) => {
     const team = data.value.teams[teamIndex];
@@ -140,11 +140,11 @@ const saveTeamChanges = async (teamIndex, successMessage) => {
     } catch (error) {
         console.error("Error saving team changes:", error);
         showToast("Error saving changes!", error.message);
-        
+
         const freshData = await $fetch(`/api/event/${currentEvent.value}`);
         if (freshData && freshData.data) data.value = freshData.data;
     }
-}
+};
 
 const addStickyNote = (teamName) => {
     const teamIndex = findTeamIndex(teamName);

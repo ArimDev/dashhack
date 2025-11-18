@@ -37,9 +37,9 @@ const editablePriority = ref(props.note.priority);
 const editableColor = ref(props.note.color || '#ffeb3b');
 
 watch(() => props.note, (newNote) => {
-  editableContent.value = newNote.content;
-  editablePriority.value = newNote.priority;
-  editableColor.value = newNote.color || '#ffeb3b';
+    editableContent.value = newNote.content;
+    editablePriority.value = newNote.priority;
+    editableColor.value = newNote.color || '#ffeb3b';
 }, { deep: true });
 
 const updateNote = () => {
@@ -54,7 +54,7 @@ const updateNote = () => {
 const updateNoteColor = (event) => {
     editableColor.value = event.target.value;
     updateNote();
-}
+};
 </script>
 
 <style scoped>
@@ -66,9 +66,11 @@ input[type="color"] {
     border-radius: 50%;
     padding: 0;
 }
+
 input[type="color"]::-webkit-color-swatch-wrapper {
     padding: 0;
 }
+
 input[type="color"]::-webkit-color-swatch {
     border: none;
     border-radius: 50%;

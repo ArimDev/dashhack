@@ -84,14 +84,14 @@ async function teamSubmit() {
 	};
 
 	if (edit.value) {
-        const existingNotes = props.team?.stickyNotes || [];
+		const existingNotes = props.team?.stickyNotes || [];
 		let data = await $fetch(`/api/team/edit/`, {
 			method: "PUT",
-			body: { 
-                oldName: oldName.value, 
-                ...teamData,
-                stickyNotes: existingNotes
-            }
+			body: {
+				oldName: oldName.value,
+				...teamData,
+				stickyNotes: existingNotes
+			}
 		});
 
 		if (!data || data.status !== 200) {
@@ -117,7 +117,7 @@ async function teamSubmit() {
 			showToast("Failed to add a team!", data?.message);
 		} else {
 			emit('close', true);
-			
+
 			teamName.value = "",
 				teamGithub.value = "",
 				teamDescription.value = "";
