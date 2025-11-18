@@ -20,9 +20,6 @@
 					<div>
 						<input v-model="teamDescription" class="mb-4 p-3 border-2 h-[50px] border-black dark:border-white rounded-xl text-sm font-semibold w-full trans-all-linear dark:placeholder-slate-300" name="teamDescription" placeholder="Team Description" />
 					</div>
-					<div>
-						<textarea v-model="teamNotes" class="mb-4 p-3 border-2 min-h-[50px] h-[150px] max-h-[200px] border-black dark:border-white rounded-xl text-sm font-semibold w-full trans-all-linear dark:placeholder-slate-300" name="teamNotes" placeholder="Team Notes"></textarea>
-					</div>
 				</div>
 
 				<div class="flex justify-between gap-70 flex-row">
@@ -58,8 +55,7 @@ const oldName = ref(""),
 	teamName = ref(props.team?.name || ""),
 	teamGithub = ref(props.team?.github || ""),
 	teamColor = ref(props.team?.color || "#3081E0"),
-	teamDescription = ref(props.team?.description || ""),
-	teamNotes = ref(props.team?.notes || "");
+	teamDescription = ref(props.team?.description || "");
 
 const edit = computed(() => !!props.team);
 
@@ -69,14 +65,12 @@ watch(() => props.team, function (newTeam) {
 			teamName.value = newTeam.name || "",
 			teamGithub.value = newTeam.github || "",
 			teamColor.value = newTeam.color || "#3081E0",
-			teamDescription.value = newTeam.description || "",
-			teamNotes.value = newTeam.notes || "";
+			teamDescription.value = newTeam.description || "";
 	} else {
 		teamName.value = "",
 			teamGithub.value = "",
 			teamColor.value = "#3081E0",
-			teamDescription.value = "",
-			teamNotes.value = "";
+			teamDescription.value = "";
 	}
 }, { immediate: true });
 
@@ -87,13 +81,17 @@ async function teamSubmit() {
 		teamGithub: teamGithub.value,
 		teamColor: teamColor.value,
 		teamDescription: teamDescription.value,
-		teamNotes: teamNotes.value,
 	};
 
 	if (edit.value) {
+		const existingNotes = props.team?.stickyNotes || [];
 		let data = await $fetch(`/api/team/edit/`, {
 			method: "PUT",
-			body: { oldName: oldName.value, ...teamData }
+			body: {
+				oldName: oldName.value,
+				...teamData,
+				stickyNotes: existingNotes
+			}
 		});
 
 		if (!data || data.status !== 200) {
@@ -105,8 +103,7 @@ async function teamSubmit() {
 
 			teamName.value = "",
 				teamGithub.value = "",
-				teamDescription.value = "",
-				teamNotes.value = "";
+				teamDescription.value = "";
 		}
 	} else {
 		let data = await $fetch(`/api/team/add`, {
@@ -123,8 +120,7 @@ async function teamSubmit() {
 
 			teamName.value = "",
 				teamGithub.value = "",
-				teamDescription.value = "",
-				teamNotes.value = "";
+				teamDescription.value = "";
 		};
 	};
 };

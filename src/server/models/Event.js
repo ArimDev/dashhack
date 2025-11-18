@@ -1,6 +1,14 @@
 import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
+const StickyNoteSchema = new mongoose.Schema({
+	id: { type: String, required: true, unique: true },
+	content: { type: String, default: '' },
+	color: { type: String, default: '#ffeb3b' },
+	priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+	status: { type: String, default: 'To Do' }
+});
+
 const EventSchema = new mongoose.Schema({
 	event: { type: String, unique: true, required: true, },
 	logo: { type: String, required: false, },
@@ -15,7 +23,7 @@ const EventSchema = new mongoose.Schema({
 			color: { type: String, required: true, },
 			description: { type: String, required: false, },
 			github: { type: String, required: false, },
-			notes: { type: String, required: false, },
+			stickyNotes: [StickyNoteSchema],
 		},
 	],
 }, { timestamps: true });

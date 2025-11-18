@@ -23,7 +23,7 @@ export default defineEventHandler(async (event) => {
     }
 
     const body = await readBody(event);
-    const { username, teamName, teamColor, teamGithub, teamDescription, teamNotes } = body;
+    const { username, teamName, teamColor, teamGithub, teamDescription } = body;
 
     const existingEvent = await Event.findOne({ event: username });
 
@@ -40,7 +40,7 @@ export default defineEventHandler(async (event) => {
         color: teamColor,
         github: teamGithub,
         description: teamDescription,
-        notes: teamNotes,
+        stickyNotes: [],
     });
 
     await existingEvent.save();
