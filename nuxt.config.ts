@@ -20,6 +20,9 @@ export default defineNuxtConfig({
 	devServer: {
 		port: 5002,
 	},
+	nitro: {
+		preset: "bun",
+	},
 
 	site: {
 		url: process.env.url,
@@ -54,7 +57,6 @@ export default defineNuxtConfig({
 	},
 
 	fonts: {
-		provider: 'google',
 		families: [
 			{ name: 'Public Sans', provider: 'google' },
 		],
@@ -69,7 +71,7 @@ export default defineNuxtConfig({
 	},
 
 	css: [
-		"/assets/css/main.css",
+		"~/assets/css/main.css",
 	],
 
 	vite: {

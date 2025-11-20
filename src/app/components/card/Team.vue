@@ -49,7 +49,7 @@
                     </ClientOnly>
                     <div v-else class="w-full h-full flex text-center justify-center items-center">
                         <p v-if="!team.github" class="text-xs font-normal italic">Include GitHub URL to see activity chart.</p>
-                        <p v-else-if="!chartDisplay" class="text-xs font-normal italic">Invalid GitHub token.</p>
+                        <p v-else-if="!chartDisplay" class="text-xs font-normal italic">{{ chartReason }}</p>
                     </div>
                 </div>
             </div>
@@ -92,7 +92,8 @@ const eventName = ref(route.params.event);
 const series = ref(null),
     chartOptions = ref(null),
     chartLoading = ref(true),
-    chartDisplay = ref(false);
+    chartDisplay = ref(false),
+    chartReason = ref("Unknown error!");
 
 const { getSeries } = useGithubSeries(eventName.value);
 
@@ -103,13 +104,14 @@ onMounted(async () => {
         if (!event?.settings?.githubToken) {
             showToast("Failed contact GitHub API!", "GitHub Token is missing to fetch charts.");
             return chartDisplay.value = false,
-                chartLoading.value = false;
+                chartLoading.value = false,
+                chartReason.value = "GitHub Token is missing!";
         } else {
             const res = await getSeries(props.team.github);
             if (res.status !== 200) {
-                console.log("x");
                 return chartDisplay.value = false,
-                    chartLoading.value = false;
+                    chartLoading.value = false,
+                    chartReason.value = res.message;
             }
 
             //Reverse the data to show the oldest data on the left side

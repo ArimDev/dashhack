@@ -1,14 +1,13 @@
 @import "tailwindcss";
 
-* {
+html {
     font-family: "Public Sans", monospace;
 }
 
 @custom-variant dark (&:where(.dark, .dark *));
 
 @theme {
-    --font-sans: "Public Sans", monospace;
-    --font-display: "Public Sans", monospace;
+    --font-display: "Public Sans", "monospace";
     --color-bluey-50: #e3f4ff;
     --color-bluey-100: #b3d9ff;
     --color-bluey-200: #80bfff;

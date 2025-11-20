@@ -19,11 +19,11 @@ export default async function githubSeries(_url, event) {
         };
 
         try {
-            const response = await $fetch(url, options);
+            const response = await $fetch(url, options)
             reqs++;
             return response;
         } catch (error) {
-            return { status: 500, message: "Something went wrong with GitHub API!", reqs };
+            return { status: 500, message: error.response._data.message, reqs };
         }
     }
 
@@ -52,8 +52,8 @@ export default async function githubSeries(_url, event) {
     try {
         const commitsData = await getRequest(url, headers);
 
-        if (!Array.isArray(commitsData)) {
-            return { status: 500, message: "Invalid response from GitHub API", reqs };
+        if (commitsData.status && commitsData.status !== 200 || !Array.isArray(commitsData)) {
+            return { status: commitsData.status, message: commitsData.message, reqs };
         }
 
         for (const commit of commitsData) {
