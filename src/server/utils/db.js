@@ -11,5 +11,7 @@ export async function connectDB() {
 	await mongoose.connect(config.mongoUri, clientOptions);
 
 	isConnected = true;
+	//TODO: Bug, we dont handle error when connecting
+	
 	console.log("> ✅ MongoDB connected!");
 }
