@@ -27,3 +27,5 @@ logs
 
 # Development
 .vscode/
+test-results/
+playwright-report/

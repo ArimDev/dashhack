@@ -1,27 +1,52 @@
 <template>
     <ClientOnly>
-        <div :class="['rounded-3xl', { 'h-50': !notes && !compact, 'h-45': !notes && compact }]" :style="{ backgroundColor: team.color }">
-            <div :class="notes ? 'max-h-50 h-50 rounded-tr-3xl' : 'h-full rounded-r-3xl'" class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white ml-5 font-bold text-2xl px-[2%] flex transition-colors duration-500">
-                <div :class="compact ? 'w-[100%]' : 'w-[30%]'" class="py-[3%]">
-                    <div class="flex flex-row items-center gap-3 mb-2">
-                        <h1 class="text-3xl font-bold">{{ team.name }}</h1>
-                        <div class="flex flex-row items-center gap-1 z-[1]">
-                            <button @click="emit('edit', team)" class="cursor-pointer flex flex-row items-center transition-transform duration-300 ease-in-out hover:scale-120">
-                                <Icon name="heroicons:pencil-square-20-solid" size="25px" :style="{ color: team.color }" />
-                            </button>
-                            <button @click="emit('delete', team)" class="cursor-pointer flex flex-row items-center transition-transform duration-300 ease-in-out hover:scale-120">
-                                <Icon name="heroicons:trash" size="24px" :style="{ color: team.color }" style="margin-bottom: 2px;" />
-                            </button>
-                        </div>
-                    </div>
-                    <MDC class="text-base font-normal w-full break-words max-h-[132px] h-[132px] overflow-hidden" :value="team.description" />
+        <div class="rounded-2xl overflow-hidden shadow-lg transition-all duration-300 bg-white dark:bg-gray-800 border-l-8" :style="{ borderLeftColor: team.color }">
+            
+            <div class="p-4 flex items-center justify-between bg-white dark:bg-gray-800">
+                <div class="flex flex-col">
+                    <h1 class="text-2xl font-bold text-gray-900 dark:text-gray-100">{{ team.name }}</h1>
+                    <p v-if="!showGraph && !showNotes" class="text-sm text-gray-500 dark:text-gray-400 truncate max-w-md">{{ team.description }}</p>
                 </div>
-                <div v-show="!compact" class="w-[70%] h-full flex items-center justify-center">
-                    <div v-if="chartLoading" class="w-full h-full flex text-center justify-center items-center">
-                        <p class="text-xs font-normal italic">Loading chart...</p>
+
+                <div class="flex items-center gap-2">
+                    <button 
+                        @click="toggleGraph" 
+                        class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        :class="{ 'text-bluey-500 bg-bluey-50 dark:bg-bluey-900/30': showGraph, 'text-gray-400': !showGraph }"
+                        title="Toggle Activity Graph"
+                    >
+                        <Icon name="heroicons:presentation-chart-line" size="24px" />
+                    </button>
+
+                    <button 
+                        @click="toggleNotes" 
+                        class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
+                        :class="{ 'text-bluey-500 bg-bluey-50 dark:bg-bluey-900/30': showNotes, 'text-gray-400': !showNotes }"
+                        title="Toggle Sticky Notes"
+                    >
+                        <Icon name="heroicons:document-text" size="24px" />
+                    </button>
+
+                    <div class="w-px h-6 bg-gray-300 dark:bg-gray-600 mx-1"></div>
+
+                    <button @click="emit('edit', team)" class="p-2 text-gray-500 hover:text-bluey-500 transition-colors">
+                        <Icon name="heroicons:pencil-square-20-solid" size="20px" />
+                    </button>
+
+                    <button @click="emit('delete', team)" class="p-2 text-gray-500 hover:text-red-500 transition-colors">
+                        <Icon name="heroicons:trash" size="20px" />
+                    </button>
+                </div>
+            </div>
+
+            <div v-if="showGraph" class="border-t border-gray-200 dark:border-gray-700 p-4 bg-gray-50 dark:bg-gray-900/50">
+                 <div class="h-64 w-full flex items-center justify-center">
+                    <div v-if="chartLoading" class="text-center text-gray-500 italic flex flex-col items-center gap-2">
+                        <Icon name="heroicons:arrow-path" class="animate-spin" size="24px"/>
+                        <span>Loading GitHub Data...</span>
                     </div>
                     <ClientOnly v-else-if="!!team.github && !!chartDisplay">
-                        <div class="w-full h-full pt-8 pb-1 px-1">
+                        <div class="w-full h-full">
                             <apexchart height="100%" width="100%" type="area" :options="{
                                 ...chartOptions,
                                 colors: [team.color],
@@ -29,151 +54,139 @@
                                     ...chartOptions.chart,
                                     height: '100%',
                                     width: '100%',
-                                    parentHeightOffset: 0
+                                    background: 'transparent'
                                 },
-                                plotOptions: {
-                                    ...chartOptions.plotOptions
-                                },
-                                grid: {
-                                    ...chartOptions?.grid,
-                                    padding: {
-                                        top: 5,
-                                        right: 5,
-                                        bottom: 5,
-                                        left: 5
-                                    }
-                                }
+                                grid: { padding: { top: 0, right: 0, bottom: 0, left: 10 } }
                             }" :series="series">
                             </apexchart>
                         </div>
                     </ClientOnly>
-                    <div v-else class="w-full h-full flex text-center justify-center items-center">
-                        <p v-if="!team.github" class="text-xs font-normal italic">Include GitHub URL to see activity chart.</p>
-                        <p v-else-if="!chartDisplay" class="text-xs font-normal italic">{{ chartReason }}</p>
+                    <div v-else class="text-center text-gray-500 italic">
+                        <p v-if="!team.github">No GitHub URL provided.</p>
+                        <p v-else>Unable to load chart data: {{ chartReason }}</p>
                     </div>
                 </div>
             </div>
-            <div v-show="notes" class="rounded-br-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white min-h-[theme(spacing.25)] ml-5 font-normal text-lg px-[2%] py-4 transition-colors duration-500">
-                <div class="h-full" style="position: relative; top: -40px;">
-                    <h2 class="text-xl font-bold">Notes:</h2>
-                    <div class="grid grid-cols-2 md:grid-cols-4 gap-3 mt-4">
-                        <StickyNote
-                            v-for="note in team.stickyNotes || []"
-                            :key="note.id"
-                            :note="note"
-                            @update="note => $emit('update-note', { teamName: team.name, note })"
-                            @delete="noteId => $emit('delete-note', { teamName: team.name, noteId })"
-                        />
-                        <button 
-                            @click="emit('add-note', team.name)" 
-                            class="h-32 p-3 rounded-lg border-2 border-dashed border-gray-400 dark:border-gray-600 flex items-center justify-center text-gray-500 dark:text-gray-400 hover:text-bluey-500 dark:hover:text-bluey-400 hover:border-bluey-500 dark:hover:border-bluey-400 transition-colors duration-200"
-                            title="Add new note"
-                        >
-                            <Icon name="heroicons:plus-20-solid" size="40px" />
-                        </button>
-                    </div>
+
+            <div v-if="showNotes" class="border-t border-gray-200 dark:border-gray-700 p-6 bg-gray-100 dark:bg-gray-900">
+                <div class="flex justify-between items-center mb-4">
+                    <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-300">Team Notes</h2>
+                     <button 
+                        @click="emit('add-note', team.name)" 
+                        class="flex items-center gap-2 px-4 py-2 bg-bluey-500 text-white rounded-full hover:bg-bluey-600 transition-colors shadow-sm text-sm font-bold"
+                    >
+                        <Icon name="heroicons:plus" size="16px" />
+                        Add Note
+                    </button>
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 grid-flow-dense">
+                    <StickyNote
+                        v-for="note in team.stickyNotes || []"
+                        :key="note.id"
+                        :note="note"
+                        :class="{ 'md:col-span-2': note.content && note.content.length > 100, 'row-span-2': note.content && note.content.length > 200 }" 
+                        @update="note => $emit('update-note', { teamName: team.name, note })"
+                        @delete="noteId => $emit('delete-note', { teamName: team.name, noteId })"
+                    />
+                </div>
+                 <div v-if="(!team.stickyNotes || team.stickyNotes.length === 0)" class="text-center py-8 text-gray-400">
+                    No notes yet. Click "Add Note" to start.
                 </div>
             </div>
+
         </div>
     </ClientOnly>
 </template>
 
 <script setup>
-const { showToast } = useToast();
+// Note: StickyNote is auto-imported by Nuxt
+
 const emit = defineEmits(["edit", "delete", "add-note", "update-note", "delete-note"]);
 const props = defineProps({
     team: Object,
-    notes: Boolean,
-    compact: Boolean,
+    // notes/compact props removed as they are handled internally per card now
 });
+
+const showGraph = ref(false);
+const showNotes = ref(false);
 const route = useRoute();
 const eventName = ref(route.params.event);
-
-const series = ref(null),
-    chartOptions = ref(null),
-    chartLoading = ref(true),
-    chartDisplay = ref(false),
-    chartReason = ref("Unknown error!");
-
 const { getSeries } = useGithubSeries(eventName.value);
 
-onMounted(async () => {
-    if (props.team.github) {
-        const event = (await $fetch(`/api/event/${eventName.value}`)).data;
+// Chart state
+const series = ref(null);
+const chartOptions = ref(null);
+const chartLoading = ref(false);
+const chartDisplay = ref(false);
+const chartLoadedOnce = ref(false);
+const chartReason = ref("Unknown error");
 
-        if (!event?.settings?.githubToken) {
-            showToast("Failed contact GitHub API!", "GitHub Token is missing to fetch charts.");
-            return chartDisplay.value = false,
-                chartLoading.value = false,
-                chartReason.value = "GitHub Token is missing!";
+function toggleNotes() {
+    showNotes.value = !showNotes.value;
+}
+
+async function toggleGraph() {
+    showGraph.value = !showGraph.value;
+    
+    // Only load data if opening and haven't loaded yet
+    if (showGraph.value && !chartLoadedOnce.value) {
+        await loadChartData();
+    }
+}
+
+async function loadChartData() {
+    if (!props.team.github) return;
+    
+    chartLoading.value = true;
+    
+    try {
+        const res = await getSeries(props.team.github);
+        if (res.status !== 200) {
+            chartDisplay.value = false;
+            chartReason.value = res.message || "Failed to fetch data";
         } else {
-            const res = await getSeries(props.team.github);
-            if (res.status !== 200) {
-                return chartDisplay.value = false,
-                    chartLoading.value = false,
-                    chartReason.value = res.message;
-            }
-
-            //Reverse the data to show the oldest data on the left side
             const commitData = res.commits.slice().reverse();
             const diffData = res.diff.slice().reverse();
             const hours = res.hours.slice().reverse();
 
             series.value = [
-                {
-                    name: "Commits",
-                    type: "line",
-                    data: commitData,
-                },
-                {
-                    name: "Lines",
-                    type: "area",
-                    data: diffData,
-                },
+                { name: "Commits", type: "line", data: commitData },
+                { name: "Lines", type: "area", data: diffData },
             ];
 
             chartOptions.value = {
                 colors: [props.team.color],
                 chart: {
-                    zoom: { enabled: true },
-                    toolbar: {
-                        show: true,
-                        offsetX: 0,
-                        offsetY: 0,
-                        tools: {
-                            download: false,
-                            selection: true,
-                            zoom: `<span class="z-1 relative iconify i-heroicons:arrows-pointing-out-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
-                            zoomin: `<span class="z-1 relative iconify i-heroicons:magnifying-glass-plus-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
-                            zoomout: `<span class="z-1 relative iconify i-heroicons:magnifying-glass-minus-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
-                            pan: `<span class="z-1 relative iconify i-heroicons:hand-raised-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
-                            reset: `<span class="z-1 relative iconify i-heroicons:arrow-path-16-solid" aria-hidden="true" style="font-size: 30px; color: ${props.team.color};"></span>`,
-                        },
-                        style: {
-                            z: 1,
-                        },
-                    }
+                    zoom: { enabled: false },
+                    toolbar: { show: false },
+                    fontFamily: 'inherit'
                 },
-                dataLabels: {
-                    enabled: false,
-                },
-                xaxis: {
+                stroke: { curve: 'smooth', width: 2 },
+                dataLabels: { enabled: false },
+                xaxis: { 
                     categories: hours,
+                    labels: { show: false },
+                    axisBorder: { show: false },
+                    axisTicks: { show: false }
                 },
-                legend: {
-                    show: false,
-                },
-                tooltip: {
-                    enabled: true,
-                }
+                yaxis: { show: false },
+                legend: { show: true, position: 'top' },
+                tooltip: { theme: 'dark' },
+                grid: { show: false }
             };
 
-            return chartDisplay.value = true,
-                chartLoading.value = false;
+            chartDisplay.value = true;
+            chartLoadedOnce.value = true;
         }
-    } else return chartDisplay.value = false,
+    } catch (e) {
+        console.error(e);
+        chartDisplay.value = false;
+        chartReason.value = "Network or parsing error";
+    } finally {
         chartLoading.value = false;
-});
+    }
+}
 </script>
 
 <style>
