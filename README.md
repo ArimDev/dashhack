@@ -34,6 +34,42 @@ Over time, **DashHack** got more generic and currently, it can be used for any h
 3. bun run dev
 ```
 
+### 💻 Run Locally with local DB (Development)
+
+```
+# set up .env file for local DB (example)
+MONGO_URI_LOCAL=mongodb://127.0.0.1:27017/dashhack_dev
+url=https://localhost
+discord=https://discord.com/invite/<code>
+webPort=6464
+
+# install packages
+npm install
+
+# start DB
+docker compose --env-file .env -f docker-compose.dev.yml up
+
+# configure VScode for debugger (.vscode/launch.json)
+{
+  "version": "0.2.0",
+  "configurations": [
+    {
+      "type": "node",
+      "request": "launch",
+      "name": "Debug Nuxt (Node)",
+      "runtimeExecutable": "npm",
+      "runtimeArgs": ["run", "dev"],
+      "cwd": "${workspaceFolder}",
+      "console": "integratedTerminal",
+      "envFile": "${workspaceFolder}/.env",
+      "skipFiles": [
+        "<node_internals>/**"
+      ]
+    }
+  ]
+}
+```
+
 ### 🏗️ Build for Production
 
 ```

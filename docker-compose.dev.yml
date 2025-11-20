@@ -1,21 +1,4 @@
 services:
-  dashhack:
-    image: dashhack
-    build:
-      context: .
-      args:
-        webPort: ${webPort}
-    container_name: dashhack
-    restart: unless-stopped
-    env_file:
-      - .env.dev
-    ports:
-      - "${webPort}:${webPort}"
-    networks:
-      - NuxtEr
-    depends_on:
-      - mongo
-
   mongo:
     image: mongo:latest
     container_name: dashhack-mongo
