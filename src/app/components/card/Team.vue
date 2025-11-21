@@ -1,6 +1,6 @@
 <template>
     <ClientOnly>
-        <div class="rounded-2xl overflow-hidden shadow-lg transition-all duration-300 bg-white dark:bg-gray-800 border-l-8" :style="{ borderLeftColor: team.color }">
+        <div :data-testid="`team-card-${team.name}`" class="rounded-2xl overflow-hidden shadow-lg transition-all duration-300 bg-white dark:bg-gray-800 border-l-8" :style="{ borderLeftColor: team.color }">
             
             <div class="p-4 flex items-center justify-between bg-white dark:bg-gray-800">
                 <div class="flex flex-col">
@@ -10,6 +10,7 @@
 
                 <div class="flex items-center gap-2">
                     <button 
+                        data-testid="toggle-graph-btn"
                         @click="toggleGraph" 
                         class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         :class="{ 'text-bluey-500 bg-bluey-50 dark:bg-bluey-900/30': showGraph, 'text-gray-400': !showGraph }"
@@ -19,6 +20,7 @@
                     </button>
 
                     <button 
+                        data-testid="toggle-notes-btn"
                         @click="toggleNotes" 
                         class="p-2 rounded-full hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors"
                         :class="{ 'text-bluey-500 bg-bluey-50 dark:bg-bluey-900/30': showNotes, 'text-gray-400': !showNotes }"
@@ -71,13 +73,6 @@
             <div v-if="showNotes" class="border-t border-gray-200 dark:border-gray-700 p-6 bg-gray-100 dark:bg-gray-900">
                 <div class="flex justify-between items-center mb-4">
                     <h2 class="text-lg font-semibold text-gray-700 dark:text-gray-300">Team Notes</h2>
-                     <button 
-                        @click="emit('add-note', team.name)" 
-                        class="flex items-center gap-2 px-4 py-2 bg-bluey-500 text-white rounded-full hover:bg-bluey-600 transition-colors shadow-sm text-sm font-bold"
-                    >
-                        <Icon name="heroicons:plus" size="16px" />
-                        Add Note
-                    </button>
                 </div>
 
                 <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4 grid-flow-dense">
@@ -89,9 +84,16 @@
                         @update="note => $emit('update-note', { teamName: team.name, note })"
                         @delete="noteId => $emit('delete-note', { teamName: team.name, noteId })"
                     />
-                </div>
-                 <div v-if="(!team.stickyNotes || team.stickyNotes.length === 0)" class="text-center py-8 text-gray-400">
-                    No notes yet. Click "Add Note" to start.
+                    
+                    <button 
+                        data-testid="add-note-btn"
+                        @click="emit('add-note', team.name)" 
+                        class="h-full min-h-[160px] p-4 rounded-xl border-2 border-dashed border-gray-300 dark:border-gray-700 flex flex-col items-center justify-center text-gray-400 dark:text-gray-500 hover:text-bluey-500 dark:hover:text-bluey-400 hover:border-bluey-500 dark:hover:border-bluey-400 hover:bg-bluey-50/50 dark:hover:bg-bluey-900/20 transition-all duration-200 group"
+                        title="Add new note"
+                    >
+                        <Icon name="heroicons:plus" size="32px" class="group-hover:scale-110 transition-transform" />
+                        <span class="text-sm font-semibold mt-2">Add Note</span>
+                    </button>
                 </div>
             </div>
 
@@ -100,12 +102,9 @@
 </template>
 
 <script setup>
-// Note: StickyNote is auto-imported by Nuxt
-
 const emit = defineEmits(["edit", "delete", "add-note", "update-note", "delete-note"]);
 const props = defineProps({
     team: Object,
-    // notes/compact props removed as they are handled internally per card now
 });
 
 const showGraph = ref(false);
@@ -129,7 +128,6 @@ function toggleNotes() {
 async function toggleGraph() {
     showGraph.value = !showGraph.value;
     
-    // Only load data if opening and haven't loaded yet
     if (showGraph.value && !chartLoadedOnce.value) {
         await loadChartData();
     }
@@ -190,28 +188,8 @@ async function loadChartData() {
 </script>
 
 <style>
-p a {
-    color: var(--color-bluey-500);
-    text-decoration: underline;
-}
-
-.apexcharts-selected * {
-    color: #3081e0 !important;
-    background-color: #3081e0 !important;
-    stroke: #3081e0 !important;
-}
-
 .apexcharts-menu-icon,
-.apexcharts-pan-icon,
-.apexcharts-reset-icon,
-.apexcharts-selection-icon,
-.apexcharts-toolbar-custom-icon,
-.apexcharts-zoom-icon,
-.apexcharts-zoomin-icon,
-.apexcharts-zoomout-icon {
+.apexcharts-reset-icon {
     transform: scale(1) !important;
-    margin-top: -10px !important;
-    width: 30px !important;
-    height: 30px !important;
 }
 </style>

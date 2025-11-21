@@ -2,11 +2,11 @@ import mongoose from 'mongoose';
 import bcrypt from 'bcrypt';
 
 const StickyNoteSchema = new mongoose.Schema({
-	id: { type: String, required: true, unique: true },
-	content: { type: String, default: '' },
-	color: { type: String, default: '#ffeb3b' },
-	priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
-	status: { type: String, default: 'To Do' }
+    id: { type: String, required: true, unique: true, sparse: true }, 
+    content: { type: String, default: '' },
+    color: { type: String, default: '#ffeb3b' },
+    priority: { type: String, enum: ['low', 'medium', 'high'], default: 'medium' },
+    status: { type: String, default: 'To Do' }
 });
 
 const EventSchema = new mongoose.Schema({

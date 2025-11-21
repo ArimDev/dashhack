@@ -4,6 +4,7 @@
         :style="{ backgroundColor: note.color }"
     >
         <textarea
+            data-testid="note-content"
             ref="textarea"
             v-model="editableContent"
             @input="autoResize"
@@ -40,7 +41,7 @@
                 </div>
             </div>
 
-            <button @click="$emit('delete', note.id)" class="text-black/40 hover:text-red-600 transition-colors p-1" title="Delete note">
+            <button data-testid="delete-note-btn" @click="$emit('delete', note.id)" class="text-black/40 hover:text-red-600 transition-colors p-1" title="Delete note">
                 <Icon name="heroicons:trash" size="18px" />
             </button>
         </div>
@@ -65,7 +66,7 @@ watch(() => props.note, (newNote) => {
   editableContent.value = newNote.content;
   editablePriority.value = newNote.priority;
   editableColor.value = newNote.color || '#ffeb3b';
-  nextTick(autoResize); // Resize when data changes externally
+  nextTick(autoResize);
 }, { deep: true });
 
 onMounted(() => {

@@ -26,7 +26,7 @@
             />
         </div>
 
-        <button @click="open(false)" class="fixed bg-bluey-500 hover:bg-bluey-600 h-16 w-16 shadow-lg cursor-pointer rounded-full flex items-center justify-center transition-all duration-300 z-50 bottom-8 right-8 hover:scale-110 hover:rotate-90">
+        <button data-testid="add-team-fab" @click="open(false)" class="fixed bg-bluey-500 hover:bg-bluey-600 h-16 w-16 shadow-lg cursor-pointer rounded-full flex items-center justify-center transition-all duration-300 z-50 bottom-8 right-8 hover:scale-110 hover:rotate-90">
             <Icon name="heroicons:plus" size="32px" class="text-white" />
         </button>
     </ClientOnly>

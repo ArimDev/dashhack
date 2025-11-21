@@ -8,10 +8,10 @@
 			</div>
 			<form @submit="open" class="pt-10 flex items-center flex-col">
 				<div class="flex gap-3 sm:gap-10 flex-col sm:flex-row">
-					<input @input="checkEventFree" v-model="credentials.user" required type="username" placeholder="Event Name" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4" />
-					<input @focus="clearSubmit" v-model="credentials.pass" type="password" autocomplete="current-password" placeholder="Password" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4">
+					<input data-testid="username-input" @input="checkEventFree" v-model="credentials.user" required type="username" placeholder="Event Name" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4" />
+					<input data-testid="password-input" @focus="clearSubmit" v-model="credentials.pass" type="password" autocomplete="current-password" placeholder="Password" class="text-xl rounded-lg bg-zinc-300 w-72 h-16 text-zinc-800 placeholder-zinc-800 text-center font-bold py-2 px-4">
 				</div>
-				<button type="submit" :class="`cursor-pointer text-xl font-bold mt-10 rounded-full w-85 sm:w-72 h-16 transition-colors duration-500 ${submitClass}`">{{ submitText }}</button>
+				<button data-testid="login-button" type="submit" :class="`cursor-pointer text-xl font-bold mt-10 rounded-full w-85 sm:w-72 h-16 transition-colors duration-500 ${submitClass}`">{{ submitText }}</button>
 			</form>
 		</div>
 
