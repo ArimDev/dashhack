@@ -7,7 +7,14 @@
                     <h1 class="text-left text-3xl font-bold">{{ props.subject }}</h1>
                 </div>
 
-                <div class="text-xl" v-html="message"></div>
+                <div class="text-xl">
+                    <template v-if="!!props.team">
+                        {{ messageBeforeTeam }}<strong>{{ props.team.name }}</strong>{{ messageAfterTeam }}
+                    </template>
+                    <template v-else>
+                        {{ props.message }}
+                    </template>
+                </div>
 
                 <div class="flex justify-between gap-70 flex-row">
                     <button @click="emit('close', false)" class="cursor-pointer rounded-full bg-zinc-300 w-full h-[56px] text-xl font-bold text-black">
@@ -34,11 +41,16 @@ const props = defineProps({
     },
 });
 
-const message = computed(() => {
-    if (!!props.team)
-        return props.message.replace("$var", `<strong>${props.team.name}</strong>`);
-    else
-        return props.message;
+const messageBeforeTeam = computed(() => {
+    if (!props.team) return '';
+    const parts = props.message.split('$var');
+    return parts[0] || '';
+});
+
+const messageAfterTeam = computed(() => {
+    if (!props.team) return '';
+    const parts = props.message.split('$var');
+    return parts[1] || '';
 });
 
 const route = useRoute();

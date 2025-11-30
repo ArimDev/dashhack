@@ -32,7 +32,7 @@
 				<a href="" class="hover:text-bluey-500 dark:hover:text-bluey-500 dark:text-white transition-colors duration-500">Terms of Use</a>
 			</div>
 			<div>
-				<p class="dark:text-white transition-colors duration-500">&copy; 2025 <a href="" class="hover:text-bluey-500">ArimDev</a></p> <!-- TODO: Add URL -->
+				<p class="dark:text-white transition-colors duration-500">&copy; 2025 <a href="https://github.com/ArimDev/" class="hover:text-bluey-500">ArimDev</a></p>
 			</div>
 		</footer>
 	</div>

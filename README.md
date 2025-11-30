@@ -11,7 +11,7 @@
 The main goal of **DashHack** is to monitor teams progress and activity during the event.  
 This feature is reached by integration with GitHub API to fetch data from repositories.
 
-The project was initially created for [AT&T Hackathon Brno 2026](https://atthack.cz).  
+The project was initially created for [AT&T Hackathon Brno 2025](https://atthack.cz).  
 Over time, **DashHack** got more generic and currently, it can be used for any hackathon event.  
 
 ---
@@ -28,28 +28,23 @@ Over time, **DashHack** got more generic and currently, it can be used for any h
 
 ### 💻 Run Locally (Development)
 
-```
-1. set up .env file
-2. bun install
-3. bun run dev
-```
+1. Set up .env file
+2. `bun install`
+3. `bun run dev`
 
 ### 💻 Run Locally with local DB (Development)
 
-```
-# set up .env file for local DB (example)
+1. Set up .env file for local DB (example)
+```env
 MONGO_URI_LOCAL=mongodb://127.0.0.1:27017/dashhack_dev
-url=https://localhost
+url=http://localhost
 discord=https://discord.com/invite/<code>
 webPort=6464
-
-# install packages
-npm install
-
-# start DB
-docker compose --env-file .env -f docker-compose.dev.yml up
-
-# configure VScode for debugger (.vscode/launch.json)
+```
+2. `bun install`
+3. `docker compose --env-file .env -f docker-compose-dev.yml up`
+4. Configure VScode for debugger (`.vscode/launch.json`)
+```json
 {
   "version": "0.2.0",
   "configurations": [
@@ -69,14 +64,16 @@ docker compose --env-file .env -f docker-compose.dev.yml up
   ]
 }
 ```
+5. Start debugging with VScode
 
 ### 🏗️ Build for Production
 
-```
-bun run build
-```
+1. `docker compose --env-file .env up --build`
 
 ---
-### 📄 License
+### 📄 Attribution
 
-Please follow the [LICENSE](./LICENSE.md).
+**Author:** [ArimDev](https://github.com/ArimDev) ([PetyXbron](https://github.com/PetyXbron))  
+**License:** Apache License 2.0 (see [LICENSE](./LICENSE))  
+**Credit in pages/index.vue :** "© 2025 ArimDev".  
+NOTICE file must be retained in redistributions.
