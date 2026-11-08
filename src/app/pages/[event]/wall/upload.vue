@@ -22,7 +22,7 @@ onMounted(async () => {
   } catch {
     availability.value = 'unavailable';
   }
-}
+});
 
 useHead({ title: `${eventName.value} | Upload` });
 </script>
