@@ -64,6 +64,7 @@
         target="_blank"
         rel="noopener noreferrer"
         class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-300 dark:hover:text-cyan-200"
+        :class="isBlueCard ? 'hover:text-slate-200 text-white' : ''"
       >
         View original <Icon name="heroicons:arrow-top-right-on-square" size="14px" />
       </a>

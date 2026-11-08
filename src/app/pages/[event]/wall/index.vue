@@ -12,7 +12,7 @@
     </div>
 
     <div
-      class="relative mx-auto flex h-full w-full max-w-[1800px] flex-col px-4 py-4 sm:px-6 sm:py-5 lg:px-8"
+      class="relative mx-auto flex h-full w-full max-w-[1800px] flex-col"
     >
       <PublicWallHeader
         :event-name="eventName"
@@ -34,8 +34,8 @@
       <section
         v-else
         ref="feedViewport"
-        class="relative min-h-0 flex-1"
-        :class="isScrollingEnabled ? 'overflow-hidden' : 'overflow-y-auto'"
+        class="relative min-h-0 flex-1 px-4"
+        :class="isScrollingEnabled ? 'overflow-hidden' : 'overflow-y-auto mt-2'"
       >
         <div
           :class="{ 'will-change-transform': isScrollingEnabled }"
@@ -47,7 +47,7 @@
             :ref="copy === 1 ? setFirstFeedCopy : undefined"
             :aria-hidden="copy > 1 ? 'true' : undefined"
             :class="{ 'pointer-events-none': copy > 1 }"
-            class="columns-1 gap-4 sm:columns-2 xl:columns-3 2xl:columns-4"
+            class="columns-1 gap-4 sm:columns-2 xl:columns-3 2xl:columns-4 pb-4"
           >
             <WallPostCard
               v-for="post in posts"
@@ -64,7 +64,7 @@
         :href="uploadUrl"
         target="_blank"
         rel="noopener noreferrer"
-        class="group absolute top-30 right-8 z-99 flex w-44 flex-col items-center gap-2 rounded-xl border border-cyan-300/40 bg-bluey-500/10 p-2.5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-xl transition hover:border-cyan-300/70 hover:bg-bluey-500/15 dark:border-white/10 dark:bg-white/4 dark:shadow-black/20"
+        class="group absolute top-22 right-8 z-99 flex w-44 flex-col items-center gap-2 rounded-xl border border-cyan-300/40 bg-bluey-500/10 p-2.5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-xl transition hover:border-cyan-300/70 hover:bg-bluey-500/15 dark:border-white/10 dark:bg-white/4 dark:shadow-black/20"
       >
         <img
           :src="qrUrl"
@@ -74,17 +74,17 @@
         <span class="min-w-0">
           <span
             class="block text-sm font-bold leading-tight text-slate-900 dark:text-white"
-            >Your moment belongs here!</span
+            >Your moment belongs here.</span
           >
           <span
             class="mt-0.5 block text-xs leading-relaxed text-slate-600 dark:text-slate-300"
-            >Scan to share a photo, video or story.</span
+            >Scan to share!</span
           >
         </span>
       </a>
       <footer
         v-if="wallStatus === 'available'"
-        class="mt-3 flex shrink-0 items-center justify-between gap-3 px-1 text-xs text-slate-600 dark:text-slate-500"
+        class="mt-3 pb-3 px-4 flex shrink-0 items-center justify-between gap-3 px-1 text-xs text-slate-600 dark:text-slate-500"
       >
         <div
           class=""

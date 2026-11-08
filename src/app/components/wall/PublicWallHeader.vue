@@ -1,6 +1,6 @@
 <template>
   <header
-    class="mb-3 h-20 rounded-2xl border border-cyan-300/40 bg-bluey-500/10 px-3 py-2.5 shadow-xl shadow-slate-900/5 backdrop-blur-xl sm:px-4 sm:py-3 dark:border-white/10 dark:bg-white/4 dark:shadow-black/20"
+    class="h-20 rounded-b-2xl border border-cyan-300/40 bg-bluey-500/10 px-3 py-2.5 shadow-xl shadow-slate-900/5 backdrop-blur-xl sm:px-4 sm:py-3 dark:border-white/10 dark:bg-white/4 dark:shadow-black/20"
   >
     <div class="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
       <div class="min-w-0">
