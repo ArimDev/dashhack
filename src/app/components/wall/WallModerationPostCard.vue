@@ -1,8 +1,8 @@
 <template>
   <article
-    class="relative rounded-3xl border border-slate-200 bg-white p-4 shadow-sm dark:border-slate-700 dark:bg-slate-900"
+    class="relative rounded-3xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900"
   >
-    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between">
+    <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between p-2">
       <div class="relative min-w-0 flex-1 overflow-hidden rounded-2xl">
         <div class="mb-2 flex items-center gap-2">
           <Badge variant="slate" size="xs" upper>
@@ -10,19 +10,18 @@
               :name="wallPlatformMeta[post.platform]?.icon || 'heroicons:photo'"
               size="12px"
             />
-            {{ wallPlatformMeta[post.platform]?.label || post.platform || "Community" }}
           </Badge>
           <span class="text-sm font-semibold text-slate-800 dark:text-slate-100">
             {{ post.authorName || "Anonymous" }}
           </span>
-          <span v-if="post.handle" class="text-xs text-slate-500">{{ post.handle }}</span>
+          <span v-if="post.handle" class="text-xs text-slate-500">{{ post.handle || wallPlatformMeta[post.platform]?.label || "Community post" }}</span>
           <Badge v-if="post.pinned" variant="cyan" upper>
             <Icon name="heroicons:map-pin" size="12px" />
             Pinned
           </Badge>
         </div>
 
-        <p class="whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-200">
+        <p class="whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-200 px-2">
           {{ post.text }}
         </p>
         <div
