@@ -14,148 +14,22 @@
     <div
       class="relative mx-auto flex h-full w-full max-w-[1800px] flex-col px-4 py-4 sm:px-6 sm:py-5 lg:px-8"
     >
-      <header
-        class="mb-3 h-20 rounded-2xl border border-cyan-300/40 bg-bluey-500/10 px-3 py-2.5 shadow-xl shadow-slate-900/5 backdrop-blur-xl sm:px-4 sm:py-3 dark:border-white/10 dark:bg-white/4 dark:shadow-black/20"
-      >
-        <div class="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
-          <div class="min-w-0">
-            <div
-              class="mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300"
-            >
-              <span v-if="wallStatus === 'available'" class="relative flex h-2.5 w-2.5">
-                <span
-                  class="absolute inline-flex h-full w-full animate-ping rounded-full bg-emerald-400 opacity-60"
-                />
-                <span
-                  class="relative inline-flex h-2.5 w-2.5 rounded-full bg-emerald-400"
-                />
-              </span>
-              <Icon v-else name="heroicons:information-circle" size="14px" />
-              {{
-                wallStatus === 'available'
-                  ? 'Live moments shared by the community'
-                  : wallStatus === 'disabled'
-                    ? 'Event wall unavailable'
-                    : 'Event wall status'
-              }}
-            </div>
-            <h1
-              class="truncate text-2xl font-black tracking-tight text-slate-900 sm:text-3xl lg:text-[2rem] dark:text-white"
-            >
-              {{ eventName }}
-            </h1>
-          </div>
+      <PublicWallHeader
+        :event-name="eventName"
+        :wall-status="wallStatus"
+        :scrolling-enabled="isScrollingEnabled"
+        :fullscreen="isFullscreen"
+        :dark-theme="isDarkTheme"
+        @toggle-scroll="setScrollingEnabled"
+        @toggle-fullscreen="toggleFullscreen"
+        @toggle-theme="toggleTheme"
+      />
 
-          <div class="flex flex-col items-end gap-2">
-            <div class="flex flex-wrap items-center gap-2">
-              <label
-                class="inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold transition hover:border-cyan-300/50 hover:bg-cyan-300/10 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-cyan-300 dark:border-white/15 dark:bg-white/10"
-              >
-                <span>Auto-scroll</span>
-                <input
-                  v-model="isScrollingEnabled"
-                  type="checkbox"
-                  role="switch"
-                  aria-label="Enable auto-scroll layout"
-                  class="peer sr-only"
-                  @change="resetFeedPosition"
-                />
-                <span
-                  class="relative h-5 w-9 rounded-full transition-colors"
-                  :class="
-                    isScrollingEnabled ? 'bg-cyan-400' : 'bg-slate-400 dark:bg-slate-600'
-                  "
-                  aria-hidden="true"
-                >
-                  <span
-                    class="absolute top-0.5 h-4 w-4 rounded-full bg-white transition-transform"
-                    :class="isScrollingEnabled ? 'translate-x-4' : 'translate-x-0.5'"
-                  />
-                </span>
-              </label>
-
-              <button
-                type="button"
-                class="inline-flex min-h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white transition hover:border-cyan-300/50 hover:bg-cyan-300/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 dark:border-white/15 dark:bg-white/10"
-                :aria-label="isFullscreen ? 'Exit full screen' : 'Enter full screen'"
-                :title="isFullscreen ? 'Exit full screen' : 'Enter full screen'"
-                @click="toggleFullscreen"
-              >
-                <Icon
-                  :name="
-                    isFullscreen
-                      ? 'heroicons:arrows-pointing-in'
-                      : 'heroicons:arrows-pointing-out'
-                  "
-                  size="17px"
-                />
-              </button>
-
-              <button
-                type="button"
-                class="inline-flex min-h-10 w-10 items-center justify-center rounded-xl border border-slate-300 bg-white transition hover:border-cyan-300/50 hover:bg-cyan-300/10 focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-cyan-300 dark:border-white/15 dark:bg-white/10"
-                :aria-label="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'"
-                :title="isDarkTheme ? 'Switch to light mode' : 'Switch to dark mode'"
-                @click="toggleTheme"
-              >
-                <Icon
-                  :name="isDarkTheme ? 'heroicons:sun' : 'heroicons:moon'"
-                  size="17px"
-                />
-              </button>
-            </div>
-          </div>
-        </div>
-      </header>
-
-      <section
-        v-if="wallStatus === 'loading'"
-        class="flex flex-1 items-center justify-center rounded-3xl border border-slate-200 bg-white px-6 py-20 text-center dark:border-white/15 dark:bg-white/3"
-      >
-        <p class="text-slate-600 dark:text-slate-300">Loading the event wall...</p>
-      </section>
-
-      <section
-        v-else-if="wallStatus === 'error'"
-        class="flex flex-1 items-center justify-center rounded-3xl border border-slate-200 bg-white px-6 py-20 text-center dark:border-white/15 dark:bg-white/3"
-      >
-        <div class="max-w-md">
-          <h2 class="text-2xl font-bold">We couldn't load this event wall</h2>
-          <p class="mt-2 text-slate-500 dark:text-slate-400">Please try again in a moment.</p>
-        </div>
-      </section>
-
-      <section
-        v-else-if="wallStatus === 'disabled'"
-        class="flex flex-1 items-center justify-center rounded-3xl border border-slate-200 bg-white px-6 py-20 text-center dark:border-white/15 dark:bg-white/3"
-      >
-        <div class="max-w-md">
-          <div class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-700 dark:text-cyan-200">
-            <Icon name="heroicons:information-circle" size="30px" />
-          </div>
-          <h2 class="mt-5 text-2xl font-bold">The event wall isn't available</h2>
-          <p class="mt-2 text-slate-500 dark:text-slate-400">
-            The wall is currently unavailable for {{ eventName }}. Please check with the event organizers.
-          </p>
-        </div>
-      </section>
-
-      <section
-        v-else-if="!posts.length"
-        class="flex flex-1 items-center justify-center rounded-3xl border border-dashed border-slate-300 bg-white px-6 py-20 text-center dark:border-white/15 dark:bg-white/3"
-      >
-        <div class="max-w-md">
-          <div
-            class="mx-auto flex h-16 w-16 items-center justify-center rounded-2xl border border-cyan-300/30 bg-cyan-300/10 text-cyan-700 dark:text-cyan-200"
-          >
-            <Icon name="heroicons:photo" size="30px" />
-          </div>
-          <h2 class="mt-5 text-2xl font-bold">The first moment is waiting</h2>
-          <p class="mt-2 text-slate-500 dark:text-slate-400">
-            Scan the upload code to share what’s happening at {{ eventName }}.
-          </p>
-        </div>
-      </section>
+      <PublicWallState
+        v-if="wallStatus !== 'available' || !posts.length"
+        :status="wallStatus"
+        :event-name="eventName"
+      />
 
       <section
         v-else
@@ -227,6 +101,8 @@
 
 <script setup>
 import WallPostCard from "../../../components/wall/PostCard.vue";
+import PublicWallHeader from "../../../components/wall/PublicWallHeader.vue";
+import PublicWallState from "../../../components/wall/PublicWallState.vue";
 
 const route = useRoute();
 const colorMode = useColorMode();
@@ -287,6 +163,11 @@ function toggleTheme() {
 function resetFeedPosition() {
   scrollOffset.value = 0;
   if (feedViewport.value) feedViewport.value.scrollTop = 0;
+}
+
+function setScrollingEnabled(enabled) {
+  isScrollingEnabled.value = enabled;
+  resetFeedPosition();
 }
 
 function setFirstFeedCopy(element) {

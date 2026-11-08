@@ -15,7 +15,7 @@
           class="flex h-10 w-10 shrink-0 items-center justify-center rounded-2xl bg-slate-100 text-cyan-700 dark:bg-white/7 dark:text-cyan-100"
         >
           <Icon
-            :name="platformMeta[post.platform]?.icon || 'heroicons:photo'"
+            :name="wallPlatformMeta[post.platform]?.icon || 'heroicons:photo'"
             size="19px"
           />
         </span>
@@ -24,7 +24,7 @@
             {{ post.authorName || "Anonymous" }}
           </p>
           <p class="truncate text-xs" :class="isBlueCard ? 'text-slate-200' : 'text-slate-500'">
-            {{ post.handle || platformMeta[post.platform]?.label || "Community post" }}
+            {{ post.handle || wallPlatformMeta[post.platform]?.label || "Community post" }}
           </p>
         </div>
       </div>
@@ -73,6 +73,7 @@
 
 <script setup>
 import Badge from "../ui/Badge.vue";
+import { wallPlatformMeta } from "../../utils/wallPlatforms";
 
 const props = defineProps({
   post: {
@@ -84,12 +85,6 @@ const props = defineProps({
     default: 100,
   },
 });
-
-const platformMeta = {
-  x: { label: "X", icon: "simple-icons:x" },
-  instagram: { label: "Instagram", icon: "simple-icons:instagram" },
-  manual: { label: "Community", icon: "heroicons:paper-clip" },
-};
 
 const truncatedText = computed(() => {
   const text = props.post?.text || "";
