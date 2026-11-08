@@ -30,3 +30,6 @@ logs
 
 # Uploads
 uploads/
+
+# Do not commit files
+*.dev
