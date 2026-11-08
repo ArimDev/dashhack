@@ -70,6 +70,10 @@ The flow verifies active organization ownership (or personal-account ownership) 
 
 GitHub App validation: 29 unit tests (149 assertions), 24 browser scenarios and a production build pass. Coverage includes populated schema-5 upgrades, session/event binding, expiry/replay rejection, owner checks, read-only token minting/refresh/coalescing, PKCE and JWT signatures, repository pagination/selection, callback state rejection and existing event flows.
 
+## Social Wall from PR #6
+
+Schema version 7 adds separate wall settings, post and BLOB media tables, retaining all prior event/team/mentor/GitHub data. This is the SQLite adaptation of upstream PR #6, with no dependency or infrastructure additions. Walls default disabled; organizer moderation, bounded uploads and optional X collection are isolated from team workflows. See [review, behavior, quotas, backup differences and validation](SOCIAL_WALL_PR6.md). Full SQLite snapshots now include uploaded attachments; public per-event JSON exports do not. Live Railway remains at schema 6 until deployment.
+
 ## Resource evidence
 
 | Local measurement | Original Nuxt/Mongo baseline | Migrated branch |

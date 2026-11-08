@@ -32,6 +32,12 @@ Each team also has a collapsible **Startupová matice** with ten CzechInvest que
 
 For the real event, use a dedicated GitHub organization with one repository per team. A read-only GitHub App lets the organizer connect the organization in Settings and select repositories directly in Add/Edit Team. It uses the existing Bun/SQLite process without an added SDK or service. Organization/App registration and server credentials must be configured before the connection becomes available. See [GitHub App setup](docs/GITHUB_APP.md) for the exact callback URLs, permissions and variables.
 
+## Social Wall
+
+The feature ported from [PR #6](https://github.com/ArimDev/dashhack/pull/6) adds a public event wall and moderated attendee text/photo/video submissions. Log in, open **Social Wall**, and enable it. Display `/<event>/wall` and share `/<event>/wall/upload` (also available by QR). Walls start disabled; public uploads always await approval. The moderation dashboard can approve, reject, hide, pin and archive posts.
+
+Attachments live in the existing SQLite database: maximum 4 MiB per upload, 32 MiB per event and 64 MiB overall. Full SQLite snapshots include them; public JSON event downloads do not. Optional X hashtag/account collection uses server-only `NUXT_X_BEARER_TOKEN` and **Settings → X social collector**, without any added service or dependency. See [PR review, setup and limits](docs/SOCIAL_WALL_PR6.md).
+
 ## Tests
 
 ```sh

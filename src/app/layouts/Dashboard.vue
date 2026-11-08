@@ -30,6 +30,12 @@
                     <div v-if="isCollapsed" class="absolute left-16 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap">Kanban</div>
                 </NuxtLink>
 
+                <NuxtLink :to="getPath('social-wall')" class="flex items-center px-3 py-2.5 rounded-lg transition-colors group" :class="isActive(getPath('social-wall')) ? 'bg-bluey-500 text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                    <Icon name="heroicons:photo" size="22px" class="flex-shrink-0" />
+                    <span v-if="!isCollapsed" class="ml-3 text-sm font-medium whitespace-nowrap">Social Wall</span>
+                    <div v-if="isCollapsed" class="absolute left-16 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none">Social Wall</div>
+                </NuxtLink>
+
 				<NuxtLink :to="getPath('log')" class="flex items-center px-3 py-2.5 rounded-lg transition-colors group" :class="isActive(getPath('log')) ? 'bg-bluey-500 text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'">
                     <Icon name="fluent:document-bullet-list-20-filled" size="22px" class="flex-shrink-0" />
                     <span v-if="!isCollapsed" class="ml-3 text-sm font-medium whitespace-nowrap">Log</span>
@@ -137,7 +143,7 @@ const currentPage = computed(() => {
 	const route = useRoute();
 	const pathParts = route.path.split("/");
 	const path = pathParts[3] || "home";
-	return path.charAt(0).toUpperCase() + path.slice(1);
+	return path.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
 });
 const loggedIn = computed(() => !!useCookie("sessionExists").value);
 

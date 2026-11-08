@@ -25,6 +25,7 @@ export default defineNuxtConfig({
 
 	runtimeConfig: {
 		sqlitePath: './.data/dashhack.sqlite',
+        xBearerToken: '',
         githubAppId: '',
         githubAppClientId: '',
         githubAppClientSecret: '',

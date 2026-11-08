@@ -5,6 +5,7 @@
         <EventLogo />
         <Token />
         <GitHubConnection />
+        <XCollector v-if="canEdit" />
         <Backup />
     </div>
 </template>
@@ -15,6 +16,7 @@ definePageMeta({
     middleware: ["routes"],
 });
 
+const canEdit = useState('eventCanEdit');
 const currentEvent = useState('currentEvent'),
     config = useRuntimeConfig();
 

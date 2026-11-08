@@ -1,5 +1,6 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
     const eventParam = String(to.params.event || '');
+    if (!eventParam || !to.path.startsWith('/app/')) return;
     const currentEvent = useState('currentEvent', () => eventParam);
     currentEvent.value = eventParam;
 

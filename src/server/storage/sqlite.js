@@ -98,7 +98,7 @@ export class SqliteStore {
             PRAGMA mmap_size = 0;
         `);
         const version = this.db.query('PRAGMA user_version').get().user_version;
-        if (version > 6) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
+        if (version > 7) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
         if (version === 0) this.db.transaction(() => {
             this.db.exec(`
                 CREATE TABLE events (
@@ -169,6 +169,30 @@ export class SqliteStore {
             );
             CREATE INDEX github_flows_expiry ON github_oauth_flows(expires_at);
             PRAGMA user_version = 6;`);
+        })();
+        if (version < 7) this.db.transaction(() => {
+            this.db.exec(`CREATE TABLE wall_settings (
+                event_id TEXT PRIMARY KEY REFERENCES events(id) ON DELETE CASCADE,
+                settings TEXT NOT NULL DEFAULT '{}', revision INTEGER NOT NULL DEFAULT 0,
+                last_poll_at INTEGER, last_poll_error TEXT NOT NULL DEFAULT ''
+            );
+            CREATE TABLE wall_posts (
+                event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE, id TEXT NOT NULL,
+                platform TEXT NOT NULL CHECK(platform IN ('manual','x','instagram')),
+                author_name TEXT NOT NULL, handle TEXT NOT NULL, text TEXT NOT NULL,
+                image_url TEXT NOT NULL, video_url TEXT NOT NULL, source_url TEXT NOT NULL,
+                status TEXT NOT NULL CHECK(status IN ('pending','approved','rejected')),
+                hidden INTEGER NOT NULL DEFAULT 0, pinned INTEGER NOT NULL DEFAULT 0,
+                deleted INTEGER NOT NULL DEFAULT 0, revision INTEGER NOT NULL DEFAULT 0,
+                created_at TEXT NOT NULL, PRIMARY KEY(event_id,id)
+            );
+            CREATE INDEX wall_posts_feed ON wall_posts(event_id,deleted,status,created_at);
+            CREATE TABLE wall_media (
+                event_id TEXT NOT NULL, post_id TEXT NOT NULL, mime TEXT NOT NULL, data BLOB NOT NULL,
+                PRIMARY KEY(event_id,post_id),
+                FOREIGN KEY(event_id,post_id) REFERENCES wall_posts(event_id,id) ON DELETE CASCADE
+            );
+            PRAGMA user_version = 7;`);
         })();
     }
 
