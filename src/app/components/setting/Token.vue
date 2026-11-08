@@ -34,7 +34,7 @@ const value = ref(data.settings.githubToken || "");
 async function autosave() {
     let data = await $fetch(`/api/auth/update`, {
         method: "POST",
-        body: { setting: "githubToken", value: value.value },
+        body: { username: route.params.event, setting: "githubToken", value: value.value },
     });
 
     if (data.status !== 200) return error.value = data.message + "!";

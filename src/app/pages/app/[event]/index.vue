@@ -7,9 +7,4 @@ definePageMeta({
     middleware: ["routes"],
 });
 
-defineOgImageComponent('NuxtSeo', {
-    title: currentEvent.value,
-    theme: config.public.color,
-    colorMode: 'dark',
-});
 </script>

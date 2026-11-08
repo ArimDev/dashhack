@@ -1,32 +1,16 @@
-# Build Stage 1
-
-FROM oven/bun:latest AS build
+# Match the runtime verified locally. Override deliberately when upgrading Bun.
+ARG BUN_VERSION=1.3.2
+FROM oven/bun:${BUN_VERSION} AS build
 WORKDIR /app
-
-# Copy package.json and bun.lock (lock file)
 COPY package.json bun.lock ./
-
-# Install dependencies using npm
-RUN bun install
-
-# Copy the entire project
+RUN bun install --frozen-lockfile --ignore-scripts
 COPY . ./
-
-# Build the project
 RUN bun run build
 
-# Build Stage 2
-
-FROM oven/bun:latest AS production
+FROM oven/bun:${BUN_VERSION}-slim AS production
 WORKDIR /app
-
-# Only `.output` folder is needed from the build stage
 COPY --from=build /app/src/.output/ ./
-
-# Change the port and host
-ENV PORT 1020
-ENV HOST 0.0.0.0
-
+COPY scripts/backup-sqlite.js ./scripts/backup-sqlite.js
+ENV PORT=1020 HOST=0.0.0.0 NUXT_SQLITE_PATH=/data/dashhack.sqlite
 EXPOSE 1020
-
-ENTRYPOINT ["bun", "run", "/app/server/index.mjs"]
+CMD ["bun", "run", "/app/server/index.mjs"]

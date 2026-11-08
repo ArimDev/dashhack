@@ -1,14 +1,11 @@
-import { connectDB } from "./db";
-import Event from "../models/Event";
+import { parseGitHubRepository } from "../services/github-app.js";
 
 export default async function githubSeries(_url, event) {
-    await connectDB();
-
-    const data = await Event.findOne({ event });
-    if (!data || !data.settings.githubToken) {
-        return { status: 401, message: `Missing GitHub token! (event ${event})` };
-    }
-    const token = data.settings.githubToken;
+    let repository, token;
+    try {
+        repository = parseGitHubRepository(_url);
+        token = await githubCredential(event, repository);
+    } catch (error) { return { status: error.status || 502, message: error.message, reqs: 0 }; }
 
     let reqs = 0;
 
@@ -23,18 +20,16 @@ export default async function githubSeries(_url, event) {
             reqs++;
             return response;
         } catch (error) {
-            return { status: 500, message: error.response._data.message, reqs };
+            return { status: 500, message: error?.response?._data?.message || error.message || "GitHub request failed", reqs };
         }
     }
 
-    const matchURL = _url.match(/github\.com\/([^\/]+)\/([^\/]+)/);
-    if (!matchURL) return { status: 400, message: "Invalid GitHub repository URL.", reqs };
-    const owner = matchURL[1], repo = matchURL[2];
+    const [owner, repo] = repository.split('/');
 
     const url = `https://api.github.com/repos/${owner}/${repo}/commits`;
 
     const headers = {
-        "Authorization": `token ${token}`,
+        "Authorization": `Bearer ${token}`,
         "Accept": "application/vnd.github+json"
     };
 

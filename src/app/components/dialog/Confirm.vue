@@ -60,7 +60,8 @@ async function confirmed() {
     if (!!props.team) { //or if (props.subject === "Delete Team")
         const teamData = {
             username: eventName.value,
-            teamName: props.team.name
+            teamName: props.team.name,
+            teamId: props.team._id
         };
 
         let data = await $fetch(`/api/team/delete/`, {

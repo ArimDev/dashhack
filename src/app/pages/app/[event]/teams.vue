@@ -3,7 +3,7 @@
         <div v-if="!data.teams.length" class="text-center flex justify-center items-center min-h-[81vh]">
             <h1 class="mt-[-10px] text-3xl text-gray-500 dark:text-gray-400">No teams found.<br>Get started by adding one!</h1>
         </div>
-        
+
         <div v-show="(openAddTeam || openConfirm)" class="fixed inset-0 flex justify-center items-center z-[150]">
             <AddTeam v-show="openAddTeam" :team="selectedTeam || false" @close="close" />
             <Confirm v-show="openConfirm" subject="Delete Team" message="Are you sure you want to delete team $var?" :team="selectedTeam" @close="close" />
@@ -15,10 +15,10 @@
             <Icon style="display: none;" name="heroicons:arrows-pointing-out-16-solid" />
             <Icon style="display: none;" name="heroicons:hand-raised-16-solid" />
             <Icon style="display: none;" name="heroicons:arrow-path-16-solid" />
-            
-            <Team v-for="(team, index) in data.teams" :key="index" 
-                :team="team" 
-                @edit="open" 
+
+            <Team v-for="(team, index) in data.teams" :key="team._id"
+                :team="team"
+                @edit="open"
                 @delete="confirm"
                 @add-note="addStickyNote"
                 @update-note="updateStickyNote"
@@ -50,12 +50,6 @@ watchEffect(() => {
     });
 });
 
-defineOgImageComponent('NuxtSeo', {
-    title: currentEvent,
-    description: "Teams",
-    theme: config.public.color,
-    colorMode: 'dark',
-});
 
 const { showToast } = useToast();
 
@@ -91,37 +85,45 @@ const findTeamIndex = (teamName) => {
     return data.value.teams.findIndex(t => t.name === teamName);
 }
 
-const saveTeamChanges = async (teamIndex, successMessage) => {
-    const team = data.value.teams[teamIndex];
-    if (!team) return;
-
-    try {
-        const response = await $fetch(`/api/team/edit`, {
+// Keep snapshots in order, but use the last acknowledged revision for each save.
+// A rejected queue skips subsequent stale snapshots until the event is refreshed.
+const saveQueues = new Map();
+const saveTeamChanges = (teamIndex, successMessage) => {
+    const snapshot = JSON.parse(JSON.stringify(data.value.teams[teamIndex]));
+    const task = (saveQueues.get(snapshot._id) || Promise.resolve()).then(async () => {
+        const current = data.value.teams.find(team => team._id === snapshot._id);
+        if (!current) return;
+        const response = await $fetch('/api/team/edit', {
             method: 'PUT',
             body: {
                 username: currentEvent.value,
-                oldName: team.name,
-                teamName: team.name,
-                teamColor: team.color,
-                teamGithub: team.github,
-                teamDescription: team.description,
-                stickyNotes: team.stickyNotes
-            }
+                teamId: snapshot._id,
+                revision: current.revision,
+                oldName: snapshot.name,
+                teamName: snapshot.name,
+                teamColor: snapshot.color,
+                teamGithub: snapshot.github,
+                teamDescription: snapshot.description,
+                teamOriginality: snapshot.originality,
+                teamProjectAbstract: snapshot.projectAbstract,
+                stickyNotes: snapshot.stickyNotes,
+            },
         });
-        if (response.status !== 200) {
-            throw new Error(response.message || 'Failed to save changes');
-        }
-        showToast("Success", successMessage, 2000);
-    } catch (error) {
-        console.error("Error saving team changes:", error);
-        showToast("Error saving changes!", error.message);
-        
-        const freshData = await $fetch(`/api/event/${currentEvent.value}`);
-        if (freshData && freshData.data) data.value = freshData.data;
-    }
-}
+        if (response.status !== 200) throw new Error(response.message || 'Failed to save changes');
+        current.revision = response.revision;
+        showToast('Success', successMessage, 2000);
+    });
+    saveQueues.set(snapshot._id, task);
+    task.catch(async (error) => {
+        showToast('Error saving changes!', error.message);
+        const fresh = await $fetch(`/api/event/${encodeURIComponent(currentEvent.value)}`);
+        if (fresh.data) data.value = fresh.data;
+    }).catch(console.error).finally(() => {
+        if (saveQueues.get(snapshot._id) === task) saveQueues.delete(snapshot._id);
+    });
+};
 
-const addStickyNote = (teamName) => {
+const addStickyNote = ({ teamName, type }) => {
     const teamIndex = findTeamIndex(teamName);
     if (teamIndex === -1) return;
 
@@ -130,6 +132,9 @@ const addStickyNote = (teamName) => {
         content: '',
         color: '#ffeb3b',
         priority: 'medium',
+        type,
+        creatorId: null,
+        inKanban: type === 'help_request',
         status: 'To Do'
     };
 

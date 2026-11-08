@@ -31,7 +31,7 @@ watch(value, (newValue) => {
 async function autosave() {
 	let data = await $fetch(`/api/auth/update`, {
 		method: "POST",
-		body: { setting: "event", value: value.value },
+		body: { username: route.params.event, setting: "event", value: value.value },
 	});
 
 	if (data.status !== 200) return error.value = data.message + "!";

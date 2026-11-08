@@ -41,6 +41,11 @@
                     <span v-if="!isCollapsed" class="ml-3 text-sm font-medium whitespace-nowrap">Settings</span>
                     <div v-if="isCollapsed" class="absolute left-16 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap">Settings</div>
 				</NuxtLink>
+                <NuxtLink :to="getPath('mentors')" class="flex items-center px-3 py-2.5 rounded-lg transition-colors group" :class="isActive(getPath('mentors')) ? 'bg-bluey-500 text-white shadow-md' : 'text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-700'">
+                    <Icon name="heroicons:user-group" size="22px" class="flex-shrink-0" />
+                    <span v-if="!isCollapsed" class="ml-3 text-sm font-medium whitespace-nowrap">Mentors</span>
+                    <div v-if="isCollapsed" class="absolute left-16 bg-gray-800 text-white text-xs px-2 py-1 rounded opacity-0 group-hover:opacity-100 pointer-events-none transition-opacity z-50 whitespace-nowrap">Mentors</div>
+                </NuxtLink>
 			</nav>
 
 			<footer class="p-4 border-t border-gray-200 dark:border-gray-700 flex flex-col items-center gap-4">
@@ -139,11 +144,11 @@ const loggedIn = computed(() => !!useCookie("sessionExists").value);
 const { toasts } = useToast();
 const colorMode = useColorMode();
 
-if (event?.value?.settings?.githubToken) {
+if (event?.value?.settings?.githubToken || event?.value?.settings?.githubApp) {
 	const rateData = await $fetch(`/api/github/rateLimit?event=${encodeURIComponent(currentEvent.value)}`);
 	if (!rateData || rateData?.status !== 200)
 		rate.value = "Error",
-			rateError.value = "Invalid GitHub token",
+		rateError.value = "GitHub connection unavailable",
 			rateLoading.value = false;
 	else rate.value = rateData.rate.remaining,
 		rateLoading.value = false;;

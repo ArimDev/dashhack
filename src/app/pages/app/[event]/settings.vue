@@ -4,6 +4,7 @@
         <Password />
         <EventLogo />
         <Token />
+        <GitHubConnection />
         <Backup />
     </div>
 </template>
@@ -23,10 +24,4 @@ watchEffect(() => {
     });
 });
 
-defineOgImageComponent('NuxtSeo', {
-    title: currentEvent,
-    description: "Settings",
-    theme: config.public.color,
-    colorMode: 'dark',
-});
 </script>

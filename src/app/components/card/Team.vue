@@ -41,6 +41,26 @@
                 </div>
             </div>
 
+            <div class="border-t border-gray-100 dark:border-gray-700 px-4 py-3 space-y-3 text-gray-800 dark:text-gray-200">
+                <div>
+                    <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Originalita</h2>
+                    <p data-testid="team-originality" class="text-sm whitespace-pre-wrap break-words">{{ team.originality || 'Not provided.' }}</p>
+                </div>
+                <details v-if="team.projectAbstract?.length" open>
+                    <summary class="text-xs font-semibold text-gray-500 dark:text-gray-400 cursor-pointer mb-2">Project Abstract</summary>
+                    <ProjectAbstract :model-value="team.projectAbstract" read-only data-testid="team-abstract" />
+                </details>
+                <div v-else>
+                    <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Project Abstract</h2>
+                    <p class="text-sm">Not provided.</p>
+                </div>
+            </div>
+
+            <details @toggle="matrixLoaded = matrixLoaded || $event.target.open" class="border-t border-gray-100 dark:border-gray-700 px-4 py-3">
+                <summary class="cursor-pointer text-sm font-semibold text-gray-800 dark:text-gray-200">Startupová matice</summary>
+                <StartupMatrix v-if="matrixLoaded" :team="team" />
+            </details>
+
             <div v-if="showGraph" class="border-t border-gray-100 dark:border-gray-700/50 p-2 bg-gray-50 dark:bg-gray-900/30">
                  <div class="h-48 w-full flex items-center justify-center">
                     <div v-if="chartLoading" class="text-center text-gray-400 text-xs italic flex flex-col items-center gap-2">
@@ -76,6 +96,8 @@
                         v-for="note in team.stickyNotes || []"
                         :key="note.id"
                         :note="note"
+                        :mentors="eventData.mentors || []"
+                        :read-only="!canEdit"
                         :class="{ 'md:col-span-2': note.content && note.content.length > 100, 'row-span-2': note.content && note.content.length > 200 }" 
                         @update="note => $emit('update-note', { teamName: team.name, note })"
                         @delete="noteId => $emit('delete-note', { teamName: team.name, noteId })"
@@ -83,12 +105,19 @@
                     
                     <button 
                         data-testid="add-note-btn"
-                        @click="emit('add-note', team.name)" 
+                        v-if="canEdit"
+                        @click="emit('add-note', { teamName: team.name, type: 'mentor_note' })"
                         class="h-full min-h-[140px] rounded-lg border border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-400 hover:text-bluey-500 dark:hover:text-bluey-400 hover:border-bluey-400 dark:hover:border-bluey-500 hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 group"
                         title="Add new note"
                     >
                         <Icon name="heroicons:plus" size="24px" class="group-hover:scale-110 transition-transform mb-1" />
-                        <span class="text-xs font-medium">New Note</span>
+                        <span class="text-xs font-medium">New Mentor Note</span>
+                    </button>
+                    <button v-if="canEdit" data-testid="add-help-btn"
+                        @click="emit('add-note', { teamName: team.name, type: 'help_request' })"
+                        class="min-h-[140px] rounded-lg border border-dashed border-amber-400 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 flex flex-col items-center justify-center gap-2 hover:border-amber-600">
+                        <Icon name="heroicons:hand-raised" size="24px" />
+                        <span class="text-xs font-medium">New Help Request</span>
                     </button>
                 </div>
             </div>
@@ -98,12 +127,16 @@
 </template>
 
 <script setup>
+const Apexchart = defineAsyncComponent(() => import("vue3-apexcharts"));
 const emit = defineEmits(["edit", "delete", "add-note", "update-note", "delete-note"]);
 const props = defineProps({
     team: Object,
 });
 
 const showGraph = ref(false);
+const matrixLoaded = ref(false);
+const eventData = useState('eventData');
+const canEdit = useState('eventCanEdit', () => false);
 const showNotes = ref(false);
 const route = useRoute();
 const eventName = ref(route.params.event);

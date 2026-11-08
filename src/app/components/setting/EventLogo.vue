@@ -31,7 +31,7 @@ const value = ref(data.logo);
 async function autosave() {
     let data = await $fetch(`/api/auth/update`, {
         method: "POST",
-        body: { setting: "logo", value: value.value },
+        body: { username: route.params.event, setting: "logo", value: value.value },
     });
 
     if (data.status !== 200) return error.value = data.message + "!";

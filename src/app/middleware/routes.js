@@ -1,9 +1,11 @@
 export default defineNuxtRouteMiddleware(async (to, from) => {
-    const eventParam = to.fullPath.match(/^\/[^\/]+\/([^\/]+)/)?.[1];
+    const eventParam = String(to.params.event || '');
     const currentEvent = useState('currentEvent', () => eventParam);
     currentEvent.value = eventParam;
 
-    const eventFetch = (await $fetch(`/api/event/${currentEvent.value}`)).data;
+    const response = await $fetch(`/api/event/${encodeURIComponent(currentEvent.value)}`);
+    const eventFetch = response.data;
+    useState('eventCanEdit', () => false).value = !!response.canEdit;
 
     if (!eventFetch) throw createError({
         statusCode: 404,
@@ -13,7 +15,7 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const eventData = useState('eventData', () => eventFetch);
     eventData.value = eventFetch;
 
-    if (to.path.endsWith("/") || to.path.endsWith(eventParam)) {
-        return navigateTo("/app/" + eventParam + "/teams");
+    if (to.path.endsWith("/") || to.path === `/app/${encodeURIComponent(eventParam)}`) {
+        return navigateTo(`/app/${encodeURIComponent(eventParam)}/teams`);
     }
 });

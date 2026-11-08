@@ -1,19 +1,13 @@
-import { connectDB } from "./db";
-import Event from "../models/Event";
 
 export default async function githubRateLimit(event) {
-    await connectDB();
-
-    const data = await Event.findOne({ event });
-    if (!data || !data.settings.githubToken) {
-        return { status: 401, message: `Missing GitHub token! (event ${event})` };
-    }
-    const token = data.settings.githubToken;
+    let token;
+    try { token = await githubCredential(event); }
+    catch (error) { return { status: error.status || 502, message: error.message }; }
 
     const url = "https://api.github.com/rate_limit";
 
     const headers = {
-        "Authorization": `token ${token}`,
+        "Authorization": `Bearer ${token}`,
         "Accept": "application/vnd.github+json"
     };
 

@@ -1,6 +1,1 @@
-export default defineEventHandler(async (_event) => {
-    const query = getQuery(_event);
-    const { event } = query;
-
-    return githubRateLimit(decodeURIComponent(event));
-});
+export default apiHandler(async event => githubRateLimit(getQuery(event).event));

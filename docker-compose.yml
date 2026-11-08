@@ -1,19 +1,16 @@
 services:
   dashhack:
-    image: dashhack
-    build:
-      context: .
-      args:
-        webPort: ${webPort}
-    container_name: dashhack
+    build: .
     restart: unless-stopped
-    env_file:
-      - .env
+    environment:
+      PORT: 1020
+      HOST: 0.0.0.0
+      NUXT_SQLITE_PATH: /data/dashhack.sqlite
+      NUXT_PUBLIC_DISCORD_INVITE: ${NUXT_PUBLIC_DISCORD_INVITE:-}
     ports:
-      - "${webPort}:${webPort}"
-    networks:
-      - NuxtEr
+      - "127.0.0.1:${webPort:-1020}:1020"
+    volumes:
+      - dashhack-data:/data
 
-networks:
-  NuxtEr:
-    external: true
+volumes:
+  dashhack-data:

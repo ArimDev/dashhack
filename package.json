@@ -4,31 +4,33 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "nuxt build",
-    "dev": "nuxt dev",
-    "devn": "nuxt dev --host",
-    "generate": "nuxt generate",
-    "preview": "nuxt preview",
-    "postinstall": "nuxt prepare"
+    "build": "bun --bun node_modules/nuxt/bin/nuxt.mjs build",
+    "dev": "bun --bun node_modules/nuxt/bin/nuxt.mjs dev",
+    "devn": "bun --bun node_modules/nuxt/bin/nuxt.mjs dev --host",
+    "generate": "bun --bun node_modules/nuxt/bin/nuxt.mjs generate",
+    "preview": "bun --bun node_modules/nuxt/bin/nuxt.mjs preview",
+    "postinstall": "nuxt prepare",
+    "test": "bun test tests/unit",
+    "test:e2e": "playwright test",
+    "db:backup": "bun scripts/backup-sqlite.js",
+    "db:import": "bun scripts/import-mongo.js"
   },
   "dependencies": {
     "@iconify-json/heroicons": "^1.2.3",
     "@nuxt/fonts": "^0.12.1",
     "@nuxt/icon": "^2.1.0",
     "@nuxtjs/color-mode": "^4.0.0",
-    "@nuxtjs/mdc": "^0.17.4",
-    "@nuxtjs/seo": "^3.2.2",
     "@tailwindcss/vite": "^4.1.17",
     "apexcharts": "^4.7.0",
-    "bcrypt": "^6.0.0",
-    "mongoose": "^8.20.0",
     "nuxt": "^4.2.1",
-    "nuxt-color-picker": "^1.2.8",
     "uuid": "^13.0.0",
     "vue": "^3.5.24",
     "vue3-apexcharts": "^1.8.0"
   },
   "devDependencies": {
     "@playwright/test": "^1.56.1"
+  },
+  "engines": {
+    "bun": ">=1.3.2"
   }
 }

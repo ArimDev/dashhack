@@ -1,0 +1,34 @@
+[
+  {
+    "variant": "dashhack-lean",
+    "smol": false,
+    "home_warm_MiB": 122.43,
+    "after_api_MiB": 145.56,
+    "peak_MiB": 145.56,
+    "100_db_reads_seconds": 0.108
+  },
+  {
+    "variant": "dashhack-lean",
+    "smol": false,
+    "home_warm_MiB": 106.0,
+    "after_api_MiB": 132.01,
+    "peak_MiB": 132.01,
+    "100_db_reads_seconds": 0.11
+  },
+  {
+    "variant": "dashhack-lean",
+    "smol": true,
+    "home_warm_MiB": 108.97,
+    "after_api_MiB": 139.75,
+    "peak_MiB": 140.47,
+    "100_db_reads_seconds": 0.107
+  },
+  {
+    "variant": "dashhack-lean",
+    "smol": true,
+    "home_warm_MiB": 110.02,
+    "after_api_MiB": 136.65,
+    "peak_MiB": 139.63,
+    "100_db_reads_seconds": 0.117
+  }
+]

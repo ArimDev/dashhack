@@ -42,7 +42,7 @@ async function autosave() {
 
     let data = await $fetch(`/api/auth/update`, {
         method: "POST",
-        body: { setting: "password", value: newPassword.value, oldPassword: oldPassword.value },
+        body: { username: route.params.event, setting: "password", value: newPassword.value, oldPassword: oldPassword.value },
     });
 
     if (data && data?.status !== 200) {

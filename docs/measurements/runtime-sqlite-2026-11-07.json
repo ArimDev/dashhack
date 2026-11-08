@@ -1,0 +1,34 @@
+[
+  {
+    "variant": "DashHack",
+    "smol": false,
+    "home_warm_MiB": 95.73,
+    "after_api_MiB": 101.57,
+    "peak_MiB": 101.57,
+    "100_db_reads_seconds": 0.05
+  },
+  {
+    "variant": "DashHack",
+    "smol": false,
+    "home_warm_MiB": 74.8,
+    "after_api_MiB": 85.54,
+    "peak_MiB": 85.68,
+    "100_db_reads_seconds": 0.03
+  },
+  {
+    "variant": "DashHack",
+    "smol": true,
+    "home_warm_MiB": 78.66,
+    "after_api_MiB": 88.11,
+    "peak_MiB": 88.21,
+    "100_db_reads_seconds": 0.026
+  },
+  {
+    "variant": "DashHack",
+    "smol": true,
+    "home_warm_MiB": 77.85,
+    "after_api_MiB": 87.59,
+    "peak_MiB": 87.59,
+    "100_db_reads_seconds": 0.03
+  }
+]

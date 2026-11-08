@@ -29,3 +29,9 @@ logs
 .vscode/
 test-results/
 playwright-report/
+# Persistent SQLite data and snapshots (never source-controlled)
+*.sqlite
+*.sqlite-*
+*.db
+*.db-*
+backups/

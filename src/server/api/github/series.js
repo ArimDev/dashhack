@@ -1,9 +1,4 @@
-export default defineEventHandler(async (_event) => {
-    const query = getQuery(_event);
-    const { url, event } = query;
-
-    return githubSeries(
-        decodeURIComponent(url),
-        decodeURIComponent(event)
-    );
+export default apiHandler(async event => {
+    const query = getQuery(event);
+    return githubSeries(query.url, query.event);
 });

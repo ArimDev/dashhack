@@ -13,12 +13,6 @@ watchEffect(() => {
     });
 });
 
-defineOgImageComponent('NuxtSeo', {
-    title: currentEvent,
-    description: "Event log",
-    theme: config.public.color,
-    colorMode: 'dark',
-});
 </script>
 
 <template>

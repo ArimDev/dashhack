@@ -1,0 +1,34 @@
+[
+  {
+    "variant": "dashhack-review",
+    "smol": false,
+    "home_warm_MiB": 159.4,
+    "after_api_MiB": 190.67,
+    "peak_MiB": 195.52,
+    "100_db_reads_seconds": 0.17
+  },
+  {
+    "variant": "dashhack-review",
+    "smol": false,
+    "home_warm_MiB": 118.99,
+    "after_api_MiB": 154.38,
+    "peak_MiB": 157.34,
+    "100_db_reads_seconds": 0.184
+  },
+  {
+    "variant": "dashhack-review",
+    "smol": true,
+    "home_warm_MiB": 122.5,
+    "after_api_MiB": 154.75,
+    "peak_MiB": 158.39,
+    "100_db_reads_seconds": 0.156
+  },
+  {
+    "variant": "dashhack-review",
+    "smol": true,
+    "home_warm_MiB": 122.65,
+    "after_api_MiB": 157.09,
+    "peak_MiB": 160.13,
+    "100_db_reads_seconds": 0.161
+  }
+]

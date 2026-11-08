@@ -1,0 +1,60 @@
+[
+  {
+    "server": 24509643,
+    "public": 1365266,
+    "js_raw": 905268,
+    "js_gzip": 280738,
+    "variant": "dashhack-review",
+    "js_chunks": [
+      {
+        "name": "BU47-WJ8.js",
+        "raw": 821409,
+        "gzip": 246825
+      },
+      {
+        "name": "CzFUAymr.js",
+        "raw": 16882,
+        "gzip": 6052
+      },
+      {
+        "name": "BMFfeleJ.js",
+        "raw": 16329,
+        "gzip": 5649
+      },
+      {
+        "name": "BEMIXwtW.js",
+        "raw": 11486,
+        "gzip": 3830
+      }
+    ]
+  },
+  {
+    "server": 5530643,
+    "public": 1046130,
+    "js_raw": 865719,
+    "js_gzip": 264317,
+    "variant": "dashhack-lean",
+    "js_chunks": [
+      {
+        "name": "CLYXa3lK.js",
+        "raw": 577120,
+        "gzip": 155646
+      },
+      {
+        "name": "BlFGwHSo.js",
+        "raw": 212475,
+        "gzip": 80744
+      },
+      {
+        "name": "CGDUoXdr.js",
+        "raw": 17058,
+        "gzip": 6140
+      },
+      {
+        "name": "Baykjodw.js",
+        "raw": 16330,
+        "gzip": 5649
+      }
+    ]
+  }
+]

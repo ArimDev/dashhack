@@ -1,0 +1,18 @@
+[
+  {
+    "variant": "dashhack-review",
+    "initial_client_js_bytes": 889687,
+    "after_chart_js_bytes": 889687,
+    "chart_rendered": true,
+    "settings_rendered": true,
+    "page_errors": []
+  },
+  {
+    "variant": "dashhack-lean",
+    "initial_client_js_bytes": 281106,
+    "after_chart_js_bytes": 858226,
+    "chart_rendered": true,
+    "settings_rendered": true,
+    "page_errors": []
+  }
+]

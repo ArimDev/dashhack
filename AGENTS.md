@@ -1,0 +1,53 @@
+# DashHack agent guide
+
+Read [docs/SQLITE_MIGRATION.md](docs/SQLITE_MIGRATION.md) for the current implementation, rebase record, tests and tradeoffs. [docs/AGENT_HANDOFF.md](docs/AGENT_HANDOFF.md) is the original pre-migration review, retained as historical context; its MongoDB setup and several findings are superseded.
+
+## Current baseline
+
+- Branch: `feat_alby_design`, rebased onto `origin/master` release `3fa3669` (there is no `main`). Rebased design tip: `f68256c`.
+- Original design history remains at `backup/feat-alby-design-before-rebase-20261107`.
+- Nuxt 4 / Vue 3 and Tailwind 4, running on Bun with embedded SQLite. Package version 1.0.0. No Go rewrite or MongoDB service.
+- Nuxt root is `src/`; app code is `src/app/`, server code `src/server/`, public files `src/public/`, generated output `src/.nuxt/` and `src/.output/`.
+- The user prioritizes minimum memory and size for a private event. Keep architecture small: one app, one SQLite database, one web replica. Avoid adding background services or broad product features.
+
+## Development and validation
+
+- Use `bun install --frozen-lockfile`; preserve the tracked `bun.lock`. Do not create an npm lockfile or upgrade dependencies incidentally.
+- `bun run dev` starts at <http://localhost:5002>. Bun is required for `bun:sqlite`; package scripts invoke Nuxt using Bun.
+- `NUXT_SQLITE_PATH` controls database location; local default is `./.data/dashhack.sqlite`, resolved from process working directory. SQLite files/snapshots must stay out of Git and Docker build context.
+- `bun test tests/unit` validates persistence, ownership, expiry, revisions, migration and backup. `bun run test:e2e` starts a separate server at 5010 using `.data/playwright.sqlite`.
+- `PLAYWRIGHT_CHROMIUM_EXECUTABLE` optionally selects system Chrome. Tests mock GitHub; no token is required.
+- `bun run build`, then `NUXT_SQLITE_PATH=/absolute/path/app.sqlite bun src/.output/server/index.mjs` checks production behavior.
+
+## Persistence and API conventions
+
+- `src/server/storage/sqlite.js`: direct parameterized SQL, versioned schema, one connection, WAL, foreign keys, 2 MiB page cache, FULL synchronization and transactions.
+- Schema version 6: events, teams, notes, sessions and event-scoped mentors. Startup migrates version 1 in a transaction, preserving notes as `mentor_note` with a null creator. Stable IDs identify teams/notes/mentors. Team names are unique within an event. Note/team writes check a revision; stale writes return body status 409.
+- Session expiry is explicitly enforced at one hour. Password changes rotate sessions; rename retains the current session. Settings requests identify the route event and must match session ownership.
+- `src/server/utils/db.js` lazily opens the configured store; `utils/api.js` preserves the UI's `{ status, message, ... }` error contract, generally within HTTP 200. Coordinate any HTTP-status migration across clients/tests.
+- `/api/health` opens/checks SQLite. Schema initialization happens at runtime, never in a pre-deploy command that cannot see Railway's volume.
+- `scripts/import-mongo.js` imports private full Mongo exports atomically; public event backups exclude credentials and cannot restore passwords. Sessions are intentionally excluded from imports.
+- `scripts/backup-sqlite.js` uses `VACUUM INTO` for consistent snapshots. Don't copy only a live database's main file while WAL is active.
+
+## UI conventions
+
+- `/` creates events, logs in, or opens existing events read-only without a password. A private event does not silently change that existing public-view feature.
+- `/app/[event]` uses named `routes` middleware and Nuxt `currentEvent`/`eventData` state. The app is client-rendered; charts are lazy-loaded.
+- `layouts/Dashboard.vue` owns navigation, theme, login/logout, quota display and toasts. `teams.vue` owns refresh/serialized note saves; `Team.vue` expands notes/charts; `StickyNote.vue` saves text on blur.
+- Components auto-import without directory prefixes. Preserve existing `bluey-*` colors, Public Sans and light/dark styles.
+- `sessionExists` is a UI hint, never server authorization. Public reading and authenticated writes are separate existing flows.
+- Do not use `v-html` for names; upstream 1.0 already fixed the confirmation dialog. Keep that fix.
+- `kanban.vue` gathers every team's tracked notes (`inKanban: true`) into To Do, In Progress and Done, with team filtering, native drag-and-drop and the shared note status selector. Create notes in Teams; edit/delete them in either view. Legacy custom statuses appear in To Do until reassigned.
+- Kanban uses `/api/note/edit` and `/api/note/delete` to change one note, checking event ownership and the team's revision. Refresh after conflicts; never overwrite an entire stale team to move a note. `eventCanEdit` comes from the event API and is only a UI hint.
+- `/app/[event]/mentors` lists mentors and allows logged-in event participants to add themselves by name through POST `/api/mentor/add`. This is a shared roster, not individual authentication. Both Teams and Kanban expose note type (`mentor_note` or `help_request`) and optional `creatorId` dropdowns; the server validates that the creator belongs to the same event on both save paths. Kanban can filter by type. Creator attribution is separate from work status and does not identify an assignee.
+- Notes have an independent boolean `inKanban` flag. New mentor notes default to false; help requests to true. Plain notes stay on Teams with no priority/status controls. Toggling off retains those fields for later reuse. Version 3 adds the checked `in_kanban` column and preserves existing notes as tracked; both write paths validate booleans.
+- Teams alone have `originality` (plain text, 10,000 characters) and `projectAbstract` (up to 50,000 text characters as paragraph/bullet blocks with text/bold/italic runs). Schema version 4 adds empty defaults to existing teams. `ProjectAbstract.vue` supplies a small native editor and escaped Vue read view; never render abstracts as raw HTML. New fields are edited through AddTeam and shown on Team cards. Whole-team note saves must preserve them, and omitted fields in API updates retain stored values. Notes/help requests do not have their own project fields.
+- Each team has a lazy StartupMatrix section. `src/shared/startupMatrix.js` defines the ten CzechInvest labels/default questions (clients and competition are separate). `startupMatrix` stores only edited rich-text answers by field key; `matrixMentorId` optionally attributes the matrix to an event mentor. Version 5 adds two team columns. PATCH `/api/team/matrix` checks ownership, mentor scope and team revision, patches only submitted answers, and never replaces notes/project details. Other team/note saves leave matrix columns intact. Default questions are generated in the UI and not counted as completed responses. Partial answers are allowed. Collapsing preserves a draft; conflicts retain it until the user explicitly discards/reloads. Public viewing is read-only and the existing shared event login authorizes mentors to edit.
+- GitHub App integration: read docs/GITHUB_APP.md before changing auth. Schema 6 adds event-scoped connections and ten-minute single-use OAuth/selection flows. Server-only configuration lives under NUXT_GITHUB_APP_*. Settings connects an organization via PKCE/user authorization and owner verification; AddTeam offers a paginated repository picker. Installation tokens use native RS256 and bounded in-memory caching; user tokens are never persisted. Public event data exposes only settings.githubApp, and repository lists require event authorization. Public charts may only request repositories already assigned to a team. Existing PAT auth remains a fallback when no App is connected. The GitHub organization `AT-T-Hackathon-Junior-2026` exists with 15 private repositories (`team-01` through `team-15`); App registration and live credentials remain pending. This integration is deployed as e269c475-0ae7-4a94-837b-f94f9815ccc0 (SUCCESS); production uses schema 6 and retains the Czech demo. Organization display name: AT&T Hackathon Junior 2026; confirmed handle: AT-T-Hackathon-Junior-2026.
+- Log and backup Upload remain incomplete. GitHub pagination, mobile layout and broader permissions/UI issues from the original review remain separate work.
+
+## Railway
+
+See [docs/RAILWAY.md](docs/RAILWAY.md) for exact project/environment/service/volume IDs. SQLite uses the attached `/data` volume and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. First deployment `0fd0cc09-af75-4ae6-9059-28d71190aa1e` is SUCCESS; runtime health, initial schema 5 and SQLite integrity were verified by SSH. Latest deployment e269c475-0ae7-4a94-837b-f94f9815ccc0 is SUCCESS with schema 6; GitHub credentials are pending. On 2026-11-08 the local Student Hackathon Demo was imported into the existing empty production event: 15 teams, 45 notes and one mentor. Its existing login and other production data were preserved; full public-API comparison and demo login passed. Demo team names/descriptions and all 45 notes were subsequently translated into Czech locally and on Railway; the event login identifier remains Student Hackathon Demo. The user approved public exposure; https://dashhack-production.up.railway.app is live on port 1020, with HTTPS landing page and health checked. See RAILWAY.md for the deployment record.
+
+Use the Railway skill/MCP and explicit DashHack IDs. Never act on the sibling school project. Do not provision MongoDB for this branch. Keep one replica; data/backup handling and deploy downtime are explained in the migration notes. The user explicitly authorized committing all current changes and force-pushing the rebased `feat_alby_design` branch on 2026-11-08. Use an explicit force-with-lease and preserve backups; future history rewrites still require user authorization.

@@ -30,6 +30,8 @@ const { showToast } = useToast();
 const emit = defineEmits(["close"]);
 const route = useRoute();
 const eventName = ref(route.params.event);
+const eventCanEdit = useState('eventCanEdit', () => false);
+const eventData = useState('eventData');
 
 const buttonText = ref("Log In");
 const buttonDisable = ref(false);
@@ -53,7 +55,13 @@ async function login() {
         console.log("Failed to log in: ", data);
 
         showToast("Failed to log in!", data?.message);
-    } else close();
+    } else {
+        refreshCookie('sessionExists');
+        const response = await $fetch(`/api/event/${encodeURIComponent(route.params.event)}`);
+        eventCanEdit.value = !!response.canEdit;
+        if (response.data) eventData.value = response.data;
+        close();
+    }
 };
 
 function close() {

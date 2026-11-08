@@ -9,27 +9,28 @@ export default defineNuxtConfig({
 		'@nuxt/fonts',
 		'@nuxtjs/color-mode',
 		'@nuxt/icon',
-		'nuxt-color-picker',
-		'@nuxtjs/seo',
-		'@nuxtjs/mdc',
 	],
 
 	rootDir: 'src/',
-	ssr: true,
-	devtools: { enabled: true },
+	ssr: false,
+	devtools: { enabled: false },
 	devServer: {
 		port: 5002,
 	},
 	nitro: {
 		preset: "bun",
+		// Bundle shared field definitions for both dev workers and production.
+		externals: { inline: [/\/shared\/(?:noteStatuses|startupMatrix)\.js$/] },
 	},
 
-	site: {
-		url: process.env.url,
-		name: 'DashHack',
-	},
 	runtimeConfig: {
-		mongoUri: process.env.mongoUri || process.env.MONGO_URI_LOCAL || 'mongodb://mongo:27017/dashhack_dev',
+		sqlitePath: './.data/dashhack.sqlite',
+        githubAppId: '',
+        githubAppClientId: '',
+        githubAppClientSecret: '',
+        githubAppPrivateKey: '',
+        githubAppSlug: '',
+        githubAppBaseUrl: '',
 		public: {
 			appVersion: packageJson.version,
 			buildTimestamp: new Date().toISOString(),
@@ -38,9 +39,8 @@ export default defineNuxtConfig({
 		},
 	},
 
-	seo: {
-		automaticDefaults: false,
-	},
+    routeRules: { '/github/callback': { headers: { 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' } } },
+
 
 	icon: {
 		serverBundle: 'remote',

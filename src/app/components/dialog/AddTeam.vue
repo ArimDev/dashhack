@@ -13,6 +13,7 @@
 						<input data-testid="team-github-input" v-model="teamGithub" type="url" class="p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-gray-300 dark:border-gray-600 dark:placeholder-gray-400 focus:border-bluey-500 focus:ring-bluey-500 dark:bg-gray-700 dark:text-white" name="teamGithub" placeholder="GitHub URL (Optional)">
 					</div>
                     <div class="relative">
+                        <GitHubRepositoryPicker v-if="eventData?.settings?.githubApp && canEdit" @select="teamGithub = $event" />
                         <label for="teamColorInput" class="block text-sm font-medium mb-1">Team Color:</label>
                             <div class="flex items-center gap-3">
                             <input id="teamColorInput" type="color" v-model="teamColor" class="w-10 h-10 border-none cursor-pointer rounded-full p-0">
@@ -23,6 +24,15 @@
                         <label for="teamDescriptionInput" class="block text-sm font-medium mb-1">Description (Optional):</label>
 						<textarea data-testid="team-desc-input" id="teamDescriptionInput" v-model="teamDescription" class="p-3 border-2 min-h-[100px] border-gray-300 dark:border-gray-600 rounded-xl text-sm font-semibold w-full trans-all-linear dark:placeholder-gray-400 focus:border-bluey-500 focus:ring-bluey-500 dark:bg-gray-700 dark:text-white resize-y" name="teamDescription" placeholder="Team Description"></textarea>
 					</div>
+                    <div>
+                        <label for="team-originality" class="block text-sm font-medium mb-1">Originalita</label>
+                        <textarea id="team-originality" v-model="teamOriginality" maxlength="10000" rows="3"
+                            class="p-3 border-2 border-gray-300 dark:border-gray-600 rounded-xl text-sm w-full dark:bg-gray-700" placeholder="Čím je projekt originální?"></textarea>
+                    </div>
+                    <div>
+                        <p class="block text-sm font-medium mb-1">Project Abstract</p>
+                        <ProjectAbstract v-model="teamProjectAbstract" />
+                    </div>
 				</div>
 
 				<div class="flex justify-between gap-4 flex-row flex-shrink-0 pt-4 border-t border-gray-200 dark:border-gray-700">
@@ -50,6 +60,8 @@ const props = defineProps({
 });
 
 const route = useRoute();
+const eventData = useState('eventData');
+const canEdit = useState('eventCanEdit', () => false);
 const eventName = ref(route.params.event);
 
 const colorPicker = ref(false);
@@ -61,8 +73,12 @@ const oldName = ref(""),
 	teamDescription = ref(props.team?.description || "");
 
 const edit = computed(() => !!props.team);
+const teamOriginality = ref('');
+const teamProjectAbstract = ref([]);
 
 watch(() => props.team, function (newTeam) {
+    teamOriginality.value = newTeam?.originality || '';
+    teamProjectAbstract.value = structuredClone(toRaw(newTeam?.projectAbstract || []));
 	if (newTeam) {
 		oldName.value = newTeam.name || "",
 			teamName.value = newTeam.name || "",
@@ -84,14 +100,18 @@ async function teamSubmit() {
 		teamGithub: teamGithub.value,
 		teamColor: teamColor.value,
 		teamDescription: teamDescription.value,
+        teamOriginality: teamOriginality.value,
+        teamProjectAbstract: teamProjectAbstract.value,
 	};
 
 	if (edit.value) {
         const existingNotes = props.team?.stickyNotes || [];
 		let data = await $fetch(`/api/team/edit/`, {
 			method: "PUT",
-			body: { 
-                oldName: oldName.value, 
+			body: {
+                oldName: oldName.value,
+                teamId: props.team._id,
+                revision: props.team.revision,
                 ...teamData,
                 stickyNotes: existingNotes
             }
