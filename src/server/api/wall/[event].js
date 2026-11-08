@@ -1,7 +1,7 @@
 import { connectDB } from "../../utils/db";
 import Event from "../../models/Event";
 import { mkdir, writeFile } from "node:fs/promises";
-import { join } from "node:path";
+import { join, resolve, sep } from "node:path";
 
 function parseTextList(value) {
     if (!value) return [];
@@ -48,16 +48,6 @@ function filtersAllowed(post, wall) {
         return false;
     }
 
-    if (wall.whitelistedAuthors?.length && !matchesTerm(authorText, wall.whitelistedAuthors)) {
-        if (wall.whitelistedKeywords?.length && !matchesTerm(combinedText, wall.whitelistedKeywords)) {
-            return false;
-        }
-    }
-
-    if (wall.whitelistedKeywords?.length && !matchesTerm(combinedText, wall.whitelistedKeywords)) {
-        return false;
-    }
-
     return true;
 }
 
@@ -88,9 +78,7 @@ export default defineEventHandler(async (event) => {
             idleCycleSeconds: 25,
             idleWaitSeconds: 30,
             blacklistedKeywords: [],
-            whitelistedKeywords: [],
             blacklistedAuthors: [],
-            whitelistedAuthors: [],
         };
 
         if (!wall.enabled || !wall.publicUploadEnabled) {
@@ -110,10 +98,34 @@ export default defineEventHandler(async (event) => {
 
         const fileEntry = formData?.find((part) => part.name === 'file' && part.filename);
         if (fileEntry) {
-            const fileName = fileEntry.filename || `upload-${Date.now()}`;
-            const extension = fileName.includes('.') ? fileName.split('.').pop() : 'bin';
+            const extensions = {
+                'image/avif': 'avif',
+                'image/bmp': 'bmp',
+                'image/gif': 'gif',
+                'image/heic': 'heic',
+                'image/heif': 'heif',
+                'image/jpeg': 'jpg',
+                'image/png': 'png',
+                'image/tiff': 'tiff',
+                'image/webp': 'webp',
+                'video/mp4': 'mp4',
+                'video/ogg': 'ogv',
+                'video/quicktime': 'mov',
+                'video/webm': 'webm',
+                'video/x-matroska': 'mkv',
+            };
+            const extension = extensions[fileEntry.type || ''];
+            if (!extension) {
+                return { status: 415, message: 'Unsupported upload type.' };
+            }
+
             const safeName = `${Date.now()}-${crypto.randomUUID()}.${extension}`;
-            const uploadDir = join(useRuntimeConfig().uploadsDir, eventName);
+            const uploadRoot = resolve(useRuntimeConfig().uploadsDir);
+            const uploadDir = resolve(uploadRoot, eventName);
+            if (!uploadDir.startsWith(`${uploadRoot}${sep}`)) {
+                return { status: 400, message: 'Invalid event upload path.' };
+            }
+
             await mkdir(uploadDir, { recursive: true });
 
             const targetPath = join(uploadDir, safeName);
@@ -173,9 +185,7 @@ export default defineEventHandler(async (event) => {
         idleCycleSeconds: 25,
         idleWaitSeconds: 30,
         blacklistedKeywords: [],
-        whitelistedKeywords: [],
         blacklistedAuthors: [],
-        whitelistedAuthors: [],
     };
 
     const cutoff = new Date(Date.now() - (Number(wall.windowMinutes || 1440) * 60 * 1000));

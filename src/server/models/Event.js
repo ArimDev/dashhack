@@ -40,9 +40,7 @@ const WallSettingsSchema = new mongoose.Schema({
     xQueryHandles: [{ type: String }],
     xLastPollAt: { type: Date, default: null },
     blacklistedKeywords: [{ type: String }],
-    whitelistedKeywords: [{ type: String }],
     blacklistedAuthors: [{ type: String }],
-    whitelistedAuthors: [{ type: String }],
 }, { _id: false });
 
 const EventSchema = new mongoose.Schema({
@@ -78,9 +76,7 @@ const EventSchema = new mongoose.Schema({
             xQueryHandles: [],
             xLastPollAt: null,
             blacklistedKeywords: [],
-            whitelistedKeywords: [],
             blacklistedAuthors: [],
-            whitelistedAuthors: [],
         }
     },
     posts: [WallPostSchema],

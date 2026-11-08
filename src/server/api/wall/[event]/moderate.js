@@ -48,9 +48,7 @@ export default defineEventHandler(async (event) => {
         idleCycleSeconds: 25,
         idleWaitSeconds: 30,
         blacklistedKeywords: [],
-        whitelistedKeywords: [],
         blacklistedAuthors: [],
-        whitelistedAuthors: [],
     };
 
     if (event.method === 'POST') {

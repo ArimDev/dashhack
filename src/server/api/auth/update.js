@@ -1,6 +1,7 @@
 import { connectDB } from "../../utils/db";
 import Event from "../../models/Event";
 import Session from "../../models/Session";
+import { startXPollerForEvent } from "../../utils/xPoller";
 
 import bcrypt from "bcrypt";
 import { v4 as uuidv4 } from "uuid";
@@ -149,9 +150,7 @@ export default defineEventHandler(async (_event) => {
             idleWaitSeconds: 30,
             queryHashtags: [],
             blacklistedKeywords: [],
-            whitelistedKeywords: [],
             blacklistedAuthors: [],
-            whitelistedAuthors: [],
         };
 
         existingEvent.wall.queryHashtags = [...new Set(normalized)];
@@ -193,9 +192,7 @@ export default defineEventHandler(async (_event) => {
             xQueryHandles: [],
             xLastPollAt: null,
             blacklistedKeywords: [],
-            whitelistedKeywords: [],
             blacklistedAuthors: [],
-            whitelistedAuthors: [],
         };
 
         existingEvent.wall.xEnabled = Boolean(input.enabled);
@@ -203,6 +200,7 @@ export default defineEventHandler(async (_event) => {
         existingEvent.wall.xQueryHashtags = [...new Set(hashtags)];
         existingEvent.wall.xQueryHandles = [...new Set(handles)];
         await existingEvent.save();
+        startXPollerForEvent(existingEvent.event).catch((error) => console.error('[xPoller]', error));
 
         return { status: 200, message: "X collector settings updated successfully" };
     }

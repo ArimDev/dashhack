@@ -160,7 +160,7 @@ export async function syncXPostsForEvent(eventName) {
 
         const normalized = normalizeXPost(tweet, user, payload.includes || {});
         const combinedText = `${normalized.text || ''} ${normalized.handle || ''}`.toLowerCase();
-        const matchesWallFilters = !((eventDoc.wall.blacklistedKeywords || []).some((term) => combinedText.includes(String(term || '').trim().toLowerCase())) || (eventDoc.wall.blacklistedAuthors || []).some((term) => (normalized.handle || '').toLowerCase().includes(String(term || '').trim().toLowerCase())));
+        const matchesWallFilters = !((eventDoc.wall.blacklistedKeywords || []).some((term) => String(term || '').trim() && combinedText.includes(String(term).trim().toLowerCase())) || (eventDoc.wall.blacklistedAuthors || []).some((term) => String(term || '').trim() && (normalized.handle || '').toLowerCase().includes(String(term).trim().toLowerCase())));
 
         if (!matchesWallFilters) {
             skippedFiltered += 1;
@@ -192,6 +192,9 @@ export async function startXPollerForEvent(eventName) {
 
     const wall = eventDoc.wall || {};
     if (!wall.xEnabled) {
+        const existing = pollers.get(eventName);
+        if (existing?.timer) clearInterval(existing.timer);
+        pollers.delete(eventName);
         console.log(`[xPoller] Event "${eventName}": Poller not started, X polling disabled`);
         return { enabled: false, running: false };
     }

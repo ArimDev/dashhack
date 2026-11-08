@@ -165,29 +165,9 @@
           </label>
 
           <label class="block text-sm text-slate-600 dark:text-slate-300">
-            Allowed keywords
-            <textarea
-              v-model="allowedKeywordsText"
-              rows="3"
-              class="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
-              @change="saveSettings"
-            />
-          </label>
-
-          <label class="block text-sm text-slate-600 dark:text-slate-300">
             Blacklisted authors
             <textarea
               v-model="blacklistAuthorsText"
-              rows="2"
-              class="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
-              @change="saveSettings"
-            />
-          </label>
-
-          <label class="block text-sm text-slate-600 dark:text-slate-300">
-            Whitelisted authors
-            <textarea
-              v-model="whitelistAuthorsText"
               rows="2"
               class="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
               @change="saveSettings"
@@ -477,9 +457,7 @@ const settings = ref({
   idleWaitSeconds: 30,
 });
 const keywordsText = ref("");
-const allowedKeywordsText = ref("");
 const blacklistAuthorsText = ref("");
-const whitelistAuthorsText = ref("");
 
 const uploadQrUrl = computed(() => {
   if (!import.meta.client || !currentEvent.value) return "";
@@ -536,9 +514,7 @@ watch(
       idleWaitSeconds: wall.idleWaitSeconds || 30,
     };
     keywordsText.value = (wall.blacklistedKeywords || []).join(", ");
-    allowedKeywordsText.value = (wall.whitelistedKeywords || []).join(", ");
     blacklistAuthorsText.value = (wall.blacklistedAuthors || []).join(", ");
-    whitelistAuthorsText.value = (wall.whitelistedAuthors || []).join(", ");
     posts.value = (value.posts || [])
       .map((post) => ({
         ...post,
@@ -568,9 +544,7 @@ async function loadModeration() {
       idleWaitSeconds: response.data.wall.idleWaitSeconds || 30,
     };
     keywordsText.value = (response.data.wall.blacklistedKeywords || []).join(", ");
-    allowedKeywordsText.value = (response.data.wall.whitelistedKeywords || []).join(", ");
     blacklistAuthorsText.value = (response.data.wall.blacklistedAuthors || []).join(", ");
-    whitelistAuthorsText.value = (response.data.wall.whitelistedAuthors || []).join(", ");
   } catch (error) {
     console.warn("Failed to load moderation dashboard:", error);
   }
@@ -585,15 +559,7 @@ async function saveSettings() {
         .split(",")
         .map((value) => value.trim())
         .filter(Boolean),
-      whitelistedKeywords: allowedKeywordsText.value
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean),
       blacklistedAuthors: blacklistAuthorsText.value
-        .split(",")
-        .map((value) => value.trim())
-        .filter(Boolean),
-      whitelistedAuthors: whitelistAuthorsText.value
         .split(",")
         .map((value) => value.trim())
         .filter(Boolean),

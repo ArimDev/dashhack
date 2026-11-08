@@ -36,11 +36,8 @@ export default defineEventHandler(async (_event) => {
       idleWaitSeconds: 30,
       queryHashtags: [],
       blacklistedKeywords: [],
-      whitelistedKeywords: [],
       blacklistedAuthors: [],
-      whitelistedAuthors: [],
     },
-    posts: eventData.posts || [],
     createdAt: eventData.createdAt,
     updatedAt: eventData.updatedAt,
     settings: {
