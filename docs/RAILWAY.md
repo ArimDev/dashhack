@@ -12,7 +12,8 @@ Updated 2026-11-08 for the SQLite branch. This project is separate from the scho
 | Persistent volume | `dashhack-data` — `14d791fc-cdfd-4e1d-a177-6be2a8beab48`, 128 MB, `/data`, `sfo` |
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
-| First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — SUCCESS |
+| First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
+| Latest verified deployment | `0f41cc2e-49f1-44c1-ae3d-23b49c2d0070` — SUCCESS, Social Wall / schema 7 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -67,11 +68,29 @@ Deployed `e269c475-0ae7-4a94-837b-f94f9815ccc0`, observed SUCCESS. Clean source 
 
 Verified HTTPS health, demo login, the new authorized GitHub status endpoint, callback no-referrer/no-store headers, schema 6 and SQLite integrity. All 15 Czech teams and 45 notes remain present. The organization `att-hackathon-junior-2026` and GitHub App registration are not provisioned; the connection is disabled until server credentials are supplied. Follow [GitHub setup](GITHUB_APP.md). No secrets were supplied, no GitHub account was connected, and no team repository links were changed by this deployment. Git history remains uncommitted/unpushed.
 
+## Social Wall deployment — PR #6
+
+Deployment [`0f41cc2e-49f1-44c1-ae3d-23b49c2d0070`](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d/service/9960307b-3bd3-41a9-ade4-67a2ca421745?id=0f41cc2e-49f1-44c1-ae3d-23b49c2d0070) reached **SUCCESS**, with its runtime healthcheck and schema-7 initialization verified. Source commit `782f1b99dd0ec145a0ce10ad2e13645163d83030` includes separate feature commit `baa88a5` and the Czech demo seed follow-up; both were pushed to `origin/feat_alby_design` before uploading. The GitHub App registration remains pending; the confirmed organization `AT-T-Hackathon-Junior-2026` and its 15 private repositories already exist.
+
+Clean source archive: `/tmp/dashhack-pr6-release-3moxvfox`, 100 files / 516,965 bytes, SHA-256 `657b13f2cdc5600d43ebd5943b5dc353c5253f156737a9505937b2aedffe375d`. No environment files, databases, dependencies or generated output were uploaded. Existing Debian slim image, Docker builder, single replica, `/data` volume, variables, port and public domain were retained. No X/GitHub credentials were added.
+
+Before deployment, created consistent snapshot `/data/backups/before-social-wall-1794179381993.sqlite`. Its attempted optional download was rejected by automatic approval review because a full database includes credentials; that transfer requires explicit approval. The snapshot remains on Railway. The deployment and fixture writes proceeded without downloading it.
+
+Matej's PR has no committed data/upload fixtures. Ran the committed, idempotent `scripts/seed-demo-wall.js` against the existing **Student Hackathon Demo** in production after successful migration: ten fictional Czech wall posts, comprising six visible approved (two pinned), two pending, one hidden and one rejected. Three original PNG illustrations occupy **6,137 bytes**. This demo wall is enabled; other events' walls retain their defaults. Equivalent fixtures are also present locally. Existing moderation decisions are not overwritten on reruns.
+
+All pre/post fingerprints match for existing events (including credential/settings fields, excluding only the expected `updated_at`), teams, notes and mentors. **15 Czech teams, 45 notes and one mentor** remain unchanged; the second existing empty event is preserved. SQLite integrity is `ok`, schema is 7, and free volume space after seeding was 114,032,640 bytes.
+
+Validated frozen install, **39 unit tests / 241 assertions**, **27 browser scenarios**, production build and live HTTPS health/login/data checks. The public feed returns six labelled demo posts, pending media is inaccessible anonymously but readable to the logged-in organizer, moderation stats match all ten posts, and page routes return HTTP 200. The optional X collector reports unconfigured and makes no API calls. Runtime logs show a healthy listener without application errors.
+
+- [Public demo wall](https://dashhack-production.up.railway.app/Student%20Hackathon%20Demo/wall)
+- [Attendee submission form](https://dashhack-production.up.railway.app/Student%20Hackathon%20Demo/wall/upload)
+- [Organizer moderation](https://dashhack-production.up.railway.app/app/Student%20Hackathon%20Demo/social-wall)
+
 ## Deployment procedure
 
 When deployment is requested:
 
-1. Review the working tree. The branch's three design commits were rebased; rewritten history has **not** been pushed. A CLI upload deploys eligible local files, including uncommitted changes; GitHub integration deploys committed remote source.
+1. Review the working tree and pushed commit. The user authorized and completed publishing the earlier rebase; `feat_alby_design` contains the current SQLite implementation. A CLI upload deploys eligible local files, including uncommitted changes; use a clean archive of the reviewed commit to make the release reproducible.
 2. Run `bun install --frozen-lockfile`, `bun test tests/unit`, `bun run test:e2e`, and `bun run build`. Build and runtime use pinned Bun 1.3.2; update the Docker version deliberately after verification.
 3. Confirm the `/data` volume, runtime SQLite path and single replica on the service. No MongoDB, Redis or extra web service is needed.
 4. Upload the reviewed application. Ensure `bun.lock` is included: `.gitignore` currently lists it, so this deployment used a clean temporary package containing only release files and `--no-gitignore --path-as-root`. Do not use `--no-gitignore` on the unfiltered working tree, which contains local environment/database files. Upload the filtered package with explicit IDs:

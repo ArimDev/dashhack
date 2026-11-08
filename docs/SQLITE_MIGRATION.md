@@ -72,7 +72,7 @@ GitHub App validation: 29 unit tests (149 assertions), 24 browser scenarios and 
 
 ## Social Wall from PR #6
 
-Schema version 7 adds separate wall settings, post and BLOB media tables, retaining all prior event/team/mentor/GitHub data. This is the SQLite adaptation of upstream PR #6, with no dependency or infrastructure additions. Walls default disabled; organizer moderation, bounded uploads and optional X collection are isolated from team workflows. See [review, behavior, quotas, backup differences and validation](SOCIAL_WALL_PR6.md). Full SQLite snapshots now include uploaded attachments; public per-event JSON exports do not. Live Railway remains at schema 6 until deployment.
+Schema version 7 adds separate wall settings, post and BLOB media tables, retaining all prior event/team/mentor/GitHub data. This is the SQLite adaptation of upstream PR #6, with no dependency or infrastructure additions. Walls default disabled; organizer moderation, bounded uploads and optional X collection are isolated from team workflows. See [review, behavior, quotas, backup differences and validation](SOCIAL_WALL_PR6.md). Full SQLite snapshots now include uploaded attachments; public per-event JSON exports do not. The authorized Social Wall deployment `0f41cc2e-49f1-44c1-ae3d-23b49c2d0070` is now SUCCESS at schema 7; ten fictional Czech wall posts are seeded alongside the unchanged original demo. See [deployment verification](RAILWAY.md).
 
 ## Resource evidence
 
