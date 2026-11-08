@@ -44,3 +44,17 @@ Storage and mocked-provider tests cover schema-6 migration with existing data/pa
 Verified: **38 unit tests (225 assertions)**, all **24 existing browser scenarios** plus **3 new wall browser scenarios**, and a production build. An isolated production runtime smoke check passed health/schema initialization, event login, wall settings, multipart PNG submission, pending-media privacy, approval, public feed and byte ranges. Build/test logs: `/tmp/dashhack-pr6-unit.log`, `/tmp/dashhack-pr6-e2e.log`, `/tmp/dashhack-pr6-wall-e2e.log`, `/tmp/dashhack-pr6-build.log`.
 
 Live X credentials and an actual X API response were not exercised. This feature commit does not deploy or enable a production wall.
+
+## Czech demo fixtures
+
+Matej's PR contains no committed seed data or uploaded media fixtures. `scripts/seed-demo-wall.js` supplies ten clearly labelled fictional Czech examples for the existing **Student Hackathon Demo** only: six visible approved posts (two pinned), two pending, one hidden and one rejected. Three small original PNG illustrations total 6,137 bytes and are generated with built-in zlib; there are no external photos, real tweets or added dependencies. Full snapshots preserve them.
+
+```sh
+# Preview, then explicitly apply to the existing schema-7 database.
+NUXT_SQLITE_PATH=/path/to/dashhack.sqlite bun scripts/seed-demo-wall.js
+NUXT_SQLITE_PATH=/path/to/dashhack.sqlite bun scripts/seed-demo-wall.js --apply
+```
+
+The seed refuses an absent/wrong-schema database or an event missing the existing 15 teams/45 notes. Stable per-event post identifiers make reruns idempotent; it never replaces existing posts or moderation decisions. It creates/enables wall settings only if none exist, respecting an already-configured disabled wall. It never changes event credentials, teams, notes, mentors, GitHub connections or other events. The operational caller must take a full snapshot first. Locally, all ten posts were seeded after a consistent backup and schema upgrade.
+
+Fixture follow-up validation: **39 unit tests / 241 assertions**, including dry-run behavior, event isolation, valid PNG media, retained teams/notes/settings and idempotence after an organizer rejects a post/disables the wall. The prior 27 browser checks, build and production smoke record above cover unchanged application code.
