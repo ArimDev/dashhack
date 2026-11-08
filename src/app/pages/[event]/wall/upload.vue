@@ -7,8 +7,24 @@
         <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">Add a photo, video, or a few words from the event.</p>
       </header>
 
+      <div v-if="availability === 'checking'" role="status" class="p-8 text-center text-slate-600 dark:text-slate-300">
+        Checking upload availability...
+      </div>
+
+      <div v-else-if="availability === 'unavailable'" role="status" class="flex flex-col items-center gap-4 p-8 text-center sm:p-10">
+        <div class="flex h-16 w-16 items-center justify-center rounded-full bg-cyan-400/15 text-cyan-600 dark:text-cyan-300">
+          <Icon name="heroicons:information-circle" size="40px" />
+        </div>
+        <div>
+          <h2 class="text-xl font-black">Uploads aren't available</h2>
+          <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
+            Public uploads aren't available for this event right now. Please check with the event organizers.
+          </p>
+        </div>
+      </div>
+
       <!-- Success state -->
-      <div v-if="status === 'success'" class="flex flex-col items-center gap-5 p-8 text-center sm:p-10">
+      <div v-else-if="status === 'success'" class="flex flex-col items-center gap-5 p-8 text-center sm:p-10">
         <div class="flex h-16 w-16 items-center justify-center rounded-full bg-emerald-400/15 text-emerald-300">
           <Icon name="heroicons:check-circle" size="40px" />
         </div>
@@ -72,12 +88,26 @@
 const route = useRoute();
 const eventName = computed(() => route.params.event || 'event');
 const submitting = ref(false);
+const availability = ref('checking');
 const message = ref('');
 // status: 'idle' | 'validation' | 'error' | 'success'
 const status = ref('idle');
 const previewUrl = ref('');
 const isImagePreview = ref(true);
 const form = ref({ authorName: '', text: '', file: null });
+
+onMounted(async () => {
+  try {
+    const response = await $fetch(`/api/wall/${eventName.value}`);
+    const wall = response?.data?.wall;
+    availability.value = response?.status === 200 && wall
+      && wall.enabled !== false && wall.publicUploadEnabled !== false
+      ? 'available'
+      : 'unavailable';
+  } catch {
+    availability.value = 'unavailable';
+  }
+});
 
 function handleFileChange(event) {
   const file = event.target.files?.[0];

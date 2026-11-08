@@ -188,6 +188,14 @@ export default defineEventHandler(async (event) => {
         blacklistedAuthors: [],
     };
 
+    if (!wall.enabled) {
+        return {
+            status: 200,
+            message: 'Wall unavailable for this event.',
+            data: { wall, posts: [] },
+        };
+    }
+
     const cutoff = new Date(Date.now() - (Number(wall.windowMinutes || 1440) * 60 * 1000));
     const posts = (eventDoc.posts || [])
         .filter((post) => {
