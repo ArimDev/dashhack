@@ -1,58 +1,51 @@
 <template>
   <div class="space-y-6">
     <ModerationTabBar
+      :active-tab="activeTab"
+      :stats="stats"
+      :tab-labels="tabLabel"
+      @select="activeTab = $event"
+    />
+
+    <div class="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
+      <ModerationSettingsPanel
+        :settings="settings"
+        :keywords-text="keywordsText"
+        :blacklist-authors-text="blacklistAuthorsText"
+        :upload-qr-url="uploadQrUrl"
+        @update:settings="settings = $event"
+        @update:keywords-text="keywordsText = $event"
+        @update:blacklist-authors-text="blacklistAuthorsText = $event"
+        @save="saveSettings"
+      />
+
+      <section class="space-y-4">
+        <ModerationToolbar
+          :active-tab-label="tabLabel[activeTab]"
+          :current-event="currentEvent"
+          :sort-order="sortOrder"
+          @sort="sortOrder = $event"
+        />
+
+        <div
+          v-if="!filteredPosts.length"
+          class="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
+        >
+          No {{ tabLabel[activeTab].toLowerCase() }} posts.
+        </div>
+
         <div v-else class="grid gap-4">
           <ModerationPostCard
             v-for="post in filteredPosts"
             :key="post.id"
             :post="post"
             :menu-open="openMenuId === post.id"
-              <ModerationToolbar
-                :active-tab-label="tabLabel[activeTab]"
-                :current-event="currentEvent"
-                :sort-order="sortOrder"
-                @sort="sortOrder = $event"
-              />
-                </div>
-
-                <!-- Rejected posts: menu -->
-                <div v-else-if="post.status === 'rejected'" class="relative">
-                  <button
-                    @click="toggleMenu(post.id)"
-                    class="rounded-full border border-slate-300 bg-white px-3 py-2 text-slate-700 transition hover:border-slate-400 hover:bg-slate-50 dark:border-slate-600 dark:bg-slate-800 dark:text-slate-200 dark:hover:border-slate-500 dark:hover:bg-slate-700"
-                  >
-                    <Icon name="heroicons:ellipsis-horizontal" size="18px" />
-                  </button>
-
-                  <div
-                    v-if="openMenuId === post.id"
-                    class="absolute right-0 top-full z-50 mt-2 w-40 overflow-hidden rounded-2xl border border-slate-200 bg-white shadow-lg dark:border-slate-700 dark:bg-slate-900"
-                  >
-                    <button
-                      @click="
-                        moderatePost(post.id, 'unreject');
-                        openMenuId = null;
-                      "
-                      class="flex w-full items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                    >
-                      <Icon name="heroicons:arrow-uturn-left" size="16px" />
-                      Undo
-                    </button>
-                    <button
-                      @click="confirmDelete(post.id)"
-                      class="flex w-full items-center gap-3 border-t border-slate-200 px-4 py-3 text-sm font-semibold text-red-600 transition hover:bg-red-50 dark:border-slate-700 dark:text-red-400 dark:hover:bg-red-950/30"
-                    >
-                      <Icon name="heroicons:trash" size="16px" />
-                      Delete
-                    </button>
-                  </div>
-                </div>
-              </div>
-
-              <!-- Close menu when clicking outside -->
-              <div v-if="openMenuId" @click="openMenuId = null" class="fixed inset-0" />
-            </div>
-          </article>
+            :expired="isOutsideWindow(post)"
+            @moderate="moderatePost(post.id, $event)"
+            @toggle-menu="toggleMenu(post.id)"
+            @close-menu="openMenuId = null"
+            @delete="confirmDelete(post.id)"
+          />
         </div>
       </section>
     </div>
