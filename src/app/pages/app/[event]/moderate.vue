@@ -1,88 +1,60 @@
 <template>
   <div class="space-y-6">
-    <div class="grid gap-4 md:grid-cols-2 xl:grid-cols-5">
+    <div
+      class="mb-6 flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm scrollbar-hide dark:border-slate-700 dark:bg-slate-900"
+    >
       <button
+        v-for="tab in [
+          {
+            id: 'all',
+            label: 'All',
+            count: stats.total,
+            active: 'bg-slate-200 text-slate-900 dark:bg-slate-700 dark:text-white',
+          },
+          {
+            id: 'approved',
+            label: 'Approved',
+            count: stats.approved,
+            active:
+              'bg-emerald-100 text-emerald-800 dark:bg-emerald-900/50 dark:text-emerald-300',
+          },
+          {
+            id: 'pending',
+            label: 'Pending',
+            count: stats.pending,
+            active:
+              'bg-amber-100 text-amber-800 dark:bg-amber-900/50 dark:text-amber-300',
+          },
+          {
+            id: 'rejected',
+            label: 'Rejected',
+            count: stats.rejected,
+            active: 'bg-red-100 text-red-800 dark:bg-red-900/50 dark:text-red-300',
+          },
+          {
+            id: 'pinned',
+            label: 'Pinned',
+            count: stats.pinned,
+            active: 'bg-cyan-100 text-cyan-800 dark:bg-cyan-900/50 dark:text-cyan-300',
+          },
+        ]"
+        :key="tab.id"
         type="button"
-        @click="activeTab = 'all'"
+        @click="activeTab = tab.id"
+        :aria-pressed="activeTab === tab.id"
         :class="
-          activeTab === 'all'
-            ? 'ring-2 ring-slate-400 dark:ring-slate-500'
-            : 'hover:opacity-90'
+          activeTab === tab.id
+            ? tab.active
+            : 'text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-slate-800'
         "
-        class="rounded-3xl border border-slate-200 bg-white p-4 text-left shadow-sm transition dark:border-slate-700 dark:bg-slate-900"
+        class="flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-xl px-4 py-2 text-sm font-semibold transition-colors focus-visible:outline-none focus-visible:ring-2 focus-visible:ring-blue-500"
       >
-        <p class="text-xs uppercase tracking-[0.2em] text-slate-500">Total</p>
-        <p class="mt-3 text-3xl font-black">{{ stats.total }}</p>
-      </button>
-      <button
-        type="button"
-        @click="activeTab = 'approved'"
-        :class="
-          activeTab === 'approved'
-            ? 'ring-2 ring-emerald-400 dark:ring-emerald-600'
-            : 'hover:opacity-90'
-        "
-        class="rounded-3xl border border-emerald-200 bg-emerald-50 p-4 text-left shadow-sm transition dark:border-emerald-900 dark:bg-emerald-950/40"
-      >
-        <p
-          class="text-xs uppercase tracking-[0.2em] text-emerald-700 dark:text-emerald-300"
+        <span>{{ tab.label }}</span>
+        <span
+          class="rounded-full bg-black/5 px-2 py-0.5 text-xs font-bold tabular-nums dark:bg-white/10"
         >
-          Approved
-        </p>
-        <p class="mt-3 text-3xl font-black text-emerald-700 dark:text-emerald-300">
-          {{ stats.approved }}
-        </p>
-      </button>
-      <button
-        type="button"
-        @click="activeTab = 'pending'"
-        :class="
-          activeTab === 'pending'
-            ? 'ring-2 ring-amber-400 dark:ring-amber-600'
-            : 'hover:opacity-90'
-        "
-        class="rounded-3xl border border-amber-200 bg-amber-50 p-4 text-left shadow-sm transition dark:border-amber-900 dark:bg-amber-950/40"
-      >
-        <p class="text-xs uppercase tracking-[0.2em] text-amber-700 dark:text-amber-300">
-          Pending
-        </p>
-        <p class="mt-3 text-3xl font-black text-amber-700 dark:text-amber-300">
-          {{ stats.pending }}
-        </p>
-      </button>
-      <button
-        type="button"
-        @click="activeTab = 'rejected'"
-        :class="
-          activeTab === 'rejected'
-            ? 'ring-2 ring-red-400 dark:ring-red-600'
-            : 'hover:opacity-90'
-        "
-        class="rounded-3xl border border-red-200 bg-red-50 p-4 text-left shadow-sm transition dark:border-red-900 dark:bg-red-950/40"
-      >
-        <p class="text-xs uppercase tracking-[0.2em] text-red-700 dark:text-red-300">
-          Rejected
-        </p>
-        <p class="mt-3 text-3xl font-black text-red-700 dark:text-red-300">
-          {{ stats.rejected }}
-        </p>
-      </button>
-      <button
-        type="button"
-        @click="activeTab = 'pinned'"
-        :class="
-          activeTab === 'pinned'
-            ? 'ring-2 ring-cyan-400 dark:ring-cyan-600'
-            : 'hover:opacity-90'
-        "
-        class="rounded-3xl border border-cyan-200 bg-cyan-50 p-4 text-left shadow-sm transition dark:border-cyan-900 dark:bg-cyan-950/40"
-      >
-        <p class="text-xs uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300">
-          Pinned
-        </p>
-        <p class="mt-3 text-3xl font-black text-cyan-700 dark:text-cyan-300">
-          {{ stats.pinned }}
-        </p>
+          {{ tab.count }}
+        </span>
       </button>
     </div>
 

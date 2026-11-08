@@ -52,7 +52,7 @@
 		</div>
 
 		<div class="lg:ml-[max(15%,_240px)] p-[1%] flex flex-col lg:w-[calc(100%-max(15%,_240px))] h-[calc(100vh-56px)] lg:h-full overflow-y-auto">
-			<nav class="sticky top-0 flex flex-row w-full mb-4 lg:justify-between">
+			<nav class="sticky top-0 z-30 flex flex-row w-full mb-4 lg:justify-between">
 				<div class="flex lg:gap-3">
 					<span class="shadow-md bg-white text-black dark:bg-gray-800 dark:text-white px-4 py-2 flex gap-2 h-[56px] text-lg lg:text-2xl font-bold text-left justify-start items-center rounded-full transition-colors duration-500">
 						{{ currentPage }}
