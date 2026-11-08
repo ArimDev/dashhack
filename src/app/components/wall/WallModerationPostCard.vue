@@ -59,13 +59,13 @@
         <div v-if="post.status === 'pending'" class="flex flex-wrap items-center gap-2">
           <button
             class="rounded-full bg-emerald-500 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-600 active:scale-95"
-            @click="emit('moderate', 'approve')"
+            @click="emit('action', 'approve')"
           >
             ✓ Approve
           </button>
           <button
             class="rounded-full bg-red-500 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-red-600 active:scale-95"
-            @click="emit('moderate', 'reject')"
+            @click="emit('action', 'reject')"
           >
             ✕ Reject
           </button>
@@ -95,14 +95,14 @@
             >
               <button
                 class="flex w-full items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-                @click="emit('moderate', post.hidden ? 'unhide' : 'hide'); emit('close-menu')"
+                @click="emit('action', post.hidden ? 'unhide' : 'hide'); emit('close-menu')"
               >
                 <Icon :name="post.hidden ? 'heroicons:eye' : 'heroicons:eye-slash'" size="16px" />
                 {{ post.hidden ? "Unhide" : "Hide" }}
               </button>
               <button
                 class="flex w-full items-center gap-3 border-t border-slate-200 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:border-slate-700 dark:text-slate-200 dark:hover:bg-slate-800"
-                @click="emit('moderate', post.pinned ? 'unpin' : 'pin'); emit('close-menu')"
+                @click="emit('action', post.pinned ? 'unpin' : 'pin'); emit('close-menu')"
               >
                 <Icon name="heroicons:map-pin" size="16px" :class="{ 'opacity-40': !post.pinned }" />
                 {{ post.pinned ? "Unpin" : "Pin" }}
@@ -132,7 +132,7 @@
           >
             <button
               class="flex w-full items-center gap-3 px-4 py-3 text-sm font-semibold text-slate-700 transition hover:bg-slate-100 dark:text-slate-200 dark:hover:bg-slate-800"
-              @click="emit('moderate', 'unreject'); emit('close-menu')"
+              @click="emit('action', 'unreject'); emit('close-menu')"
             >
               <Icon name="heroicons:arrow-uturn-left" size="16px" />
               Undo
@@ -163,5 +163,5 @@ defineProps({
   expired: { type: Boolean, default: false },
 });
 
-const emit = defineEmits(["moderate", "toggle-menu", "close-menu", "delete"]);
+const emit = defineEmits(["action", "toggle-menu", "close-menu", "delete"]);
 </script>

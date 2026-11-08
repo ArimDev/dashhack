@@ -7,7 +7,7 @@
       <label
         class="flex items-center justify-between gap-4 text-sm text-slate-600 dark:text-slate-300"
       >
-        <span>Moderation mode</span>
+        <span>Approval mode</span>
         <select
           :value="settings.moderationMode"
           class="rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 text-sm dark:border-slate-600 dark:bg-slate-800"

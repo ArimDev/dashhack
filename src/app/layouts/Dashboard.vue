@@ -29,9 +29,9 @@
 					</NuxtLink>
 				</li>
 				<li class="text-left justify-center">
-					<NuxtLink :to="getPath('moderate')" class="text-black dark:text-white cursor-pointer px-4 py-2 flex gap-2 text-2xl font-bold text-left justify-start items-center rounded-full w-full transition-colors duration-500" :class="isActive(getPath('moderate')) ? 'bg-bluey-500 text-white' : 'hover:text-bluey-500'">
+					<NuxtLink :to="getPath('social-wall')" class="text-black dark:text-white cursor-pointer px-4 py-2 flex gap-2 text-2xl font-bold text-left justify-start items-center rounded-full w-full transition-colors duration-500" :class="isActive(getPath('social-wall')) ? 'bg-bluey-500 text-white' : 'hover:text-bluey-500'">
 						<Icon name="material-symbols:display-settings-rounded" size="40px" />
-						<p class="hidden lg:block">Content Wall</p>
+						<p class="hidden lg:block">Social Wall</p>
 					</NuxtLink>
 				</li>
 			</ul>
@@ -136,7 +136,7 @@ const currentPage = computed(() => {
 	const route = useRoute();
 	const pathParts = route.path.split("/");
 	const path = pathParts[3] || "home";
-	return path.charAt(0).toUpperCase() + path.slice(1);
+	return path.split("-").map((word) => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
 });
 const loggedIn = computed(() => !!useCookie("sessionExists").value);
 

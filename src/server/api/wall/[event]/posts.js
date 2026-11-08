@@ -101,14 +101,14 @@ export default defineEventHandler(async (event) => {
                 Object.assign(wall, settings || {});
                 break;
             default:
-                return { status: 400, message: 'Unsupported moderation action.' };
+                return { status: 400, message: 'Unsupported social wall action.' };
         }
 
         await eventDoc.save();
 
         return {
             status: 200,
-            message: 'Moderation action applied.',
+            message: 'Social wall action applied.',
             data: {
                 wall,
                 posts: (eventDoc.posts || []).filter((post) => !post.deleted).map(normalizePost).sort((a, b) => Number(b.pinned) - Number(a.pinned) || new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
@@ -128,7 +128,7 @@ export default defineEventHandler(async (event) => {
 
     return {
         status: 200,
-        message: 'Moderation dashboard loaded.',
+        message: 'Social wall loaded.',
         data: {
             wall,
             posts,

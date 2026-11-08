@@ -1,6 +1,6 @@
 <template>
   <div class="space-y-6">
-    <ModerationTabBar
+    <WallModerationTabBar
       :active-tab="activeTab"
       :stats="stats"
       :tab-labels="tabLabel"
@@ -8,7 +8,7 @@
     />
 
     <div class="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
-      <ModerationSettingsPanel
+      <WallModerationSettingsPanel
         :settings="settings"
         :keywords-text="keywordsText"
         :blacklist-authors-text="blacklistAuthorsText"
@@ -20,7 +20,7 @@
       />
 
       <section class="space-y-4">
-        <ModerationToolbar
+        <WallModerationToolbar
           :active-tab-label="tabLabel[activeTab]"
           :current-event="currentEvent"
           :sort-order="sortOrder"
@@ -35,13 +35,13 @@
         </div>
 
         <div v-else class="grid gap-4">
-          <ModerationPostCard
+          <WallModerationPostCard
             v-for="post in filteredPosts"
             :key="post.id"
             :post="post"
             :menu-open="openMenuId === post.id"
             :expired="isOutsideWindow(post)"
-            @moderate="moderatePost(post.id, $event)"
+            @action="applyPostAction(post.id, $event)"
             @toggle-menu="toggleMenu(post.id)"
             @close-menu="openMenuId = null"
             @delete="confirmDelete(post.id)"
@@ -53,10 +53,10 @@
 </template>
 
 <script setup>
-import ModerationTabBar from "../../../components/wall/ModerationTabBar.vue";
-import ModerationSettingsPanel from "../../../components/wall/ModerationSettingsPanel.vue";
-import ModerationPostCard from "../../../components/wall/ModerationPostCard.vue";
-import ModerationToolbar from "../../../components/wall/ModerationToolbar.vue";
+import WallModerationTabBar from "../../../components/wall/WallModerationTabBar.vue";
+import WallModerationSettingsPanel from "../../../components/wall/WallModerationSettingsPanel.vue";
+import WallModerationPostCard from "../../../components/wall/WallModerationPostCard.vue";
+import WallModerationToolbar from "../../../components/wall/WallModerationToolbar.vue";
 
 definePageMeta({
   layout: "dashboard",
@@ -158,9 +158,9 @@ watch(
   { immediate: true }
 );
 
-async function loadModeration() {
+async function loadSocialWall() {
   try {
-    const response = await $fetch(`/api/wall/${currentEvent.value}/moderate`);
+    const response = await $fetch(`/api/wall/${currentEvent.value}/posts`);
     if (!response || !response.data) return;
     posts.value = response.data.posts || [];
     stats.value = response.data.stats || stats.value;
@@ -175,7 +175,7 @@ async function loadModeration() {
     keywordsText.value = (response.data.wall.blacklistedKeywords || []).join(", ");
     blacklistAuthorsText.value = (response.data.wall.blacklistedAuthors || []).join(", ");
   } catch (error) {
-    console.warn("Failed to load moderation dashboard:", error);
+    console.warn("Failed to load social wall:", error);
   }
 }
 
@@ -195,29 +195,29 @@ async function saveSettings() {
     },
   };
 
-  await $fetch(`/api/wall/${currentEvent.value}/moderate`, {
+  await $fetch(`/api/wall/${currentEvent.value}/posts`, {
     method: "POST",
     body: payload,
   });
-  await loadModeration();
+  await loadSocialWall();
 }
 
-async function moderatePost(postId, action) {
-  await $fetch(`/api/wall/${currentEvent.value}/moderate`, {
+async function applyPostAction(postId, action) {
+  await $fetch(`/api/wall/${currentEvent.value}/posts`, {
     method: "POST",
     body: { action, postId },
   });
-  await loadModeration();
+  await loadSocialWall();
 }
 
 function confirmDelete(postId) {
   openMenuId.value = null;
   if (
     window.confirm(
-      "Delete this post permanently from the wall and moderation list? It will remain archived in the database."
+      "Delete this post permanently from the wall and dashboard? It will remain archived in the database."
     )
   ) {
-    moderatePost(postId, "delete");
+    applyPostAction(postId, "delete");
   }
 }
 
@@ -226,7 +226,7 @@ function toggleMenu(postId) {
 }
 
 onMounted(async () => {
-  await loadModeration();
+  await loadSocialWall();
   // Close menu when pressing Escape
   document.addEventListener("keydown", (e) => {
     if (e.key === "Escape") openMenuId.value = null;
