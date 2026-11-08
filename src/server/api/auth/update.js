@@ -128,5 +128,82 @@ export default defineEventHandler(async (_event) => {
         });
 
         return { status: 200, message: "Password changed successfully" };
+    } else if (setting === "wall.queryHashtags") {
+        let existingEvent = await Event.findOne({ event: session.username });
+        if (!existingEvent) return { status: 404, message: "Event not found" };
+
+        const normalized = Array.isArray(value)
+            ? value.map((entry) => String(entry).trim()).filter(Boolean).map((entry) => entry.startsWith('#') ? entry : `#${entry}`)
+            : String(value || '')
+                .split(/[\n,]+/)
+                .map((entry) => entry.trim())
+                .filter(Boolean)
+                .map((entry) => entry.startsWith('#') ? entry : `#${entry}`);
+
+        existingEvent.wall = existingEvent.wall || {
+            enabled: true,
+            publicUploadEnabled: true,
+            moderationMode: 'auto',
+            windowMinutes: 1440,
+            idleCycleSeconds: 25,
+            idleWaitSeconds: 30,
+            queryHashtags: [],
+            blacklistedKeywords: [],
+            whitelistedKeywords: [],
+            blacklistedAuthors: [],
+            whitelistedAuthors: [],
+        };
+
+        existingEvent.wall.queryHashtags = [...new Set(normalized)];
+        await existingEvent.save();
+
+        return { status: 200, message: "Hashtag list updated successfully" };
+    } else if (setting === "wall.xCollector") {
+        const existingEvent = await Event.findOne({ event: session.username });
+        if (!existingEvent) return { status: 404, message: "Event not found" };
+
+        const input = value || {};
+        const hashtags = Array.isArray(input.hashtags)
+            ? input.hashtags
+            : String(input.hashtags || '')
+                .split(/[\n,]+/)
+                .map((entry) => entry.trim())
+                .filter(Boolean)
+                .map((entry) => entry.startsWith('#') ? entry : `#${entry}`);
+
+        const handles = Array.isArray(input.handles)
+            ? input.handles
+            : String(input.handles || '')
+                .split(/[\n,]+/)
+                .map((entry) => entry.trim())
+                .filter(Boolean)
+                .map((entry) => entry.startsWith('@') ? entry : `@${entry}`);
+
+        existingEvent.wall = existingEvent.wall || {
+            enabled: true,
+            publicUploadEnabled: true,
+            moderationMode: 'auto',
+            windowMinutes: 1440,
+            idleCycleSeconds: 25,
+            idleWaitSeconds: 30,
+            queryHashtags: [],
+            xEnabled: false,
+            xPollIntervalMinutes: 5,
+            xQueryHashtags: [],
+            xQueryHandles: [],
+            xLastPollAt: null,
+            blacklistedKeywords: [],
+            whitelistedKeywords: [],
+            blacklistedAuthors: [],
+            whitelistedAuthors: [],
+        };
+
+        existingEvent.wall.xEnabled = Boolean(input.enabled);
+        existingEvent.wall.xPollIntervalMinutes = Math.max(1, Number(input.intervalMinutes) || 5);
+        existingEvent.wall.xQueryHashtags = [...new Set(hashtags)];
+        existingEvent.wall.xQueryHandles = [...new Set(handles)];
+        await existingEvent.save();
+
+        return { status: 200, message: "X collector settings updated successfully" };
     }
 });

@@ -5,11 +5,11 @@
 	</div>
 	<div class="flex-col h-screen font-sans flex bg-zinc-300 text-black dark:bg-gray-900 dark:text-white transition-colors duration-500">
 		<div class="fixed z-10 lg:w-[15%] lg:h-screen w-screen bottom-0 bg-white text-black dark:bg-gray-800 dark:text-white p-[2%] lg:min-h-screen lg:min-w-[240px] flex lg:flex-col flex-row items-center text-center content-center align-center transition-colors duration-500">
-			<header class="hidden lg:flex min-h-1/3 flex-col justify-center items-center">
+			<header class="hidden lg:flex flex-col justify-center items-center">
 				<NuxtLink to="/" class="min-h-1/3 flex flex-col justify-center items-center"><img src="/logo.png" width="60%"></NuxtLink>
 				<h1 class="font-bold text-2xl">DashHack</h1>
 			</header>
-			<ul class="min-h-1/3 flex flex-row lg:flex-col justify-center gap-9 w-full">
+			<ul class="min-h-1/3 flex flex-row grow lg:flex-col justify-center gap-9 w-full">
 				<li class="text-left justify-center">
 					<NuxtLink :to="getPath('teams')" class="text-black dark:text-white cursor-pointer px-4 py-2 flex gap-2 text-2xl font-bold text-left justify-start items-center rounded-full w-full transition-colors duration-500" :class="isActive(getPath('teams')) ? 'bg-bluey-500 text-white' : 'hover:text-bluey-500'">
 						<Icon name="fluent:people-team-20-filled" size="40px" />
@@ -28,8 +28,14 @@
 						<p class="hidden lg:block">Settings</p>
 					</NuxtLink>
 				</li>
+				<li class="text-left justify-center">
+					<NuxtLink :to="getPath('moderate')" class="text-black dark:text-white cursor-pointer px-4 py-2 flex gap-2 text-2xl font-bold text-left justify-start items-center rounded-full w-full transition-colors duration-500" :class="isActive(getPath('moderate')) ? 'bg-bluey-500 text-white' : 'hover:text-bluey-500'">
+						<Icon name="material-symbols:display-settings-rounded" size="40px" />
+						<p class="hidden lg:block">Content Wall</p>
+					</NuxtLink>
+				</li>
 			</ul>
-			<footer class="hidden lg:flex min-h-1/3 flex-row justify-end items-end gap-3">
+			<footer class="hidden lg:flex flex-row justify-end items-end gap-3">
 				<button class="cursor-pointer bg-bluey-500 rounded-full w-12 h-12 flex items-center justify-center transition-colors duration-500">
 					<Icon name="octicon:law-16" size="23px" style="color: white" />
 				</button>

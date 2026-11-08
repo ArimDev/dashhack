@@ -5,6 +5,7 @@
         <EventLogo />
         <Token />
         <Backup />
+        <XCollector />
     </div>
 </template>
 

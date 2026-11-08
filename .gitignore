@@ -27,3 +27,6 @@ logs
 
 # Development
 .vscode/
+
+# Uploads
+uploads/

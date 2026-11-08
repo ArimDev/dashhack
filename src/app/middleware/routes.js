@@ -3,6 +3,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     const currentEvent = useState('currentEvent', () => eventParam);
     currentEvent.value = eventParam;
 
+    if (!eventParam || !to.path.startsWith('/app/')) {
+        return;
+    }
+
     const eventFetch = (await $fetch(`/api/event/${currentEvent.value}`)).data;
 
     if (!eventFetch) throw createError({

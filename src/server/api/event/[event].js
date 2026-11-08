@@ -1,35 +1,56 @@
 import { connectDB } from "../../utils/db";
 import Event from "../../models/Event";
+import { startXPollerForEvent } from "../../utils/xPoller";
 import Session from "../../models/Session";
 
 export default defineEventHandler(async (_event) => {
-    await connectDB();
+  await connectDB();
 
-    const eventName = _event.context.params.event;
-    const eventData = await Event.findOne({ event: eventName });
+  const eventName = _event.context.params.event;
+  const eventData = await Event.findOne({ event: eventName });
 
-    if (!eventData) {
-        return { status: 404, message: "Event not found" };
-    }
+  if (!eventData) {
+    return { status: 404, message: "Event not found" };
+  }
 
-    let githubToken = false;
-    if (eventData.settings.githubToken) githubToken = "x".repeat(eventData.settings.githubToken.length);
+  // Start the X poller for the event if it's enabled
+  if (eventData.wall?.enabled) {
+    startXPollerForEvent(eventData.event);
+  }
 
-    let data = {
-        event: eventData.event,
-        logo: eventData.logo,
-        color: eventData.color,
-        teams: [...eventData.teams],
-        createdAt: eventData.createdAt,
-        updatedAt: eventData.updatedAt,
-        settings: {
-            githubToken
-        }
-    };
+  let githubToken = false;
+  if (eventData.settings.githubToken)
+    githubToken = "x".repeat(eventData.settings.githubToken.length);
 
-    return { status: 200, message: "Event found", data };
+  let data = {
+    event: eventData.event,
+    logo: eventData.logo,
+    color: eventData.color,
+    teams: [...eventData.teams],
+    wall: eventData.wall || {
+      enabled: true,
+      publicUploadEnabled: true,
+      moderationMode: "auto",
+      windowMinutes: 1440,
+      idleCycleSeconds: 25,
+      idleWaitSeconds: 30,
+      queryHashtags: [],
+      blacklistedKeywords: [],
+      whitelistedKeywords: [],
+      blacklistedAuthors: [],
+      whitelistedAuthors: [],
+    },
+    posts: eventData.posts || [],
+    createdAt: eventData.createdAt,
+    updatedAt: eventData.updatedAt,
+    settings: {
+      githubToken,
+    },
+  };
 
-    /* # SESSION CHECK (LOGIN)
+  return { status: 200, message: "Event found", data };
+
+  /* # SESSION CHECK (LOGIN)
     const sessionID = getCookie(_event, "session");
     if (!sessionID) {
         if (getCookie(_event, "sessionExists")) deleteCookie(_event, "sessionExists", {
