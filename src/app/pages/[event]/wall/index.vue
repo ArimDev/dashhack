@@ -34,6 +34,7 @@
         @pointerdown="pauseForInteraction"
         @pointerenter="pauseForInteraction"
         @pointermove="pauseForInteraction"
+        @pointerleave="pauseForInteraction"
         @focusin="pauseForInteraction"
         @wheel.passive="pauseForInteraction"
         class="relative min-h-0 flex-1 px-4"
@@ -101,7 +102,7 @@ function openPost(post) {
 }
 function closePost() {
   // Ignore focus restoration and pointer re-entry while the reader's close delay runs.
-  readerResumeUntil = performance.now() + 5000;
+  readerResumeUntil = performance.now() + idleWaitSeconds.value * 1000;
   pauseUntil = readerResumeUntil;
   readingPost.value = null;
 }
@@ -117,7 +118,7 @@ const feedViewportHeight = ref(0);
 const feedCopyHeight = ref(0);
 const scrollOffset = ref(0);
 const textPreviewLength = 100;
-const cycleSeconds = ref(25), idleWaitSeconds = ref(30), uploadsEnabled = ref(false);
+const cycleSeconds = ref(25), idleWaitSeconds = ref(5), uploadsEnabled = ref(false);
 let pauseUntil = 0, readerResumeUntil = 0, loading = false;
 function pauseForInteraction(event) {
   const now = performance.now();

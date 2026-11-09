@@ -303,3 +303,22 @@ test('Stop X polling works during loading/saving and stale writes cannot switch 
   const guest=await browser.newContext();try{expect((await(await guest.request.post(path,{data:{action:'pauseX'}})).json()).status).toBe(401);}finally{await guest.close();}
   await page.reload();await expect(page.getByRole('checkbox',{name:'Automatic X polling'})).not.toBeChecked();
 });
+
+
+test('hover without opening a post resumes after five seconds, including with the pointer parked', async ({ page }) => {
+  const name=await setup(page),encoded=encodeURIComponent(name);
+  await changed(page,()=>page.getByLabel('Wall enabled',{exact:true}).check());
+  const post=(await(await page.request.post(`/api/wall/${encoded}`,{data:{text:'Hover without opening the reader. '.repeat(12)}})).json()).data;
+  expect((await(await page.request.post(`/api/wall/${encoded}/posts`,{data:{action:'approve',postId:post.id,revision:0}})).json()).status).toBe(200);
+  await page.setViewportSize({width:1280,height:720});await page.goto(`/${encoded}/wall`);
+  const card=page.locator('[data-wall-copy="1"] article');await expect(card).toBeVisible();
+  const box=await card.boundingBox();await page.mouse.move(box.x+box.width/2,box.y+box.height/2);
+  const track=page.getByTestId('wall-feed-track'),paused=await track.getAttribute('style');
+  await page.waitForTimeout(4000);expect(await track.getAttribute('style')).toBe(paused);
+  await expect.poll(()=>track.getAttribute('style'),{timeout:3500}).not.toBe(paused);
+  await expect(page.getByRole('dialog')).toHaveCount(0);
+  // Leaving the feed starts the same delay; it must not leave a permanent hover lock.
+  await page.mouse.move(10,10);const left=await track.getAttribute('style');
+  await page.waitForTimeout(4000);expect(await track.getAttribute('style')).toBe(left);
+  await expect.poll(()=>track.getAttribute('style'),{timeout:3500}).not.toBe(left);
+});

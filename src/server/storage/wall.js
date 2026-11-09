@@ -6,7 +6,7 @@ import { MAX_UPLOAD_BYTES, WALL_MEDIA_BUDGET, EVENT_MEDIA_BUDGET, VOLUME_RESERVE
 
 export { MAX_UPLOAD_BYTES } from '../../shared/wallUploads.js';
 export const WALL_DEFAULTS = Object.freeze({ enabled: false, publicUploadEnabled: true, moderationMode: 'manual',
-    windowMinutes: 1440, idleCycleSeconds: 25, idleWaitSeconds: 30, queryHashtags: [],
+    windowMinutes: 1440, idleCycleSeconds: 25, idleWaitSeconds: 5, queryHashtags: [],
     xEnabled: false, xPollIntervalMinutes: 5, xQueryHashtags: [], xQueryHandles: [],
     blacklistedKeywords: [], blacklistedAuthors: [] });
 const PUBLIC_KEYS = ['enabled', 'publicUploadEnabled', 'windowMinutes', 'idleCycleSeconds', 'idleWaitSeconds'];

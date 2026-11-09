@@ -27,7 +27,7 @@ describe('Social wall adapted from PR #6',() => {
         const before=publicEvent(c.store.getEvent(c.name)); c.store.close();
         const reopened=new SqliteStore(c.filename); stores.push(reopened);
         expect(publicEvent(reopened.getEvent(c.name))).toEqual(before);
-        expect(new WallStore(reopened).publicFeed(c.name)).toEqual({ wall:{ enabled:false,publicUploadEnabled:true,windowMinutes:1440,idleCycleSeconds:25,idleWaitSeconds:30 },posts:[] });
+        expect(new WallStore(reopened).publicFeed(c.name)).toEqual({ wall:{ enabled:false,publicUploadEnabled:true,windowMinutes:1440,idleCycleSeconds:25,idleWaitSeconds:5 },posts:[] });
         expect(() => new WallStore(reopened).submit(c.name,{ text:'Hello' })).toThrow('disabled');
         expect((await reopened.checkPassword(c.name,'password123'))._id).toBe(c.id);
         expect(reopened.db.query('PRAGMA integrity_check').get().integrity_check).toBe('ok');
