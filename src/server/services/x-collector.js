@@ -17,15 +17,19 @@ function mediaFor(tweet, includes) {
     return { imageUrl: media.url || media.preview_image_url || '' };
 }
 export class XCollector {
-    constructor(store, token, { request = fetch } = {}) { this.store=store; this.wall=new WallStore(store); this.token=token; this.request=request; this.running=new Set(); }
+    constructor(store, token, { request = fetch, logger = console } = {}) { this.store=store; this.wall=new WallStore(store); this.token=token; this.request=request; this.logger=logger; this.running=new Set(); }
     async syncEvent(name) {
         const event = this.wall.event(name), config = this.wall.config(event.id);
         if (!this.token || !config.enabled || !config.xEnabled || this.running.has(event.id)) return { imported: 0 };
         const query = buildXQuery(config);
-        if (!query) return { imported: 0 };
+        if (!query) {
+            this.logger.warn('[X collector] No query configured', { eventId: event.id });
+            return { imported: 0 };
+        }
         this.running.add(event.id);
         let imported = 0;
         try {
+            this.logger.info('[X collector] Fetch started', { eventId: event.id });
             const params = new URLSearchParams({ query, max_results: '100',
                 'tweet.fields': 'created_at,attachments,author_id', expansions: 'author_id,attachments.media_keys',
                 'user.fields': 'name,username', 'media.fields': 'type,url,preview_image_url,variants' });
@@ -35,22 +39,29 @@ export class XCollector {
             if (!response.ok) throw new Error(response.status === 429 ? 'X API rate limit; retrying after at least 15 minutes.' : `X API request failed (${response.status}). Check API access and token.`);
             const payload = await response.json();
             const users = new Map((payload.includes?.users || []).map(user => [user.id,user]));
-            for (const tweet of (Array.isArray(payload.data) ? payload.data : []).slice(0,100)) {
+            const tweets = (Array.isArray(payload.data) ? payload.data : []).slice(0,100);
+            let duplicates = 0, invalid = 0, rejected = 0;
+            for (const tweet of tweets) {
                 const user = users.get(tweet.author_id);
-                if (!user || !/^\d+$/.test(tweet.id) || !/^[a-z\d_]{1,15}$/i.test(user.username)) continue;
+                if (!user || !/^\d+$/.test(tweet.id) || !/^[a-z\d_]{1,15}$/i.test(user.username)) { invalid++; continue; }
                 try {
                     const post = this.wall.submit(name,{ id: `x-${tweet.id}`, authorName: user.name || user.username,
                         handle: `@${user.username}`, text: tweet.text || '', createdAt: tweet.created_at,
                         sourceUrl: `https://x.com/${user.username}/status/${tweet.id}`, ...mediaFor(tweet,payload.includes || {}) },null,{ collected: true });
                     if (post) imported++;
+                    else duplicates++;
                 } catch (error) {
                     if (![400,403,422].includes(error.status)) throw error;
+                    rejected++;
                 }
             }
+            this.logger.info('[X collector] Fetch succeeded', { eventId: event.id, status: response.status,
+                fetched: tweets.length, imported, duplicates, invalid, rejected, approvalMode: config.moderationMode });
             this.record(event.id,'');
             return { imported };
         } catch (error) {
             const reason = error.message?.startsWith('X API') ? error.message : 'X collection failed. Check API access or available wall storage.';
+            this.logger.warn('[X collector] Fetch failed', { eventId: event.id, imported, error: reason });
             this.record(event.id,reason);
             return { imported, error: reason };
         } finally { this.running.delete(event.id); }
