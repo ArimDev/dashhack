@@ -52,3 +52,8 @@ Deployed source `dbc1745` successfully as Railway `ad0ec598-8cf6-4609-9c90-86217
 
 
 Photo-only sharing, larger phone originals, clipboard paste and storage/rate protection were added afterward; see [upload behavior and limitations](WALL_UPLOADS.md) and the [verified deployment](RAILWAY.md#bounded-photo-only-wall-uploads--2026-11-09).
+
+
+## Kanban card dragging — 2026-11-09
+
+Desktop notes can be dragged by the card's non-interactive area or the labeled Move handle; editing controls and team links keep their normal behavior. The entire card is the native drag image, and target columns use explicit move feedback. Text-save blur no longer disables the drag source: a drop reads its payload immediately, waits for the pending note write, then resolves the latest team revision before submitting only the status patch. A failed pending save cancels the queued move. Guests remain read-only. On phones, the existing column tabs and note-status selector remain the touch workflow; no drag library or background service was added.
