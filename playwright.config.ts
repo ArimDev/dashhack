@@ -12,9 +12,6 @@ export default defineConfig({
   use: {
     baseURL,
     trace: 'retain-on-failure',
-    launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
-      ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE }
-      : {},
   },
   webServer: {
     command: `bun run dev -- --host 127.0.0.1 --port ${new URL(baseURL).port || '5010'}`,
@@ -25,5 +22,16 @@ export default defineConfig({
     stdout: 'ignore',
     stderr: 'pipe',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        launchOptions: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE
+          ? { executablePath: process.env.PLAYWRIGHT_CHROMIUM_EXECUTABLE } : {},
+      },
+    },
+    { name: 'webkit', use: { ...devices['Desktop Safari'] } },
+    { name: 'webkit-iphone', testMatch: ['**/mobile.spec.ts', '**/wall-uploads.spec.ts'], use: { ...devices['iPhone 13'] } },
+  ],
 });

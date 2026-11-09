@@ -16,6 +16,7 @@ Read [docs/SQLITE_MIGRATION.md](docs/SQLITE_MIGRATION.md) for the current implem
 - `bun run dev` starts at <http://localhost:5002>. Bun is required for `bun:sqlite`; package scripts invoke Nuxt using Bun.
 - `NUXT_SQLITE_PATH` controls database location; local default is `./.data/dashhack.sqlite`, resolved from process working directory. SQLite files/snapshots must stay out of Git and Docker build context.
 - `bun test tests/unit` validates persistence, ownership, expiry, revisions, migration and backup. `bun run test:e2e` starts a separate server at 5010 using `.data/playwright.sqlite`.
+- WebKit testing: see [docs/WEBKIT_TESTING.md](docs/WEBKIT_TESTING.md). `bun run test:e2e` stays Chromium-only; `bun run test:e2e:webkit` selects Desktop Safari and iPhone 13 projects. On this Ubuntu 26.04 host use `bun run test:e2e:webkit:docker` with the version-matched Playwright/Bun test container; avoid incompatible host library installs. The browser image is development-only, with no Railway/app footprint. Native clipboard permission grants stay Chromium-only; WebKit covers denial guidance and image paste events. Actual iOS Photo Library/HEIC/paste sheets still need a device check.
 - `PLAYWRIGHT_CHROMIUM_EXECUTABLE` optionally selects system Chrome. Tests mock GitHub; no token is required.
 - `bun run build`, then `NUXT_SQLITE_PATH=/absolute/path/app.sqlite bun src/.output/server/index.mjs` checks production behavior.
 

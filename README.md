@@ -48,6 +48,8 @@ Phones have quick navigation, a full event menu and scrollable dialogs with reac
 bun test tests/unit
 bunx playwright install chromium
 bun run test:e2e
+# WebKit desktop + iPhone emulation (Docker, for Ubuntu 26.04)
+bun run test:e2e:webkit:docker
 ```
 
 The browser suite starts its own dev server at port 5010 and uses the separate `.data/playwright.sqlite` database. To use an existing Chrome executable, set `PLAYWRIGHT_CHROMIUM_EXECUTABLE=/path/to/chrome`. No real GitHub credentials are needed by the tests.

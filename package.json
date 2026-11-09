@@ -11,7 +11,10 @@
     "preview": "bun --bun node_modules/nuxt/bin/nuxt.mjs preview",
     "postinstall": "nuxt prepare",
     "test": "bun test tests/unit",
-    "test:e2e": "playwright test",
+    "test:e2e": "playwright test --project=chromium",
+    "test:e2e:webkit": "playwright test --project=webkit --project=webkit-iphone",
+    "test:e2e:webkit:docker": "bash scripts/test-webkit-docker.sh",
+    "test:e2e:all": "playwright test",
     "db:backup": "bun scripts/backup-sqlite.js",
     "db:import": "bun scripts/import-mongo.js"
   },

@@ -8,7 +8,7 @@ async function setup(page) {
     return { name, encoded };
 }
 
-test('phone picker accepts a photo above the old limit, compresses it, and clipboard paste is previewed/removable', async ({ page, context }) => {
+test('phone picker accepts a photo above the old limit, compresses it, and clipboard paste is previewed/removable', async ({ page, context, browserName }) => {
     await page.setViewportSize({ width: 390, height: 844 });
     const { encoded } = await setup(page);
     await page.goto(`/${encoded}/wall/upload`);
@@ -29,16 +29,24 @@ test('phone picker accepts a photo above the old limit, compresses it, and clipb
     expect(media.headers()['content-type']).toContain('image/webp');
     expect((await media.body()).toString('ascii', 8, 12)).toBe('WEBP');
     await page.getByRole('button', { name: 'Upload another' }).click();
-    await context.grantPermissions(['clipboard-read', 'clipboard-write']);
-    await page.evaluate(async bytes => {
-        const blob = new Blob([Uint8Array.from(bytes)], { type: 'image/png' });
-        await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
-    }, [...png]);
-    await page.getByRole('button', { name: 'Paste photo', exact: true }).click();
-    await expect(page.getByAltText('Upload preview')).toBeVisible();
-    await page.getByRole('button', { name: 'Remove attachment' }).click();
-    await expect(page.getByAltText('Upload preview')).toHaveCount(0);
-    await expect(page.getByRole('button', { name: 'Submit for approval' })).toBeDisabled();
+    if (browserName === 'chromium') {
+        await context.grantPermissions(['clipboard-read', 'clipboard-write']);
+        await page.evaluate(async bytes => {
+            const blob = new Blob([Uint8Array.from(bytes)], { type: 'image/png' });
+            await navigator.clipboard.write([new ClipboardItem({ 'image/png': blob })]);
+        }, [...png]);
+        await page.getByRole('button', { name: 'Paste photo', exact: true }).click();
+        await expect(page.getByAltText('Upload preview')).toBeVisible();
+        await page.getByRole('button', { name: 'Remove attachment' }).click();
+        await expect(page.getByAltText('Upload preview')).toHaveCount(0);
+        await expect(page.getByRole('button', { name: 'Submit for approval' })).toBeDisabled();
+    } else {
+        // WebKit has no Playwright clipboard permission grant. Exercise denial guidance
+        // and real image decoding via the paste event below, without an OS paste prompt.
+        await page.evaluate(() => Object.defineProperty(navigator, 'clipboard', { configurable: true, value: { read: async () => { throw new DOMException('Denied', 'NotAllowedError'); } } }));
+        await page.getByRole('button', { name: 'Paste photo', exact: true }).click();
+        await expect(page.getByRole('status')).toContainText('Photo Library');
+    }
     await page.getByRole('textbox', { name: 'Your story' }).evaluate((element, bytes) => {
         const data = new DataTransfer(); data.items.add(new File([Uint8Array.from(bytes as number[])], 'pasted.png', { type: 'image/png' }));
         element.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }));
