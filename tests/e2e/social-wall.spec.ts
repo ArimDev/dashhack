@@ -293,7 +293,9 @@ test('Stop X polling works during loading/saving and stale writes cannot switch 
   });
   await tags.fill('#draft');await page.getByRole('button',{name:'Save queries',exact:true}).click();await serverGate;
   await expect(page.getByRole('button',{name:'Saving…',exact:true})).toBeDisabled();await expect(stop).toBeEnabled();
-  await changed(page,()=>stop.click());releaseSave();
+  const toggle=page.getByRole('checkbox',{name:'Automatic X polling'});
+  await expect(toggle).toBeEnabled();
+  await changed(page,()=>toggle.uncheck());releaseSave();
   await expect(page.getByRole('button',{name:'Save queries',exact:true})).toBeEnabled();
   await expect(page.getByRole('checkbox',{name:'Automatic X polling'})).not.toBeChecked();
   await expect(tags).toHaveValue('#draft');

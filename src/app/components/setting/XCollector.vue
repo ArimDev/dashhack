@@ -3,7 +3,7 @@
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
       <h1 class="text-xl sm:text-2xl font-bold">X social collector</h1>
       <label class="inline-flex items-center gap-2 cursor-pointer">
-        <input :disabled="!loaded || saving || pausing || (!configured && !enabled)" v-model="enabled" type="checkbox" @change="savePolling" class="h-4 w-4" />
+        <input :disabled="pausing || (!savedEnabled && (!loaded || saving || !configured))" v-model="enabled" type="checkbox" @change="savePolling" class="h-4 w-4" />
         <span class="font-semibold">Automatic X polling</span>
       </label>
     </div>
