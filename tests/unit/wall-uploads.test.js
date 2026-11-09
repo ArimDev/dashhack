@@ -1,5 +1,8 @@
 import { describe, expect, test } from 'bun:test';
 import sharp from 'sharp';
+import { PassThrough } from 'node:stream';
+import { EventEmitter } from 'node:events';
+import { readWallNodeBody } from '../../src/server/services/wall-body.js';
 import { normalizeWallMedia } from '../../src/server/services/wall-image.js';
 import { WallUploadGate } from '../../src/server/services/wall-upload-gate.js';
 import { MiB, VOLUME_RESERVE } from '../../src/shared/wallUploads.js';
@@ -79,5 +82,37 @@ describe('Untrusted wall uploads', () => {
             expect(wall.storageUsage(contexts[0].id).totalBytes).toBe(30 * MiB);
             wall.submit('First', {}, { mime: 'image/webp', data });
         } finally { store.close(); }
+    });
+});
+
+
+describe('Streaming upload bodies before parsing', () => {
+    test('reads split chunks within the cap', async () => {
+        const request = new PassThrough(), response = new EventEmitter();
+        const body = readWallNodeBody(request, response, { limit: 8 });
+        request.write(Buffer.from('abc')); request.end(Buffer.from('def'));
+        expect((await body).toString()).toBe('abcdef');
+    });
+    test('rejects chunked overflow without buffering the remaining body and closes after the error flushes', async () => {
+        const request = new PassThrough(), response = new EventEmitter();
+        const body = readWallNodeBody(request, response, { limit: 4 });
+        request.write(Buffer.from('abc')); request.write(Buffer.from('def'));
+        await expect(body).rejects.toMatchObject({ status: 413 });
+        expect(request.isPaused()).toBe(true); expect(request.destroyed).toBe(false);
+        response.emit('finish');
+        await new Promise(resolve => request.once('close', resolve));
+        expect(request.destroyed).toBe(true);
+    });
+    test('a stalled body times out and an interrupted body rejects', async () => {
+        const request = new PassThrough(), response = new EventEmitter();
+        const body = readWallNodeBody(request, response, { limit: 8, timeoutMs: 10 });
+        request.write(Buffer.from('{'));
+        await expect(body).rejects.toMatchObject({ status: 408 });
+        response.emit('finish');
+        const interrupted = new PassThrough();
+        const partial = readWallNodeBody(interrupted, response, { limit: 8 });
+        interrupted.emit('aborted');
+        await expect(partial).rejects.toMatchObject({ status: 400 });
+        response.emit('finish');
     });
 });

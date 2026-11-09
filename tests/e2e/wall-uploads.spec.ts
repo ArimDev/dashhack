@@ -90,3 +90,25 @@ test('production rejects oversized raw multipart bodies before parsing', async (
     expect((await response.json()).status).toBe(413);
     expect((await (await page.request.get(`/api/wall/${encoded}/posts`)).json()).data.posts).toHaveLength(0);
 });
+
+test('production streaming entry rejects concurrent work and times out an incomplete body before buffering', async ({ page, baseURL }) => {
+    test.skip(!process.env.PLAYWRIGHT_LARGE_UPLOADS, 'Run this runtime-entry abuse check against an isolated production server.');
+    test.setTimeout(35000);
+    const { encoded } = await setup(page), url = new URL(`/api/wall/${encoded}`, baseURL);
+    const { request } = await import(url.protocol === 'https:' ? 'node:https' : 'node:http');
+    let connection;
+    const stalled = new Promise((resolve, reject) => {
+        connection = request(url, { method: 'POST', rejectUnauthorized: false, headers: { 'Content-Type': 'application/json' } }, response => {
+            let body = ''; response.on('data', chunk => body += chunk); response.on('end', () => { try { resolve(JSON.parse(body)); } catch (error) { reject(error); } });
+        });
+        connection.on('error', reject); connection.setTimeout(25000, () => connection.destroy(new Error('Upload did not time out')));
+        connection.write('{');
+    });
+    try {
+        await new Promise(resolve => setTimeout(resolve, 200));
+        expect((await (await page.request.get('/api/health')).json()).status).toBe('ok');
+        expect((await (await page.request.post(url.href, { data: { text: 'Concurrent attempt' } })).json()).status).toBe(429);
+        expect(await stalled).toMatchObject({ status: 408 });
+        expect((await (await page.request.post(url.href, { data: { text: 'Recovered' } })).json()).status).toBe(200);
+    } finally { connection?.destroy(); }
+});

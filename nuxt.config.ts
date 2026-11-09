@@ -18,7 +18,8 @@ export default defineNuxtConfig({
 		port: 5002,
 	},
 	nitro: {
-		preset: "bun",
+		// Run the streaming Node-compatible server on Bun; the Bun preset eagerly buffers request bodies.
+		preset: "node-server",
 		// Bundle shared field definitions for both dev workers and production.
 		externals: { inline: [/\/shared\/(?:noteStatuses|startupMatrix|wallUploads)\.js$/] },
 	},

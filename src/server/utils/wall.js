@@ -4,6 +4,7 @@ import { WallStore } from '../storage/wall.js';
 import { MAX_UPLOAD_BYTES } from '../../shared/wallUploads.js';
 import { StorageError } from '../storage/sqlite.js';
 import { WallUploadGate } from '../services/wall-upload-gate.js';
+import { readWallNodeBody, stopWallBody } from '../services/wall-body.js';
 
 export function getWallStore() { return new WallStore(getStore()); }
 const uploads = new WallUploadGate();
@@ -29,23 +30,11 @@ export async function readWallSubmission(event) {
     const json = (getHeader(event, 'content-type') || '').startsWith('application/json');
     if (!multipart && !json) throw new StorageError(400, 'Use a JSON or upload form submission');
     const limit = multipart ? max : 32768;
-    if (Number(getHeader(event, 'content-length')) > limit) throw new StorageError(413, 'Prepared photos must be at most 2 MiB. Use the upload page to resize your photo.');
-    const reader = getRequestWebStream(event)?.getReader();
-    const chunks = []; let size = 0, timer, timedOut = false;
-    const expired = new Promise((_, reject) => {
-        timer = setTimeout(() => { timedOut = true; void reader?.cancel().catch(() => {}); reject(new StorageError(408, 'Upload timed out. Please try again.')); }, 20000);
-    });
-    try {
-        if (reader) while (true) {
-            const { done, value } = await Promise.race([reader.read(), expired]);
-            if (timedOut) throw new StorageError(408, 'Upload timed out. Please try again.');
-            if (done) break;
-            size += value.byteLength;
-            if (size > limit) { await reader.cancel(); throw new StorageError(413, 'Prepared photos must be at most 2 MiB. Use the upload page to resize your photo.'); }
-            chunks.push(Buffer.from(value));
-        }
-    } finally { clearTimeout(timer); reader?.releaseLock(); }
-    const body = Buffer.concat(chunks, size);
+    if (Number(getHeader(event, 'content-length')) > limit) {
+        stopWallBody(event.node.req, event.node.res);
+        throw new StorageError(413, 'Prepared photos must be at most 2 MiB. Use the upload page to resize your photo.');
+    }
+    const body = await readWallNodeBody(event.node.req, event.node.res, { limit });
     let input = {}, media = null;
     if (multipart) {
         let form;
