@@ -85,3 +85,14 @@ Hashtags/accounts and the interval now use an explicit Save queries action rathe
 Chromium coverage: six scenarios pass, including blur without a write, space-separated queries, deduplication, reload persistence, validation failure, conflict retention and typing during a delayed save. Production release must retain the old storage profile while the 128 MB volume remains unchanged; the larger profile in fe79623 is still pending expansion. No X requests are needed to verify this editing fix.
 
 Deployed and live-verified as release `f48445c` / Railway `bd42a185-3391-4c6b-8b81-e1f201948c98` (SUCCESS); see RAILWAY.md. Desktop/iPhone WebKit coverage completes 20 passing cases. The runtime token is now configured, collection is paused, and a real search still awaits the event hashtag/account.
+
+
+## Full-post reader for scrolling copies — 2026-11-09
+
+The repeating feed used inert/pointer-disabled copies, so a visible Read full post button could not receive clicks once a copy scrolled into view. Copies now accept pointer input while remaining hidden from the accessibility tree and omitted from keyboard navigation; focus returns to the corresponding original card. Videos in decorative copies omit controls; the original card and full reader retain them.
+
+Read full post opens the existing DialogShell with complete escaped text and media, rather than expanding a moving masonry card below a clipped viewport. It scrolls independently, traps keyboard focus and supports Escape, close button and backdrop dismissal. Animation stops while the reader is open; closing preserves feed position and resumes auto-scroll after five seconds. Restored focus and passive pointer re-entry cannot extend that close delay. Manual-scroll mode remains manual. Pointer entry/movement and keyboard focus also pause motion so controls can be targeted. Mobile uses the same scrollable reader. No new library/service/schema or persistence change.
+
+Regression coverage explicitly moves loop copy 2 into view and clicks it without forced actions, checks the full text, scrollability, frozen feed transform, Escape/close and focus restoration/keyboard reopen. Existing mobile read-full coverage now checks the reader rather than inline expansion.
+
+Deployed final source `41406e3` / Railway `3bcfaf46-c12b-4e80-9d0e-112a7bb6a258` (SUCCESS). Seven Chromium and 21 desktop/iPhone WebKit wall/mobile checks pass; targeted Chromium/WebKit and live checks verify the five-second close delay. All production content fingerprints remain unchanged; see RAILWAY.md.
