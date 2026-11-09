@@ -5,7 +5,7 @@
                 <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Kanban notes</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {{ allNotes.length }} tracked notes across {{ data.teams.length }} teams.
-                    <span v-if="canEdit"><span class="md:hidden">Change a note's status to move it.</span><span class="hidden md:inline">Drag a card's handle or change its status to move it.</span></span>
+                    <span v-if="canEdit"><span class="md:hidden">Change a note's status to move it.</span><span class="hidden md:inline">Drag a card or its Move handle to another column.</span></span>
                     <span v-else>Read-only board. Log in to move or edit notes.</span>
                 </p>
             </div>
@@ -51,7 +51,7 @@
         </nav>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
             <section v-for="status in NOTE_STATUSES" :key="status" :data-testid="`kanban-column-${status}`"
-                :aria-label="status" :aria-busy="busy" @dragover.prevent="dragOver = canEdit && !busy ? status : null"
+                :aria-label="status" :aria-busy="busy" @dragenter.prevent="overColumn($event, status)" @dragover.prevent="overColumn($event, status)"
                 @dragleave.self="dragOver = null" @drop.prevent="dropNote($event, status)"
                 class="rounded-xl border p-3 min-h-64 transition-colors"
                 :class="[status !== mobileStatus ? 'hidden md:block' : '', dragOver === status ? 'border-bluey-500 bg-bluey-50 dark:bg-bluey-950' : 'border-gray-200 dark:border-gray-700 bg-gray-100/70 dark:bg-gray-800/40']">
@@ -60,16 +60,18 @@
                     <span class="text-xs font-medium rounded-full bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 px-2 py-0.5">{{ columnNotes(status).length }}</span>
                 </header>
                 <div class="space-y-3">
-                    <article v-for="item in columnNotes(status)" :key="item.note.id" :data-testid="`kanban-note-${item.note.id}`">
+                    <article v-for="item in columnNotes(status)" :key="item.note.id" :data-testid="`kanban-note-${item.note.id}`"
+                        :draggable="canEdit && !refreshing" @pointerdown.capture="rememberDragOrigin" @dragstart="startDrag($event, item)" @dragend="endDrag"
+                        :class="draggedNoteId === item.note.id ? 'opacity-50' : ''">
                         <div class="flex items-center justify-between gap-2 px-1 pb-1.5">
                             <NuxtLink :to="`/app/${encodeURIComponent(currentEvent)}/teams`" class="text-xs font-medium text-gray-600 dark:text-gray-300 flex items-center gap-1.5 min-w-0">
                                 <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: item.team.color }"></span>
                                 <span class="truncate">{{ item.team.name }}</span>
                             </NuxtLink>
-                            <button v-if="canEdit" :disabled="busy" :draggable="!busy" @dragstart="startDrag($event, item)" @dragend="dragOver = null"
+                            <button v-if="canEdit" type="button" :disabled="refreshing" :draggable="!refreshing"
                                 aria-label="Drag note" title="Drag note to a column" data-testid="drag-note"
                                 class="hidden md:inline-flex min-h-11 items-center text-gray-400 hover:text-bluey-500 cursor-grab active:cursor-grabbing disabled:opacity-30 px-2">
-                                <Icon name="heroicons:arrows-up-down" size="16px" />
+                                <Icon name="heroicons:arrows-up-down" size="16px" /><span class="ml-1 text-xs">Move</span>
                             </button>
                         </div>
                         <StickyNote :note="item.note" :mentors="data.mentors || []" :read-only="!canEdit || busy"
@@ -99,7 +101,8 @@ const selectedType = ref('');
 const saving = ref(false);
 const refreshing = ref(false);
 const busy = computed(() => saving.value || refreshing.value);
-const dragOver = ref(null);
+const dragOver = ref(null), draggedNoteId = ref(null);
+let dragFromControl = false, pendingWrite = null;
 const error = ref('');
 const feedback = ref('');
 const { showToast } = useToast();
@@ -132,7 +135,13 @@ function editNote(item, note) {
 }
 
 async function saveNote(item, patch) {
-    if (!canEdit.value || busy.value) return;
+    if (!canEdit.value || busy.value) return false;
+    const write = persistNote(item, patch);
+    pendingWrite = write;
+    try { return await write; }
+    finally { if (pendingWrite === write) pendingWrite = null; }
+}
+async function persistNote(item, patch) {
     saving.value = true;
     error.value = '';
     feedback.value = '';
@@ -153,24 +162,44 @@ async function saveNote(item, patch) {
             } else team.stickyNotes = team.stickyNotes.filter(note => note.id !== item.note.id);
         }
         feedback.value = patch ? 'Note saved.' : 'Note deleted.';
+        return true;
     } catch (failure) {
         error.value = failure.message || 'Unable to save note';
         showToast('Could not save note', error.value);
         await refreshBoard();
+        return false;
     } finally { saving.value = false; }
 }
 
-function startDrag(event, item) {
-    if (!canEdit.value || busy.value) { event.preventDefault(); return; }
-    event.dataTransfer.effectAllowed = 'move';
-    event.dataTransfer.setData('text/plain', JSON.stringify({ teamId: item.team._id, noteId: item.note.id }));
+function rememberDragOrigin(event) {
+    const target = event.target instanceof Element ? event.target : event.target?.parentElement;
+    dragFromControl = !!target?.closest('input,textarea,select,label,a,[contenteditable],button:not([data-testid="drag-note"])');
 }
-function dropNote(event, status) {
+function startDrag(event, item) {
+    if (!canEdit.value || refreshing.value || dragFromControl || !event.dataTransfer) { event.preventDefault(); return; }
+    event.dataTransfer.effectAllowed = 'move';
+    const payload = JSON.stringify({ teamId: item.team._id, noteId: item.note.id });
+    event.dataTransfer.setData('text/plain', payload);
+    event.dataTransfer.setData('application/x-dashhack-note', payload);
+    event.dataTransfer.setDragImage?.(event.currentTarget, 24, 24);
+    draggedNoteId.value = item.note.id;
+}
+function overColumn(event, status) {
+    if (!canEdit.value || refreshing.value) return;
+    dragOver.value = status;
+    if (event.dataTransfer) event.dataTransfer.dropEffect = 'move';
+}
+function endDrag() { dragOver.value = null; draggedNoteId.value = null; dragFromControl = false; }
+async function dropNote(event, status) {
     dragOver.value = null;
-    if (!canEdit.value || busy.value) return;
+    if (!canEdit.value || refreshing.value) return;
     let payload;
-    try { payload = JSON.parse(event.dataTransfer.getData('text/plain')); } catch { return; }
+    // Read during the drop event; browsers clear DataTransfer once it returns.
+    try { payload = JSON.parse(event.dataTransfer.getData('application/x-dashhack-note') || event.dataTransfer.getData('text/plain')); } catch { return; }
+    if (pendingWrite && !await pendingWrite) return;
+    if (!canEdit.value || busy.value) return;
+    // Resolve the current team revision after the preceding text save completes.
     const item = allNotes.value.find(item => item.team._id === payload?.teamId && item.note.id === payload?.noteId);
-    if (item && item.note.status !== status) saveNote(item, { status });
+    if (item && item.note.status !== status) await saveNote(item, { status });
 }
 </script>

@@ -436,7 +436,7 @@ test('Kanban supports spaced event names and enables editing after modal login',
     await view.getByPlaceholder('Password', { exact: true }).fill(PASSWORD);
     await view.getByRole('button', { name: 'Log In', exact: true }).click();
     await expect(view.getByRole('button', { name: 'Can make changes', exact: true })).toBeVisible();
-    await expect(view.getByText("Drag a card's handle or change its status to move it.", { exact: false })).toBeVisible();
+    await expect(view.getByText("Drag a card or its Move handle to another column.", { exact: false })).toBeVisible();
   } finally { await guest.close(); }
 });
 
@@ -521,4 +521,32 @@ test('guests can view mentors but cannot register or change note attribution', a
     const rejected = await guest.request.post('/api/mentor/add', { data: { username: eventName, name: 'Guest' } });
     expect((await rejected.json()).status).toBe(401);
   } finally { await guest.close(); }
+});
+
+
+test('Kanban drags the card body after an edit without losing text during its pending save',async ({page})=>{
+  await addNote(page,await addTeam(page,'Dragging'),'Before dragging');
+  const event=(await(await page.request.get(`/api/event/${eventName}`)).json()).data;
+  const noteId=event.teams[0].stickyNotes[0].id;
+  await openBoard(page);
+  const card=page.getByTestId(`kanban-note-${noteId}`),input=card.getByTestId('note-content');
+  let release,started;const gate=new Promise(resolve=>{release=resolve}),began=new Promise(resolve=>{started=resolve});
+  const patches=[];
+  await page.route('**/api/note/edit',async route=>{
+    const body=route.request().postDataJSON();patches.push(body.patch);
+    if(body.patch.content){const response=await route.fetch();started();await gate;return route.fulfill({response});}
+    await route.continue();
+  });
+  await input.fill('Keep this edit while moving');
+  const moved=card.dragTo(page.getByTestId('kanban-column-In Progress'),{sourcePosition:{x:8,y:90},targetPosition:{x:20,y:20}});
+  await began;await moved;
+  await expect(page.getByRole('status')).toHaveText('Saving note…');
+  await expect(page.getByTestId('kanban-column-To Do').getByTestId(`kanban-note-${noteId}`)).toBeVisible();
+  release();
+  await expect(page.getByTestId('kanban-column-In Progress').getByTestId(`kanban-note-${noteId}`)).toBeVisible();
+  await expect(card.getByTestId('note-content')).toHaveValue('Keep this edit while moving');
+  expect(patches).toEqual([{content:'Keep this edit while moving'},{status:'In Progress'}]);
+  await page.reload();
+  await expect(page.getByTestId('kanban-column-In Progress').getByTestId(`kanban-note-${noteId}`)).toBeVisible();
+  await expect(card.getByTestId('note-content')).toHaveValue('Keep this edit while moving');
 });
