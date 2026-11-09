@@ -76,3 +76,10 @@ The only token variable is server-only `NUXT_X_BEARER_TOKEN`, configured on the 
 Production read-only check found no token and no enabled X collection (effective defaults: disabled, five-minute interval). UI/access changes are prepared locally; deployment is pending separately from the volume expansion work. No production content/settings were changed by this check.
 
 Validation: 48 unit tests (281 assertions), five Chromium social-wall scenarios, 19 desktop/iPhone WebKit social-wall/mobile scenarios and the production build pass. Ownership checks cover anonymous, wrong-event and correct-event sessions; scheduler tests verify disabling stops subsequent collection while approved posts remain.
+
+
+## Query draft preservation — 2026-11-09
+
+Hashtags/accounts and the interval now use an explicit Save queries action rather than blur autosave. Query parsing accepts whitespace, commas and new lines and removes duplicate terms. Fields cannot be edited before the initial load; an incoming save response only updates revision/saved status, never replaces the current text. Validation/network errors retain drafts. Revision conflicts retain drafts and require the user's explicit Reload saved settings action before reviewing/retrying; no silent overwrite or automatic reload. The independent polling switch patches only `xEnabled`, so it neither saves nor discards unfinished queries. Query saves patch only the three query/interval fields and cannot change polling. Existing backend event authorization/revisions still apply.
+
+Chromium coverage: six scenarios pass, including blur without a write, space-separated queries, deduplication, reload persistence, validation failure, conflict retention and typing during a delayed save. Production release must retain the old storage profile while the 128 MB volume remains unchanged; the larger profile in fe79623 is still pending expansion. No X requests are needed to verify this editing fix.

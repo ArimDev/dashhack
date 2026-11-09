@@ -91,8 +91,8 @@ test('moderation rejects stale changes and X settings persist without exposing s
   await expect(page.getByRole('heading',{ name:'X social collector' })).toBeVisible();
   const input=page.getByPlaceholder('#hackathon #buildinpublic #dashhack');
   await input.fill('#junior2026');
-  const save=page.waitForResponse(r => r.url().includes('/api/auth/update') && r.request().method()==='POST');
-  await input.blur();expect((await (await save).json()).status).toBe(200);
+  const save=page.waitForResponse(r => r.url().includes('/posts') && r.request().method()==='POST');
+  await page.getByRole('button',{name:'Save queries',exact:true}).click();expect((await (await save).json()).status).toBe(200);
   await page.reload();await expect(input).toHaveValue('#junior2026');
   const publicBody=await (await page.request.get(`/api/wall/${encoded}`)).json();
   expect(JSON.stringify(publicBody)).not.toContain('xQuery');
@@ -170,4 +170,50 @@ test('wall cogwheel and polling settings require a session for the matching even
     await page.reload();
     await expect(page.getByRole('button', { name: 'Wall display settings', exact: true })).toHaveCount(0);
   } finally { await guest.close(); }
+});
+
+
+test('X query drafts survive blur, validation errors, conflicts and edits during a slow save', async ({ page }) => {
+  const name = await setup(page), encoded = encodeURIComponent(name);
+  await page.goto(`/app/${encoded}/settings`);
+  const tags = page.getByLabel('Hashtags to query'), handles = page.getByLabel('Handles to follow');
+  await expect(tags).toBeEnabled();
+  await tags.fill('#junior #student, #nápad\n#junior');
+  await handles.fill('@host @mentor, coach');
+  await handles.blur();
+  expect((await (await page.request.get(`/api/wall/${encoded}/posts`)).json()).data.wall.xQueryHashtags).toEqual([]);
+  await changed(page, () => page.getByRole('button',{name:'Save queries',exact:true}).click());
+  await expect(tags).toHaveValue('#junior #student, #nápad\n#junior');
+  await expect(handles).toHaveValue('@host @mentor, coach');
+  await page.reload();
+  await expect(tags).toHaveValue('#junior, #student, #nápad');
+  await expect(handles).toHaveValue('@host, @mentor, @coach');
+  await handles.fill('@invalid-account!');
+  const invalid = page.waitForResponse(r => r.url().includes('/posts') && r.request().method()==='POST');
+  await page.getByRole('button',{name:'Save queries',exact:true}).click();
+  expect((await (await invalid).json()).status).toBe(400);
+  await expect(handles).toHaveValue('@invalid-account!');
+  await handles.fill('@draft'); await tags.fill('#draft');
+  expect((await (await page.request.post(`/api/wall/${encoded}/posts`, { data:{ action:'updateSettings', revision:1, settings:{ xQueryHashtags:['#elsewhere'] } } })).json()).status).toBe(200);
+  const conflict = page.waitForResponse(r => r.url().includes('/posts') && r.request().method()==='POST');
+  await page.getByRole('button',{name:'Save queries',exact:true}).click();
+  expect((await (await conflict).json()).status).toBe(409);
+  await expect(tags).toHaveValue('#draft'); await expect(handles).toHaveValue('@draft');
+  await expect(page.getByText('Settings changed elsewhere.', {exact:false})).toBeVisible();
+  await page.getByRole('button',{name:'Reload saved settings',exact:true}).click();
+  await expect(tags).toHaveValue('#elsewhere');
+  let release; const gate = new Promise(resolve => { release = resolve; });
+  await page.route(`**/api/wall/${encoded}/posts`, async route => {
+    if (route.request().method() !== 'POST') return route.continue();
+    await gate; await route.continue();
+  });
+  await tags.fill('#first');
+  await page.getByRole('button',{name:'Save queries',exact:true}).click();
+  await expect(page.getByRole('button',{name:'Saving…',exact:true})).toBeVisible();
+  await tags.fill('#still_typing'); release();
+  await expect(page.getByRole('button',{name:'Save queries',exact:true})).toBeEnabled();
+  await expect(tags).toHaveValue('#still_typing');
+  expect((await (await page.request.get(`/api/wall/${encoded}/posts`)).json()).data.wall.xQueryHashtags).toEqual(['#first']);
+  await changed(page, () => page.getByRole('button',{name:'Save queries',exact:true}).click());
+  await page.reload(); await expect(tags).toHaveValue('#still_typing');
 });
