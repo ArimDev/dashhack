@@ -79,6 +79,7 @@ export function validateMedia(data, mime) {
     };
     if (!valid[mime]) fail('Unsupported file type or file does not match its media type', 415);
 }
+/** @returns {import('../../shared/wallPost').WallPost} */
 function normalize(row) {
     return { id: row.id, platform: row.platform, authorName: row.author_name, handle: row.handle, text: row.text,
         imageUrl: row.image_url, videoUrl: row.video_url, sourceUrl: row.source_url, status: row.status,
@@ -158,6 +159,11 @@ export class WallStore {
             rejected: posts.filter(p => p.status === 'rejected').length, hidden: posts.filter(p => p.hidden).length,
             pinned: posts.filter(p => p.pinned).length } };
     }
+    /**
+     * @param {string} name
+     * @param {import('../../shared/wallPost').WallPostInput} input
+     * @returns {import('../../shared/wallPost').WallPost | null}
+     */
     submit(name, input, media = null, { collected = false } = {}) {
         const { id: eventId } = this.event(name);
         return this.db.transaction(() => {
@@ -169,11 +175,16 @@ export class WallStore {
             if (collected && !(platform === 'instagram' ? /^instagram-[a-z\d_-]+$/i : /^x-\d+$/).test(id)) fail('Invalid collected post identifier');
             const existing = collected && this.db.query('SELECT * FROM wall_posts WHERE event_id=? AND id=?').get(eventId,id);
             if (existing) {
-                if (platform === 'instagram' && !existing.deleted && existing.author_name === 'Instagram' && !existing.handle && existing.text === 'Instagram post') {
-                    const corrected = { authorName: string(input.authorName,80), handle: string(input.handle,80), text: string(input.text,5000) };
-                    if ((corrected.authorName !== existing.author_name || corrected.handle || corrected.text !== existing.text) && filtersAllow(corrected, wall)) {
-                        this.db.query('UPDATE wall_posts SET author_name=?,handle=?,text=?,revision=revision+1 WHERE event_id=? AND id=?')
-                            .run(corrected.authorName,corrected.handle,corrected.text,eventId,id);
+                if (platform === 'instagram' && !existing.deleted) {
+                    const placeholder = existing.author_name === 'Instagram' && !existing.handle && existing.text === 'Instagram post';
+                    const corrected = placeholder
+                        ? { authorName: string(input.authorName,80), handle: string(input.handle,80), text: string(input.text,5000) }
+                        : { authorName: existing.author_name, handle: existing.handle, text: existing.text };
+                    const imageUrl = existing.image_url || url(input.imageUrl), videoUrl = existing.video_url || url(input.videoUrl);
+                    if ((corrected.authorName !== existing.author_name || corrected.handle !== existing.handle || corrected.text !== existing.text ||
+                        imageUrl !== existing.image_url || videoUrl !== existing.video_url) && filtersAllow(corrected, wall)) {
+                        this.db.query('UPDATE wall_posts SET author_name=?,handle=?,text=?,image_url=?,video_url=?,revision=revision+1 WHERE event_id=? AND id=?')
+                            .run(corrected.authorName,corrected.handle,corrected.text,imageUrl,videoUrl,eventId,id);
                     }
                 }
                 return null;

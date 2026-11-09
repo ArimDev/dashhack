@@ -25,7 +25,7 @@
           {{ post.text }}
         </p>
         <div
-          v-if="post.imageUrl"
+          v-if="post.imageUrl && !post.videoUrl"
           class="mt-3 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700"
         >
           <img :src="post.imageUrl" class="max-h-60 w-full object-cover" />
@@ -34,7 +34,7 @@
           v-if="post.videoUrl"
           class="mt-3 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700"
         >
-          <video :src="post.videoUrl" controls class="max-h-60 w-full bg-black" />
+          <video :src="post.videoUrl" :poster="post.imageUrl || undefined" controls class="max-h-60 w-full bg-black" />
         </div>
 
         <div
@@ -157,7 +157,7 @@ import Badge from "../ui/Badge.vue";
 import { wallPlatformMeta } from "../../utils/wallPlatforms";
 
 defineProps({
-  post: { type: Object, required: true },
+  post: { type: /** @type {import('vue').PropType<import('../../../shared/wallPost').WallPost>} */ (Object), required: true },
   menuOpen: { type: Boolean, default: false },
   expired: { type: Boolean, default: false },
 });

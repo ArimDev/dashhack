@@ -114,7 +114,8 @@ describe('Optional Captapi Instagram collector', () => {
     }
     const payload = { success: true, data: { results: [
         { caption: 'Hackathon!\n#coding', url: 'https://www.instagram.com/p/ABC_123/?utm_source=test',
-            author: { username: 'javascript.js', displayName: 'JavaScript' } },
+            author: { username: 'javascript.js', displayName: 'JavaScript' },
+            thumbnailUrl: 'https://cdninstagram.com/photo.jpg', publishedAt: '2026-10-24T09:33:39.000Z' },
         { title: 'Bad source', url: 'https://example.com/p/ABC_123/', author: '@host' },
     ] } };
     test('hashtag requests, manual approval, stable deduplication and shared collector auto approval', async () => {
@@ -132,7 +133,8 @@ describe('Optional Captapi Instagram collector', () => {
         expect((await collector.syncEvent(c.name)).imported).toBe(1);
         expect(logs.find(entry => entry[0].endsWith('Fetch succeeded'))[1]).toMatchObject({ fetched: 2, imported: 1, invalid: 1 });
         let post = c.wall.moderationFeed(c.session, c.name).posts[0];
-        expect(post).toMatchObject({ authorName: 'JavaScript', handle: '@javascript.js', text: 'Hackathon!\n#coding' });
+        expect(post).toMatchObject({ authorName: 'JavaScript', handle: '@javascript.js', text: 'Hackathon!\n#coding',
+            imageUrl: 'https://cdninstagram.com/photo.jpg', videoUrl: '', createdAt: '2026-10-24T09:33:39.000Z' });
         expect(post.platform).toBe('instagram'); expect(post.status).toBe('pending'); expect(post.sourceUrl).toBe('https://www.instagram.com/p/ABC_123/');
         expect((await collector.syncEvent(c.name)).imported).toBe(0); expect(calls).toBe(2);
         expect(logs.filter(entry => entry[0].endsWith('Fetch succeeded'))[1][1].duplicates).toBe(1);
@@ -153,6 +155,23 @@ describe('Optional Captapi Instagram collector', () => {
         expect(JSON.stringify(c.wall.publicFeed(c.name))).not.toContain('instagramQuery');
         expect(() => c.wall.updateSettings(c.session, c.name, { instagramQueryHashtags: ['#x'] }, 3)).toThrow('at least 2');
     });
+    test('maps reel media, carousel cover and optional fields without accepting unsafe URLs', async () => {
+        const now = Date.now(), c = await enabled({ now: () => now });
+        const results = [
+            { url: 'https://instagram.com/reel/VIDEO/', caption: 'Reel', author: { username: 'creator' },
+                videoUrl: 'https://cdninstagram.com/reel.mp4', thumbnailUrl: 'https://cdninstagram.com/poster.jpg', publishedAt: '2026-10-22T06:29:53.000Z' },
+            { url: 'https://instagram.com/p/CAROUSEL/', caption: 'Gallery', children: [{ thumbnailUrl: 'https://cdninstagram.com/first.jpg' }] },
+            { url: 'https://instagram.com/p/UNSAFE/', caption: 'Text', videoUrl: 'javascript:alert(1)', thumbnailUrl: 'https://user:secret@example.com/photo.jpg', publishedAt: 'invalid' },
+        ];
+        const collector = new InstagramCollector(c.store, 'key', { logger: { info: () => {}, warn: () => {} },
+            request: async () => Response.json({ success: true, data: { results } }) });
+        expect((await collector.syncEvent(c.name)).imported).toBe(3);
+        const posts = c.wall.moderationFeed(c.session, c.name).posts;
+        expect(posts.find(post => post.id === 'instagram-VIDEO')).toMatchObject({ authorName: 'creator', handle: '@creator',
+            videoUrl: 'https://cdninstagram.com/reel.mp4', imageUrl: 'https://cdninstagram.com/poster.jpg', createdAt: '2026-10-22T06:29:53.000Z' });
+        expect(posts.find(post => post.id === 'instagram-CAROUSEL').imageUrl).toBe('https://cdninstagram.com/first.jpg');
+        expect(posts.find(post => post.id === 'instagram-UNSAFE')).toMatchObject({ videoUrl: '', imageUrl: '', createdAt: c.store.timestamp() });
+    });
     test('later polls repair placeholders without replacing content or moderation decisions', async () => {
         const c = await enabled();
         const input = { id: 'instagram-ABC_123', platform: 'instagram', authorName: 'Instagram', text: 'Instagram post' };
@@ -162,9 +181,15 @@ describe('Optional Captapi Instagram collector', () => {
         expect((await collector.syncEvent(c.name)).imported).toBe(0);
         let repaired = c.wall.moderationFeed(c.session, c.name).posts[0];
         expect(repaired).toMatchObject({ authorName: 'JavaScript', handle: '@javascript.js', text: 'Hackathon!\n#coding',
+            imageUrl: 'https://cdninstagram.com/photo.jpg',
             status: old.status, hidden: old.hidden, pinned: old.pinned, createdAt: old.createdAt, revision: old.revision + 1 });
         await collector.syncEvent(c.name);
         expect(c.wall.moderationFeed(c.session, c.name).posts[0]).toEqual(repaired);
+        c.wall.submit(c.name, { id: repaired.id, platform: 'instagram', authorName: 'Different author', text: 'Changed caption',
+            videoUrl: 'https://cdninstagram.com/reel.mp4' }, null, { collected: true });
+        expect(c.wall.moderationFeed(c.session, c.name).posts[0]).toMatchObject({ authorName: repaired.authorName, text: repaired.text,
+            videoUrl: 'https://cdninstagram.com/reel.mp4', status: repaired.status, pinned: repaired.pinned, createdAt: repaired.createdAt });
+        repaired = c.wall.moderationFeed(c.session, c.name).posts[0];
         repaired = action(c, repaired, 'reject'); action(c, repaired, 'delete');
         await collector.syncEvent(c.name); expect(c.wall.moderationFeed(c.session, c.name).posts).toHaveLength(0);
         const blocked = { ...input, id: 'instagram-BLOCKED' };
