@@ -5,6 +5,10 @@ export default defineNuxtRouteMiddleware(async (to, from) => {
     currentEvent.value = eventParam;
 
     const response = await $fetch(`/api/event/${encodeURIComponent(currentEvent.value)}`);
+    if(response.data?.event && response.data.event!==eventParam) {
+        const parts=to.path.split('/');parts[2]=encodeURIComponent(response.data.event);
+        return navigateTo({path:parts.join('/'),query:to.query,hash:to.hash},{replace:true});
+    }
     const eventFetch = response.data;
     useState('eventCanEdit', () => false).value = !!response.canEdit;
 
