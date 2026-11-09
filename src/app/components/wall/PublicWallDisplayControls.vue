@@ -8,6 +8,15 @@
         <input :checked="scrollingEnabled" type="checkbox" role="switch" aria-label="Enable auto-scroll layout"
           @change="$emit('toggle-scroll', $event.target.checked)" />
       </label>
+      <label class="block text-sm">
+        Scroll speed
+        <select aria-label="Scroll speed" :value="scrollSpeed" :disabled="speedSaving" @change="$emit('set-speed', Number($event.target.value))" class="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 dark:border-white/15 dark:bg-slate-900">
+          <option v-if="!presets.some(preset => preset.value === scrollSpeed)" :value="scrollSpeed">Custom ({{ scrollSpeed }} px/s)</option>
+          <option v-for="preset in presets" :key="preset.value" :value="preset.value">{{ preset.label }} ({{ preset.value }} px/s)</option>
+        </select>
+      </label>
+      <p v-if="speedSaving" role="status" class="text-xs text-slate-500">Saving speed…</p>
+      <p v-if="speedError" role="alert" class="text-xs text-red-600 dark:text-red-400">{{ speedError }}</p>
       <button type="button" class="flex min-h-11 items-center gap-3 rounded-xl border border-slate-300 px-3 text-sm dark:border-white/15"
         :aria-label="fullscreen ? 'Exit full screen' : 'Enter full screen'" @click="$emit('toggle-fullscreen')">
         <Icon :name="fullscreen ? 'heroicons:arrows-pointing-in' : 'heroicons:arrows-pointing-out'" size="18px" />
@@ -33,14 +42,18 @@
 </template>
 
 <script setup>
+import { WALL_SPEED_PRESETS as presets } from "../../../shared/wallDisplay.js";
 defineProps({
+  scrollSpeed: { type: Number, default: 40 },
+  speedSaving: Boolean,
+  speedError: { type: String, default: '' },
   scrollingEnabled: { type: Boolean, required: true },
   fullscreen: { type: Boolean, required: true },
   darkTheme: { type: Boolean, required: true },
   showQr: { type: Boolean, required: true },
   postCount: { type: Number, required: true },
 });
-defineEmits(['toggle-scroll', 'toggle-fullscreen', 'toggle-theme', 'toggle-qr']);
+defineEmits(['set-speed', 'toggle-scroll', 'toggle-fullscreen', 'toggle-theme', 'toggle-qr']);
 const open = ref(false), controls = ref(null), toggle = ref(null);
 function dismiss(event) {
   if (!open.value) return;

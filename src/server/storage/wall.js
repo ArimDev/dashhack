@@ -6,11 +6,11 @@ import { MAX_UPLOAD_BYTES, WALL_MEDIA_BUDGET, EVENT_MEDIA_BUDGET, VOLUME_RESERVE
 
 export { MAX_UPLOAD_BYTES } from '../../shared/wallUploads.js';
 export const WALL_DEFAULTS = Object.freeze({ enabled: false, publicUploadEnabled: true, moderationMode: 'manual',
-    windowMinutes: 1440, idleCycleSeconds: 25, idleWaitSeconds: 5, queryHashtags: [],
+    windowMinutes: 1440, idleCycleSeconds: 25, idleWaitSeconds: 5, scrollSpeed: 40, queryHashtags: [],
     xEnabled: false, xPollIntervalMinutes: 5, xQueryHashtags: [], xQueryHandles: [],
     instagramEnabled: false, instagramPollIntervalMinutes: 5, instagramQueryHashtags: [],
     blacklistedKeywords: [], blacklistedAuthors: [] });
-const PUBLIC_KEYS = ['enabled', 'publicUploadEnabled', 'windowMinutes', 'idleCycleSeconds', 'idleWaitSeconds'];
+const PUBLIC_KEYS = ['enabled', 'publicUploadEnabled', 'windowMinutes', 'idleCycleSeconds', 'idleWaitSeconds', 'scrollSpeed', 'revision'];
 function fail(message, status = 400) { throw new StorageError(status, message); }
 function string(value = '', max = 1000) {
     if (typeof value !== 'string' || value.length > max) fail('Invalid wall text');
@@ -54,7 +54,7 @@ function validateSettings(patch) {
             next[key] = list(value, key.toLowerCase().includes('hashtag') ? 'hashtag' : key === 'xQueryHandles' ? 'handle' : 'filter');
             if (key === 'instagramQueryHashtags' && next[key].some(term => [...term.slice(1)].length < 2)) fail('Instagram hashtags need at least 2 characters');
         } else {
-            const [min, max] = key === 'windowMinutes' ? [15, 10080] : ['xPollIntervalMinutes', 'instagramPollIntervalMinutes'].includes(key) ? [1, 180] : [5, 600];
+            const [min, max] = key === 'scrollSpeed' ? [10, 100] : key === 'windowMinutes' ? [15, 10080] : ['xPollIntervalMinutes', 'instagramPollIntervalMinutes'].includes(key) ? [1, 180] : [5, 600];
             if (!Number.isInteger(value) || value < min || value > max) fail(`Invalid ${key} (${min}–${max})`);
             next[key] = value;
         }
@@ -144,12 +144,15 @@ export class WallStore {
             return this.config(id);
         })();
     }
-    publicFeed(name) {
+    publicFeed(name, { limit = 200, offset = 0 } = {}) {
+        if (!Number.isInteger(limit) || limit < 1 || limit > 200 || !Number.isInteger(offset) || offset < 0 || offset >= 200) fail('Invalid wall page');
         const { id } = this.event(name), wall = this.config(id);
         const cutoff = new Date(this.store.now() - wall.windowMinutes * 60000).toISOString();
-        const posts = wall.enabled ? this.db.query(`SELECT * FROM wall_posts WHERE event_id=? AND deleted=0 AND hidden=0
-            AND status='approved' AND (pinned=1 OR created_at>=?) ORDER BY pinned DESC,created_at DESC,id LIMIT 200`).all(id, cutoff).map(normalize) : [];
-        return { wall: Object.fromEntries(PUBLIC_KEYS.map(key => [key, wall[key]])), posts };
+        const total = wall.enabled ? Math.min(200, this.db.query(`SELECT COUNT(*) AS n FROM wall_posts WHERE event_id=? AND deleted=0 AND hidden=0
+            AND status='approved' AND (pinned=1 OR created_at>=?)`).get(id, cutoff).n) : 0;
+        const posts = total ? this.db.query(`SELECT * FROM wall_posts WHERE event_id=? AND deleted=0 AND hidden=0
+            AND status='approved' AND (pinned=1 OR created_at>=?) ORDER BY pinned DESC,created_at DESC,id LIMIT ? OFFSET ?`).all(id, cutoff, Math.min(limit, 200 - offset), offset).map(normalize) : [];
+        return { wall: Object.fromEntries(PUBLIC_KEYS.map(key => [key, wall[key]])), posts, total, hasMore: offset + posts.length < total };
     }
     moderationFeed(session, name) {
         const id = this.store.authorize(session, name);

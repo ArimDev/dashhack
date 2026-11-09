@@ -43,24 +43,25 @@
         class="mt-1 inline-flex min-h-11 items-center text-xs font-semibold underline">Read full post</button>
       <div
         v-if="post.imageUrl && !post.videoUrl"
-        class="mt-3 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800"
+        ref="mediaContainer" class="mt-3 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800" :class="fullText ? '' : 'aspect-[4/3]'"
       >
         <img
-          :src="post.imageUrl"
+          :src="mediaReady ? post.imageUrl : undefined"
           :alt="post.authorName ? `Post by ${post.authorName}` : 'Shared post image'"
-          class="max-h-105 w-full object-cover"
-          loading="lazy"
+          :class="fullText ? 'max-h-[60vh] w-full object-contain' : 'h-full w-full object-contain'"
+          loading="lazy" decoding="async"
         />
       </div>
-      <div v-else-if="post.videoUrl" class="mt-3 overflow-hidden rounded-2xl bg-black">
+      <div v-else-if="post.videoUrl" ref="mediaContainer" class="mt-3 overflow-hidden rounded-2xl bg-black" :class="fullText ? '' : 'aspect-[4/3]'">
         <video
-          :src="post.videoUrl"
-          :poster="post.imageUrl || undefined"
+          :src="mediaReady ? post.videoUrl : undefined"
+          :poster="mediaReady ? post.imageUrl || undefined : undefined"
           :controls="!decorative"
           :tabindex="decorative ? -1 : undefined"
+          preload="none"
           playsinline
           muted
-          class="max-h-105 w-full object-contain"
+          :class="fullText ? 'max-h-[60vh] w-full object-contain' : 'h-full w-full object-contain'"
         />
       </div>
       <a
@@ -79,6 +80,7 @@
 </template>
 
 <script setup>
+import { observeWallMedia } from "../../utils/lazyWallMedia.js";
 import Badge from "../ui/Badge.vue";
 import { wallPlatformMeta } from "../../utils/wallPlatforms";
 
@@ -95,6 +97,14 @@ const props = defineProps({
     default: 100,
   },
 });
+
+const mediaContainer = ref(null), mediaReady = ref(props.fullText);
+let stopObserving;
+watch(mediaContainer, element => {
+  stopObserving?.();
+  if (element && !mediaReady.value) stopObserving = observeWallMedia(element, () => { mediaReady.value = true; });
+}, { flush: 'post' });
+onBeforeUnmount(() => stopObserving?.());
 
 const truncatedText = computed(() => {
   const text = props.post?.text || "";

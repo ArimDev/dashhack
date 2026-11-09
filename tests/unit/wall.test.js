@@ -28,7 +28,7 @@ describe('Social wall adapted from PR #6',() => {
         const before=publicEvent(c.store.getEvent(c.name)); c.store.close();
         const reopened=new SqliteStore(c.filename); stores.push(reopened);
         expect(publicEvent(reopened.getEvent(c.name))).toEqual(before);
-        expect(new WallStore(reopened).publicFeed(c.name)).toEqual({ wall:{ enabled:false,publicUploadEnabled:true,windowMinutes:1440,idleCycleSeconds:25,idleWaitSeconds:5 },posts:[] });
+        expect(new WallStore(reopened).publicFeed(c.name)).toEqual({ wall:{ enabled:false,publicUploadEnabled:true,windowMinutes:1440,idleCycleSeconds:25,idleWaitSeconds:5,scrollSpeed:40,revision:0 },posts:[],total:0,hasMore:false });
         expect(() => new WallStore(reopened).submit(c.name,{ text:'Hello' })).toThrow('disabled');
         expect((await reopened.checkPassword(c.name,'password123'))._id).toBe(c.id);
         expect(reopened.db.query('PRAGMA integrity_check').get().integrity_check).toBe('ok');
@@ -300,5 +300,30 @@ describe('Optional in-process X collector',() => {
         expect(JSON.stringify(c.wall.config(c.id))).not.toContain('SECRET');
         now+=300001;await collector.tick();expect(calls).toBe(1);
         now+=600001;await collector.tick();expect(calls).toBe(2);
+    });
+});
+
+
+describe('Wall incremental pages and display speed',()=>{
+    test('pages preserve the bounded approved-feed order without leaking pending/hidden posts',async()=>{
+        const c=await setup();
+        for(let i=0;i<31;i++){const p=c.wall.submit(c.name,{text:'Post '+i});action(c,p,'approve');}
+        c.wall.submit(c.name,{text:'Still pending'});
+        const all=c.wall.publicFeed(c.name),first=c.wall.publicFeed(c.name,{limit:12}),rest=c.wall.publicFeed(c.name,{limit:188,offset:12});
+        expect(first.posts).toHaveLength(12);expect(first.total).toBe(31);expect(first.hasMore).toBe(true);
+        expect([...first.posts,...rest.posts]).toEqual(all.posts);expect(rest.hasMore).toBe(false);
+        for(const options of [{limit:0},{limit:201},{offset:-1},{offset:200},{limit:1.5}])expect(()=>c.wall.publicFeed(c.name,options)).toThrow('Invalid wall page');
+    });
+    test('speed updates are revision-checked, event-owned and preserve collection settings',async()=>{
+        const c=await setup();
+        c.wall.updateSettings(c.session,c.name,{xEnabled:true,xQueryHashtags:['#keepx'],instagramEnabled:true,instagramQueryHashtags:['#keepig'],moderationMode:'auto'},c.wall.config(c.id).revision);
+        const old=c.wall.config(c.id);
+        expect(()=>c.wall.updateSettings(null,c.name,{scrollSpeed:60},old.revision)).toThrow('expired');
+        const updated=c.wall.updateSettings(c.session,c.name,{scrollSpeed:60},old.revision);
+        expect(updated.scrollSpeed).toBe(60);expect(updated.xEnabled).toBe(old.xEnabled);expect(updated.instagramEnabled).toBe(old.instagramEnabled);
+        expect(updated.xQueryHashtags).toEqual(['#keepx']);expect(updated.instagramQueryHashtags).toEqual(['#keepig']);expect(updated.moderationMode).toBe('auto');
+        expect(c.wall.publicFeed(c.name).wall.scrollSpeed).toBe(60);expect(c.wall.publicFeed(c.name).wall.revision).toBe(updated.revision);
+        expect(()=>c.wall.updateSettings(c.session,c.name,{scrollSpeed:20},old.revision)).toThrow('changed');
+        for(const scrollSpeed of [0,101,'60',30.5])expect(()=>c.wall.updateSettings(c.session,c.name,{scrollSpeed},updated.revision)).toThrow('Invalid');
     });
 });

@@ -353,3 +353,48 @@ test('hover without opening a post resumes after five seconds, including with th
   await page.waitForTimeout(4000);expect(await track.getAttribute('style')).toBe(left);
   await expect.poll(()=>track.getAttribute('style'),{timeout:3500}).not.toBe(left);
 });
+
+test('wall starts scrolling the first batch before remaining posts or media finish loading', async ({ page }) => {
+  const name=await setup(page),encoded=encodeURIComponent(name),total=120;
+  let releaseRest;const restGate=new Promise(resolve=>{releaseRest=resolve});
+  let releaseMedia;const mediaGate=new Promise(resolve=>{releaseMedia=resolve});
+  const mediaRequests=new Set();
+  const posts=Array.from({length:total},(_,i)=>({id:'lazy-'+i,platform:'x',authorName:'Student '+i,handle:'@student',text:'Lazy wall post '+i+' '+ 'Text '.repeat(30),imageUrl:`https://wall-media.invalid/image-${i}.webp`,videoUrl:'',sourceUrl:'',pinned:false}));
+  await page.route(`**/api/wall/${encoded}*`,async route=>{
+    const url=new URL(route.request().url());if(url.pathname!==`/api/wall/${encoded}`)return route.continue();
+    const offset=Number(url.searchParams.get('offset')||0),limit=Number(url.searchParams.get('limit')||200);
+    if(offset)await restGate;
+    await route.fulfill({json:{status:200,canEdit:true,data:{wall:{enabled:true,publicUploadEnabled:false,idleWaitSeconds:5,scrollSpeed:40,revision:0},posts:posts.slice(offset,offset+limit),total,hasMore:offset+limit<total}}});
+  });
+  await page.route('https://wall-media.invalid/**',async route=>{mediaRequests.add(route.request().url());await mediaGate;await route.fulfill({contentType:'image/png',body:png});});
+  await page.setViewportSize({width:1440,height:900});
+  // A stationary cursor over the newly mounted feed must not trigger a startup pause.
+  await page.mouse.move(600,400);await page.goto(`/${encoded}/wall`);
+  const track=page.getByTestId('wall-feed-track');await expect(track).toBeVisible();
+  await expect(page.locator('[data-wall-copy="1"] article')).toHaveCount(12);
+  const before=await track.getAttribute('style');
+  await expect.poll(()=>track.getAttribute('style'),{timeout:1800}).not.toBe(before);
+  const oldNode=await page.locator('[data-wall-copy="1"] article').first().elementHandle();
+  releaseRest();
+  await expect(page.locator('[data-wall-copy="1"] article')).toHaveCount(total);
+  expect(mediaRequests.size).toBeLessThan(40);
+  expect(await oldNode.evaluate(node=>node.isConnected)).toBe(true);
+  releaseMedia();
+});
+
+test('cogwheel speed presets persist for the event and reject guests and stale writes',async({page,browser})=>{
+  const name=await setup(page),encoded=encodeURIComponent(name);
+  await changed(page,()=>page.getByLabel('Wall enabled',{exact:true}).check());
+  const post=(await(await page.request.post(`/api/wall/${encoded}`,{data:{text:'Speed control example'}})).json()).data;
+  expect((await(await page.request.post(`/api/wall/${encoded}/posts`,{data:{action:'approve',postId:post.id,revision:0}})).json()).status).toBe(200);
+  await page.setViewportSize({width:1440,height:900});await page.goto(`/${encoded}/wall`);
+  const cog=page.getByRole('button',{name:'Wall display settings',exact:true});await expect(cog).toBeVisible();await cog.click();
+  const speed=page.getByLabel('Scroll speed',{exact:true});await expect(speed).toHaveValue('40');
+  for(const value of ['20','60','80'])await changed(page,()=>speed.selectOption(value));
+  await page.reload();await cog.click();await expect(speed).toHaveValue('80');
+  const path=`/api/wall/${encoded}/posts`,saved=(await(await page.request.get(path)).json()).data.wall;
+  expect(saved.xEnabled).toBe(false);expect(saved.instagramEnabled).toBe(false);
+  expect((await(await page.request.post(path,{data:{action:'setSpeed',speed:20,revision:saved.revision-1}})).json()).status).toBe(409);
+  expect((await(await page.request.post(path,{data:{action:'setSpeed',speed:900,revision:saved.revision}})).json()).status).toBe(400);
+  const guest=await browser.newContext();try{expect((await(await guest.request.post(path,{data:{action:'setSpeed',speed:20,revision:saved.revision}})).json()).status).toBe(401);}finally{await guest.close();}
+});

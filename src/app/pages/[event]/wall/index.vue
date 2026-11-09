@@ -31,8 +31,8 @@
       <section
         v-else
         ref="feedViewport"
+        data-wall-viewport
         @pointerdown="pauseForInteraction"
-        @pointerenter="pauseForInteraction"
         @pointermove="pauseForInteraction"
         @pointerleave="pauseForInteraction"
         @focusin="pauseForInteraction"
@@ -51,16 +51,18 @@
             :ref="copy === 1 ? setFirstFeedCopy : undefined"
             :aria-hidden="copy > 1 ? 'true' : undefined"
             :data-wall-copy="copy"
-            class="columns-1 gap-4 sm:columns-2 xl:columns-3 2xl:columns-4 pb-4"
+            class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 pb-4"
           >
-            <WallPostCard
-              v-for="post in posts"
-              :key="`${copy}-${post.id}`"
-              :post="post"
-              :decorative="copy > 1"
-              @read="openPost"
-              :text-preview-length="textPreviewLength"
-            />
+            <div v-for="(column, columnIndex) in postColumns" :key="columnIndex" class="min-w-0">
+              <WallPostCard
+                v-for="post in column"
+                :key="`${copy}-${post.id}`"
+                :post="post"
+                :decorative="copy > 1"
+                @read="openPost"
+                :text-preview-length="textPreviewLength"
+              />
+            </div>
           </div>
         </div>
       </section>
@@ -71,7 +73,11 @@
         :fullscreen="isFullscreen"
         :dark-theme="isDarkTheme"
         :show-qr="showQr"
-        :post-count="posts.length"
+        :post-count="totalPosts"
+        :scroll-speed="scrollSpeed"
+        :speed-saving="speedSaving"
+        :speed-error="speedError"
+        @set-speed="saveSpeed"
         @toggle-scroll="setScrollingEnabled"
         @toggle-fullscreen="toggleFullscreen"
         @toggle-theme="toggleTheme"
@@ -92,7 +98,15 @@ import PublicWallState from "../../../components/wall/PublicWallState.vue";
 const route = useRoute();
 const colorMode = useColorMode();
 const eventName = computed(() => route.params.event || "event");
-const posts = ref([]);
+const posts = ref([]), renderedCount = ref(12), totalPosts = ref(0);
+const renderedPosts = computed(() => posts.value.slice(0, renderedCount.value));
+const columnCount = ref(1);
+const postColumns = computed(() => {
+  const columns = Array.from({ length: columnCount.value }, () => []);
+  renderedPosts.value.forEach((post, index) => columns[index % columns.length].push(post));
+  return columns;
+});
+function updateColumnCount() { columnCount.value = innerWidth >= 1536 ? 4 : innerWidth >= 1280 ? 3 : innerWidth >= 640 ? 2 : 1; }
 const readingPost = ref(null);
 function openPost(post) {
   pauseForInteraction();
@@ -118,7 +132,8 @@ const feedViewportHeight = ref(0);
 const feedCopyHeight = ref(0);
 const scrollOffset = ref(0);
 const textPreviewLength = 100;
-const cycleSeconds = ref(25), idleWaitSeconds = ref(5), uploadsEnabled = ref(false);
+const scrollSpeed = ref(40), speedSaving = ref(false), speedError = ref(''), wallRevision = ref(0);
+const idleWaitSeconds = ref(5), uploadsEnabled = ref(false);
 let pauseUntil = 0, readerResumeUntil = 0, loading = false;
 function pauseForInteraction(event) {
   const now = performance.now();
@@ -193,27 +208,83 @@ function measureFeed() {
   }
 }
 
-async function loadWall() {
-  if (loading) return;
-  loading = true;
+let disposed = false, loadController, revealHandle = 0, revealUsesIdle = false;
+function revealMore() {
+  if (revealHandle || disposed || document.hidden || renderedCount.value >= posts.value.length) return;
+  const reveal = () => {
+    revealHandle = 0;
+    if (disposed || document.hidden) return;
+    renderedCount.value = Math.min(posts.value.length, renderedCount.value + 12);
+    revealMore();
+  };
+  revealUsesIdle = typeof window.requestIdleCallback === 'function';
+  revealHandle = revealUsesIdle ? window.requestIdleCallback(reveal, { timeout: 200 }) : window.setTimeout(reveal, 32);
+}
+function applySettings(wall) {
+  const revision = wall.revision || 0;
+  if (revision < wallRevision.value) return;
+  wallRevision.value = revision;
+  if (!speedSaving.value) scrollSpeed.value = wall.scrollSpeed || 40;
+  idleWaitSeconds.value = wall.idleWaitSeconds;
+  uploadsEnabled.value = wall.publicUploadEnabled;
+}
+function applyPosts(incoming) {
+  const previous = new Map(posts.value.map(post => [post.id, post]));
+  // Keep unchanged card props stable during the 12-second refresh.
+  posts.value = [...new Map(incoming.map(post => [post.id, previous.has(post.id) && JSON.stringify(previous.get(post.id)) === JSON.stringify(post) ? previous.get(post.id) : post])).values()];
+  revealMore();
+}
+async function saveSpeed(speed) {
+  if (!canEdit.value || speedSaving.value) return;
+  const previous = scrollSpeed.value;
+  speedSaving.value = true; speedError.value = ''; scrollSpeed.value = speed;
   try {
-    const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}`);
-    if (response?.status !== 200 || !response.data?.wall) {
-      canEdit.value = false;
-      wallStatus.value = "error";
-      return;
-    }
-
+    const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}/posts`, {
+      method: 'POST', body: { action: 'setSpeed', speed, revision: wallRevision.value }, timeout: 10000,
+    });
+    if (response.status !== 200) throw new Error(response.message || 'Could not save scroll speed.');
+    wallRevision.value = response.data.wall.revision;
+    scrollSpeed.value = response.data.wall.scrollSpeed;
+  } catch (failure) {
+    scrollSpeed.value = previous; speedError.value = failure.message || 'Could not save scroll speed.';
+  } finally { speedSaving.value = false; }
+}
+async function loadWall() {
+  if (loading || disposed) return;
+  loading = true;
+  loadController = new AbortController();
+  const initial = !posts.value.length;
+  try {
+    const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}`, {
+      ...(initial ? { query: { limit: 12 } } : {}), timeout: 8000, signal: loadController.signal,
+    });
+    if (disposed) return;
+    if (response?.status !== 200 || !response.data?.wall) throw new Error('Wall unavailable');
     canEdit.value = response.canEdit === true;
-    wallStatus.value = response.data.wall.enabled === false ? "disabled" : "available";
-    posts.value = response.data.posts || [];
-    cycleSeconds.value = response.data.wall.idleCycleSeconds;
-    idleWaitSeconds.value = response.data.wall.idleWaitSeconds;
-    uploadsEnabled.value = response.data.wall.publicUploadEnabled;
+    wallStatus.value = response.data.wall.enabled === false ? 'disabled' : 'available';
+    totalPosts.value = response.data.total ?? response.data.posts?.length ?? 0;
+    applySettings(response.data.wall);
+    if (initial) renderedCount.value = 12;
+    applyPosts(response.data.posts || []);
+    if (initial && response.data.hasMore) {
+      // Show and animate the first screen before fetching/building the rest of the loop.
+      await nextTick();
+      await new Promise(resolve => requestAnimationFrame(resolve));
+      if (disposed) return;
+      const offset = response.data.posts.length;
+      const rest = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}`, {
+        query: { offset, limit: 200 - offset }, timeout: 8000, signal: loadController.signal,
+      });
+      if (disposed || rest?.status !== 200 || !rest.data?.wall) return;
+      canEdit.value = rest.canEdit === true;
+      wallStatus.value = rest.data.wall.enabled === false ? 'disabled' : 'available';
+      applySettings(rest.data.wall);
+      totalPosts.value = rest.data.total ?? totalPosts.value;
+      applyPosts(rest.data.wall.enabled === false ? [] : [...response.data.posts, ...(rest.data.posts || [])]);
+    }
   } catch (error) {
-    canEdit.value = false;
-    console.warn("Wall load failed:", error);
-    wallStatus.value = "error";
+    if (!disposed && !posts.value.length) { canEdit.value = false; wallStatus.value = 'error'; }
+    // A failed background refresh must not replace a running wall with a loading/error screen.
   } finally { loading = false; }
 }
 
@@ -221,7 +292,7 @@ let refreshInterval, animationFrame = 0, previousFrame = 0;
 function scrollFeed(timestamp) {
   if (timestamp >= pauseUntil && previousFrame && feedCopyHeight.value) {
     const elapsedSeconds = Math.min((timestamp - previousFrame) / 1000, 0.1);
-    scrollOffset.value = (scrollOffset.value + Math.max(10, Math.min(80, feedCopyHeight.value / cycleSeconds.value)) * elapsedSeconds) % feedCopyHeight.value;
+    scrollOffset.value = (scrollOffset.value + scrollSpeed.value * elapsedSeconds) % feedCopyHeight.value;
   }
   previousFrame = timestamp;
   animationFrame = requestAnimationFrame(scrollFeed);
@@ -233,10 +304,12 @@ function syncAnimation() {
 }
 function visibilityChanged() {
   syncAnimation();
-  if (!document.hidden) loadWall();
+  if (!document.hidden) { revealMore(); loadWall(); }
 }
 watch([isScrollingEnabled, () => posts.value.length, readingPost], () => { if (import.meta.client) syncAnimation(); });
 onMounted(() => {
+  updateColumnCount();
+  window.addEventListener('resize', updateColumnCount, { passive: true });
   if (window.matchMedia('(pointer: coarse), (max-width: 767px), (prefers-reduced-motion: reduce)').matches) isScrollingEnabled.value = false;
   qrMedia = window.matchMedia('(min-width: 1024px)');
   qrMedia.addEventListener('change', updateQr);
@@ -252,16 +325,20 @@ onMounted(() => {
   syncAnimation();
 });
 onBeforeUnmount(() => {
+  disposed = true;
+  loadController?.abort();
+  if (revealHandle) { if (revealUsesIdle) window.cancelIdleCallback(revealHandle); else clearTimeout(revealHandle); }
   clearInterval(refreshInterval);
   qrMedia?.removeEventListener('change', updateQr);
   cancelAnimationFrame(animationFrame);
   feedResizeObserver?.disconnect();
+  window.removeEventListener('resize', updateColumnCount);
   document.removeEventListener('fullscreenchange', syncFullscreenState);
   document.removeEventListener('visibilitychange', visibilityChanged);
 });
 
 watch(
-  [posts, feedViewport, firstFeedCopy],
+  [renderedPosts, feedViewport, firstFeedCopy],
   async () => {
     await nextTick();
     measureFeed();

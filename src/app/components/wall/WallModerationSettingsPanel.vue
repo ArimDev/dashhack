@@ -55,15 +55,11 @@
       </label>
 
       <label class="block text-sm text-slate-600 dark:text-slate-300">
-        Idle rotation (seconds)
-        <input
-          :value="settings.idleCycleSeconds"
-          type="number"
-          min="5"
-          step="5"
-          class="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
-          @change="updateNumberSetting('idleCycleSeconds', $event); emit('save')"
-        />
+        Scroll speed
+        <select aria-label="Scroll speed" :value="settings.scrollSpeed || 40" class="mt-2 min-h-11 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 dark:border-slate-600 dark:bg-slate-800" @change="updateNumberSetting('scrollSpeed', $event); emit('save')">
+          <option v-if="!speedPresets.some(preset => preset.value === (settings.scrollSpeed || 40))" :value="settings.scrollSpeed">Custom ({{ settings.scrollSpeed }} px/s)</option>
+          <option v-for="preset in speedPresets" :key="preset.value" :value="preset.value">{{ preset.label }} ({{ preset.value }} px/s)</option>
+        </select>
       </label>
 
       <label class="block text-sm text-slate-600 dark:text-slate-300">
@@ -102,6 +98,7 @@
 </template>
 
 <script setup>
+import { WALL_SPEED_PRESETS as speedPresets } from "../../../shared/wallDisplay.js";
 const props = defineProps({
   settings: { type: Object, required: true },
   keywordsText: { type: String, required: true },

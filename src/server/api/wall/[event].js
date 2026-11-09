@@ -6,7 +6,8 @@ export default apiHandler(async event => {
     const wall = getWallStore();
     setHeader(event,'Cache-Control','no-store');
     if (event.method === 'GET') {
-        const data = wall.publicFeed(name);
+        const query = getQuery(event);
+        const data = wall.publicFeed(name, { limit: query.limit === undefined ? 200 : Number(query.limit), offset: query.offset === undefined ? 0 : Number(query.offset) });
         const session = getStore().getSession(getCookie(event, 'session'));
         return { status: 200, data, canEdit: session?.eventId === wall.event(name).id };
     }
