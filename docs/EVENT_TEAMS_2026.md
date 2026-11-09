@@ -1,6 +1,6 @@
 # Týmy — AT&T Hackathon Junior 2026
 
-Produkční událost: **Student Hackathon Demo** (přihlašovací jméno zůstává stejné). Čísla týmů zatím nejsou přidělena. Pořadí odpovídá dodanému seznamu.
+Produkční událost a přihlašovací jméno: **ATT Hackathon Junior 2026**. Heslo zůstává stejné. Čísla týmů zatím nejsou přidělena. Pořadí odpovídá dodanému seznamu.
 
 Všech 15 repozitářů je soukromých. Původní nepoužité `team-01` až `team-15` byly přejmenovány; jejich ID a oprávnění zůstala zachována. README obsahují skutečný název týmu a barvu trička.
 

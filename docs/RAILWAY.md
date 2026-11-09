@@ -13,7 +13,7 @@ Updated 2026-11-09 for the SQLite branch and mobile UI. This project is separate
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `4407f97e-2350-4877-9774-1c0bd18d38ed` — SUCCESS, larger wall title/cogwheel / schema 8 |
+| Latest verified deployment | `7d8eb0c1-bcb6-4b96-9662-ef9c04a19622` — SUCCESS, proper event URI / schema 8 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -345,3 +345,13 @@ Source `60f4ae8`, deployment **`65f904ea-797a-4a08-82da-d2f208c09118` — SUCCES
 ## Larger wall title and clearer cogwheel — 2026-11-09
 
 Source `0101aa2`, deployment **`4407f97e-2350-4877-9774-1c0bd18d38ed` — SUCCESS**. Vertical title is 36px desktop, 24px phone, and 20px on short screens; rail/feed padding increased to match. Bottom-right cogwheel is a solid, higher-contrast 48px button with a hover label. It still requires the matching event password session; GitHub student authorization does not grant event editing. Three targeted Chromium scenarios, production build and live desktop/portrait/landscape typography plus authenticated/guest button checks pass. No production data, settings, variables, permissions, schema or infrastructure changed.
+
+## Proper event URI and compatibility — 2026-11-10
+
+Canonical wall: **https://dashhack-production.up.railway.app/ATT%20Hackathon%20Junior%202026/wall**. Event URI/login name is now **ATT Hackathon Junior 2026**; the display title remains **AT&T Hackathon Junior 2026** and password is unchanged. Stable event ID remains `97c87fe6-f510-4117-9558-1e2380fdaa6a`.
+
+Source `c402f19`, deployment **`7d8eb0c1-bcb6-4b96-9662-ef9c04a19622` — SUCCESS**. Deployed compatibility before renaming. Guarded server middleware redirects old demo wall/upload/dashboard/event/wall-API paths with HTTP 307 and no-store, preserving suffixes/query and upload methods/bodies. The guard requires the exact production ID/new name, so the old event continued working before the rename and unrelated local events are unaffected. Dashboard route middleware also canonicalizes names returned by redirected API reads. Existing QR codes therefore keep working; new QR codes use the canonical upload path.
+
+Full consistent private backup: `/data/backups/before-event-uri-1794265680800.sqlite`, 0600. A parameterized BEGIN IMMEDIATE transaction verified the exact old name and unoccupied new name, then changed only `events.name` and `updated_at`. Password/hash, other event fields and all eleven checked tables matched within the transaction: teams, notes, mentors, GitHub connection, wall settings/posts/media, team links/flows/audit, and sessions. Existing sessions were intentionally preserved for this URI-only operation. Schema remains 8, integrity/foreign keys ok; 16 teams retained and both collectors OFF. No new schema/service/variable or provider request.
+
+Validation: **77 unit tests / 513 assertions**, production build and isolated production HTTP smoke (guard inactive before rename, old wall/upload/dashboard/API compatibility, query preservation, real redirected text submission, unchanged session and new-name password login). Live checks verify canonical wall, old wall/upload/dashboard redirects, QR upload target, new login with existing password, stable ID/16 teams and all 16 existing GitHub team capabilities. Private JSON export metadata was updated to the new name; tokens were not regenerated. Use the new name in future event API payloads and logins; do not recreate the former demo event.
