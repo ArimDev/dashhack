@@ -252,5 +252,9 @@ test('full-post reader works from both the original card and visible looping cop
   expect(await content.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
   await page.getByRole('button',{name:'Close dialog',exact:true}).click();
   await expect(dialog).toHaveCount(0); await expect(original).toBeFocused();
+  const closedTransform = await page.getByTestId('wall-feed-track').getAttribute('style');
+  await page.waitForTimeout(4000);
+  expect(await page.getByTestId('wall-feed-track').getAttribute('style')).toBe(closedTransform);
+  await expect.poll(() => page.getByTestId('wall-feed-track').getAttribute('style'), {timeout:3500}).not.toBe(closedTransform);
   await original.press('Enter'); await expect(page.getByRole('dialog')).toBeVisible();
 });

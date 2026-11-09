@@ -99,7 +99,12 @@ function openPost(post) {
   feedViewport.value?.querySelector(`[data-wall-copy="1"] [data-wall-post-id="${CSS.escape(post.id)}"] [data-read-post]`)?.focus({ preventScroll: true });
   readingPost.value = post;
 }
-function closePost() { pauseForInteraction(); readingPost.value = null; }
+function closePost() {
+  // Ignore focus restoration and pointer re-entry while the reader's close delay runs.
+  readerResumeUntil = performance.now() + 5000;
+  pauseUntil = readerResumeUntil;
+  readingPost.value = null;
+}
 const canEdit = ref(false);
 const wallStatus = ref("loading");
 const qrUrl = ref("");
@@ -113,8 +118,12 @@ const feedCopyHeight = ref(0);
 const scrollOffset = ref(0);
 const textPreviewLength = 100;
 const cycleSeconds = ref(25), idleWaitSeconds = ref(30), uploadsEnabled = ref(false);
-let pauseUntil = 0, loading = false;
-function pauseForInteraction() { pauseUntil = performance.now() + idleWaitSeconds.value * 1000; }
+let pauseUntil = 0, readerResumeUntil = 0, loading = false;
+function pauseForInteraction(event) {
+  const now = performance.now();
+  if (now < readerResumeUntil && ['focusin','pointerenter','pointermove'].includes(event?.type)) return;
+  pauseUntil = now + idleWaitSeconds.value * 1000;
+}
 let feedResizeObserver, qrMedia;
 function updateQr() {
   qrUrl.value = qrMedia?.matches && showQr.value && uploadsEnabled.value && wallStatus.value === 'available' ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(uploadUrl.value)}` : '';
