@@ -121,7 +121,9 @@ const currentPage = computed(() => {
 	const path = pathParts[3] || "home";
 	return path.split("-").map(word => word.charAt(0).toUpperCase() + word.slice(1)).join(" ");
 });
-const loggedIn = computed(() => !!useCookie("sessionExists").value);
+const eventCanEdit = useState('eventCanEdit', () => false);
+const sessionExists = useCookie('sessionExists');
+const loggedIn = computed(() => !!eventCanEdit.value && !!sessionExists.value);
 
 const { toasts } = useToast();
 const colorMode = useColorMode();

@@ -163,3 +163,17 @@ test('mobile password form saves explicitly and keeps the updated session usable
     expect((await(await page.request.post('/api/team/add',{data:{username:d.name,teamName:'Po změně hesla',teamColor:'#3081e0'}})).json()).status).toBe(200);
     await fits(page);
 });
+
+test('mobile editing state and login follow the displayed event rather than another event session',async({page})=>{
+    await demo(page);
+    const other=`Jiná událost ${randomUUID()}`,encoded=encodeURIComponent(other);
+    expect((await(await page.request.post('/api/auth/create',{data:{username:other,password}})).json()).status).toBe(200);
+    await page.goto(`/app/${encoded}/teams`);
+    await expect(page.getByTestId('add-team-fab')).toHaveCount(0);
+    await page.getByRole('button',{name:'Log in',exact:true}).tap();
+    await page.getByRole('dialog').getByLabel('Password',{exact:true}).fill(password);
+    await page.getByRole('button',{name:'Log In',exact:true}).tap();
+    await expect(page.getByRole('dialog')).toHaveCount(0);
+    await expect(page.getByRole('button',{name:'Editing',exact:true})).toBeVisible();
+    await expect(page.getByTestId('add-team-fab')).toBeVisible();
+});
