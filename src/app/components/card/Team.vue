@@ -2,8 +2,8 @@
     <ClientOnly>
         <div :data-testid="`team-card-${team.name}`" class="rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-800 border-l-[6px]" :style="{ borderLeftColor: team.color }">
 
-            <div class="px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-gray-800">
-                <div class="flex flex-col min-w-0 sm:mr-4 sm:flex-1">
+            <div class="px-4 py-3 flex flex-wrap items-center justify-between gap-3 bg-white dark:bg-gray-800">
+                <div class="flex min-w-0 basis-48 grow flex-col">
                     <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100 break-words leading-snug">{{ team.name }}</h1>
                     <p v-if="!showGraph && !showNotes" class="text-xs text-gray-500 dark:text-gray-500 line-clamp-2 mt-0.5">{{ team.description || 'No description provided.' }}</p>
                 </div>
@@ -91,14 +91,13 @@
             </div>
 
             <div v-if="showNotes" class="border-t border-gray-100 dark:border-gray-700/50 p-4 bg-gray-50 dark:bg-gray-900/50">
-                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 grid-flow-dense">
+                <div class="team-notes-grid grid gap-3">
                     <StickyNote
                         v-for="note in team.stickyNotes || []"
                         :key="note.id"
                         :note="note"
                         :mentors="eventData.mentors || []"
                         :read-only="!canEdit"
-                        :class="{ 'md:col-span-2': note.content && note.content.length > 100, 'md:row-span-2': note.content && note.content.length > 200 }"
                         @update="note => $emit('update-note', { teamName: team.name, note })"
                         @delete="noteId => $emit('delete-note', { teamName: team.name, noteId })"
                     />
@@ -218,6 +217,7 @@ async function loadChartData() {
 </script>
 
 <style>
+.team-notes-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
 .apexcharts-tooltip {
     background: #1f2937 !important;
     border-color: #374151 !important;

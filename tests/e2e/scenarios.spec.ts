@@ -550,3 +550,37 @@ test('Kanban drags the card body after an edit without losing text during its pe
   await expect(page.getByTestId('kanban-column-In Progress').getByTestId(`kanban-note-${noteId}`)).toBeVisible();
   await expect(card.getByTestId('note-content')).toHaveValue('Keep this edit while moving');
 });
+
+test('Teams grid, Czech search and jump menu preserve open cards and work on phones', async ({ page }) => {
+  const first = await addTeam(page, 'Žlutý tým', 'https://github.com/demo/phoenix');
+  const second = await addTeam(page, 'Modrý tým');
+  for (const width of [1024, 1440]) {
+    await page.setViewportSize({ width, height: 900 });
+    const a = await first.boundingBox(), b = await second.boundingBox();
+    expect(Math.abs(a.y - b.y)).toBeLessThan(2);
+    expect(b.x).toBeGreaterThanOrEqual(a.x + a.width);
+  }
+  await first.getByTestId('toggle-notes-btn').click();
+  await page.getByLabel('Search teams', { exact: true }).fill('modry');
+  await expect(first).toBeHidden();
+  await expect(second).toBeVisible();
+  await page.getByRole('button', { name: 'Clear', exact: true }).click();
+  await expect(first.getByTestId('toggle-notes-btn')).toHaveAttribute('aria-expanded', 'true');
+  await page.getByLabel('Search teams', { exact: true }).fill('phoenix');
+  await expect(first).toBeVisible();
+  await expect(second).toBeHidden();
+  await page.getByLabel('Search teams', { exact: true }).fill('no such project');
+  await expect(page.getByText('No teams match your search.')).toBeVisible();
+  const id = await second.locator('..').getAttribute('id');
+  await page.getByLabel('Jump to team', { exact: true }).selectOption({ label: 'Modrý tým' });
+  await expect(page.getByLabel('Search teams', { exact: true })).toHaveValue('');
+  await expect(page.locator(`[id="${id}"]`)).toBeFocused();
+  await expect(second).toBeInViewport();
+  await page.setViewportSize({ width: 390, height: 844 });
+  const a = await first.boundingBox(), b = await second.boundingBox();
+  expect(b.y).toBeGreaterThan(a.y);
+  const sizes = await page.locator('#dashboard-content').evaluate(el => [el.scrollWidth, el.clientWidth]);
+  expect(sizes[0]).toBeLessThanOrEqual(sizes[1] + 1);
+  await page.getByLabel('Jump to team', { exact: true }).selectOption({ label: 'Žlutý tým' });
+  await expect(first.getByRole('heading', { name: 'Žlutý tým', exact: true })).toBeInViewport();
+});
