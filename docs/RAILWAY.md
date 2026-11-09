@@ -13,7 +13,7 @@ Updated 2026-11-09 for the SQLite branch and mobile UI. This project is separate
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `f9c9680e-406c-4ab9-a1df-c501b502a5e6` — SUCCESS, mobile polish / schema 7 |
+| Latest verified deployment | `a2080dab-049d-4751-ad11-76ac1bdc0a95` — SUCCESS, lazy wall / saved speeds / schema 7 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -291,3 +291,15 @@ Backup before deployment: `/data/backups/before-team-invites-1794258162827.sqlit
 Private 0600 exports `.data/team-invites-2026.csv`, `.txt`, `.json` contain all 15 generated links (expires 2026-12-09T21:04:26.248Z), ignored by Git and Docker. Never commit their contents into this public repository. Every link anonymously preview-resolved to its correct real team/repository. Organizer Get/Copy UI and phone join layout pass. A real anonymous submission for the already-authorized organization owner returned alreadyHasAccess without changing permissions or sending a notification. New-recipient grants used mocked provider calls through the actual production server, so no unrelated test account was invited.
 
 Validation: 64 unit tests / 403 assertions, five Chromium checks, four Safari/iPhone WebKit checks, production build and isolated production smoke pass. Smoke covers anonymous preview/grant, authenticated issuance, fixed repository/Write scope, tampering, foreign-origin/oversize rejection, throttling/Retry-After and privileged-token revocation. A legacy X fixture test was made deterministic by freezing its clock relative to its sample post; no X product behavior changed.
+
+## Lazy wall startup and saved scroll speeds — 2026-11-09
+
+Source **`149e4ef`** (feature `3fea60d`), deployment **`a2080dab-049d-4751-ad11-76ac1bdc0a95` — SUCCESS**. Public wall requests the first 12 posts, starts rendering/motion, then fetches the remainder and mounts cards in small idle batches. Media sources attach only near the viewport through a shared IntersectionObserver; reserved media boxes avoid scroll-height jumps. Long feeds need two loop copies instead of three. A stationary pointer no longer delays startup; actual interaction and reader dismissal retain the five-second resume delay. Background refresh failures preserve the visible feed.
+
+Authenticated cogwheel and moderation settings offer Slow/Normal/Fast/Very fast (20/40/60/80 px/s). Default 40 px/s is independent of feed length. Revision-checked speed-only writes preserve provider polling/query/approval settings. Existing public requests remain compatible; paging is validated and still capped at 200 posts. No dependencies, schema, services, replicas or infrastructure changed.
+
+Live Chromium check: first cards at 1,350 ms, motion at 1,368 ms with all image requests deliberately stalled. All 106 visible posts eventually mounted, with 212 loop cards instead of 318; only five unique image requests were started initially. These timings describe this run, not a controlled comparative benchmark. Owner UI presets and speed-only request shape passed using a browser-intercepted save; no live settings were modified for testing. Real persistence, guest denial, stale revisions and collector preservation passed against an isolated production server/database.
+
+Consistent pre-deployment backup: `/data/backups/before-wall-lazy-1794259486471.sqlite`, 0600. Post-deployment SQLite integrity remains ok, schema 7; all eight content-table fingerprints match exactly (3 events, 15 real teams, 0 notes, 1 mentor, 1 GitHub connection, 1 wall settings row, 110 posts and 3 media). X and Instagram collectors remain OFF. No provider collection request, content replacement or production settings write was needed.
+
+Validation: 66 unit tests / 427 assertions, targeted Chromium and WebKit/Safari/iPhone checks covering progressive startup, deferred media, speed persistence/authorization, reader/hover five-second resume and responsive routes; final production build and isolated production API smoke pass. Final loop-copy reduction was rechecked in both browser engines.
