@@ -1,6 +1,6 @@
 # DashHack on Railway
 
-Updated 2026-11-08 for the SQLite branch. This project is separate from the school website in `../skola_boretice`.
+Updated 2026-11-09 for the SQLite branch and mobile UI. This project is separate from the school website in `../skola_boretice`.
 
 ## Prepared resources
 
@@ -13,7 +13,7 @@ Updated 2026-11-08 for the SQLite branch. This project is separate from the scho
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `0f41cc2e-49f1-44c1-ae3d-23b49c2d0070` — SUCCESS, Social Wall / schema 7 |
+| Latest verified deployment | `f9c9680e-406c-4ab9-a1df-c501b502a5e6` — SUCCESS, mobile polish / schema 7 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -74,7 +74,7 @@ Deployment [`0f41cc2e-49f1-44c1-ae3d-23b49c2d0070`](https://railway.com/project/
 
 Clean source archive: `/tmp/dashhack-pr6-release-3moxvfox`, 100 files / 516,965 bytes, SHA-256 `657b13f2cdc5600d43ebd5943b5dc353c5253f156737a9505937b2aedffe375d`. No environment files, databases, dependencies or generated output were uploaded. Existing Debian slim image, Docker builder, single replica, `/data` volume, variables, port and public domain were retained. No X/GitHub credentials were added.
 
-Before deployment, created consistent snapshot `/data/backups/before-social-wall-1794179381993.sqlite`. Its attempted optional download was rejected by automatic approval review because a full database includes credentials; that transfer requires explicit approval. The snapshot remains on Railway. The deployment and fixture writes proceeded without downloading it.
+Before deployment, created consistent snapshot `/data/backups/before-social-wall-1794179381993.sqlite`. Its attempted optional download was rejected by automatic approval review because a full database includes credentials; that transfer requires explicit approval. The snapshot remains on Railway. The deployment and fixture writes proceeded without downloading it. The user later explicitly approved that transfer: `/tmp/dashhack-before-social-wall-production.sqlite` was downloaded with mode `0600` and verified (schema 6, integrity `ok`, 15 teams/45 notes). This temporary local snapshot contains credentials and must remain outside Git.
 
 Matej's PR has no committed data/upload fixtures. Ran the committed, idempotent `scripts/seed-demo-wall.js` against the existing **Student Hackathon Demo** in production after successful migration: ten fictional Czech wall posts, comprising six visible approved (two pinned), two pending, one hidden and one rejected. Three original PNG illustrations occupy **6,137 bytes**. This demo wall is enabled; other events' walls retain their defaults. Equivalent fixtures are also present locally. Existing moderation decisions are not overwritten on reruns.
 
@@ -85,6 +85,16 @@ Validated frozen install, **39 unit tests / 241 assertions**, **27 browser scena
 - [Public demo wall](https://dashhack-production.up.railway.app/Student%20Hackathon%20Demo/wall)
 - [Attendee submission form](https://dashhack-production.up.railway.app/Student%20Hackathon%20Demo/wall/upload)
 - [Organizer moderation](https://dashhack-production.up.railway.app/app/Student%20Hackathon%20Demo/social-wall)
+
+## Mobile polish deployment — 2026-11-09
+
+Latest deployment [`f9c9680e-406c-4ab9-a1df-c501b502a5e6`](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d/service/9960307b-3bd3-41a9-ade4-67a2ca421745?id=f9c9680e-406c-4ab9-a1df-c501b502a5e6) reached **SUCCESS**, with its database-aware healthcheck passing. Source `7ae4989cfa9e50bfe7265d7e82fd541628f033e5` contains mobile feature commit `b037c64` and the current-event editing/login correction `7ae4989`; both were pushed before deployment. The first mobile deployment `b2b5d66d-9bef-4b32-aa34-404dd260d277` also reached SUCCESS and was superseded by this final revision.
+
+Final clean source archive: `/tmp/dashhack-mobile-final-release-s9v_n8cb`, 101 files / 528,554 bytes, SHA-256 `f40e9477a80c2df9429e6adb9e2bf84a9b071cda849cf088cd6bbf96abe5381d`. No databases, local configuration, dependencies or generated files were uploaded. Existing Debian slim runtime, one replica, `/data` volume, environment variables and public domain were retained; no package or schema changes.
+
+Pre-deployment consistent snapshot: `/data/backups/before-mobile-polish-1794216450888.sqlite`. Verified all eight production content-table fingerprints before/after: events (excluding only `updated_at`), teams, notes, mentors, GitHub connections, wall settings, posts and uploaded media. All match. Production retains **three events, 15 teams, 45 notes, one mentor, ten wall posts and three images**; no fixture reseeding or password/content changes were performed. Schema remains **7** and SQLite integrity is `ok`. Live login checks create ordinary temporary sessions, which are excluded from content fingerprints.
+
+Validation: **39 unit tests (241 assertions)**, **34 desktop/mobile browser scenarios**, a hydration-aware sweep of ten routes at five viewport sizes, and the production build. Live Chrome touch checks passed on all ten routes at phone width, with a 320px landing check, safe team dialogs, navigation, manual wall scrolling, preserved six-post public feed and cross-event login availability. No production content was edited for verification. See [mobile behavior and limitations](MOBILE_POLISH.md). Test/runtime reports are in `/tmp/dashhack-mobile-*`; live phone screenshots include `/tmp/dashhack-mobile-live-teams.png` and `/tmp/dashhack-mobile-live-wall.png`.
 
 ## Deployment procedure
 
