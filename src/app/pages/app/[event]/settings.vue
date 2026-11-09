@@ -6,6 +6,7 @@
         <Token />
         <GitHubConnection />
         <XCollector v-if="canEdit" />
+        <InstagramCollector v-if="canEdit" />
         <Backup />
     </div>
 </template>

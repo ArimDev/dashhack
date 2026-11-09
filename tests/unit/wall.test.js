@@ -5,6 +5,7 @@ import { join } from 'node:path';
 import { SqliteStore, publicEvent } from '../../src/server/storage/sqlite.js';
 import { WallStore, MAX_UPLOAD_BYTES } from '../../src/server/storage/wall.js';
 import { XCollector, buildXQuery } from '../../src/server/services/x-collector.js';
+import { InstagramCollector } from '../../src/server/services/instagram-collector.js';
 const stores=[], dirs=[];
 afterEach(() => { for (const s of stores.splice(0)) { try { s.close(); } catch {} } for (const d of dirs.splice(0)) rmSync(d,{ recursive:true,force:true }); });
 async function setup(options) {
@@ -105,6 +106,77 @@ describe('Social wall adapted from PR #6',() => {
     });
 });
 
+describe('Optional Captapi Instagram collector', () => {
+    async function enabled(options) {
+        const c = await setup(options);
+        c.wall.updateSettings(c.session, c.name, { instagramEnabled: true, instagramQueryHashtags: ['#hackathon', '#Hackathon'] }, 1);
+        return c;
+    }
+    const payload = { success: true, data: { results: [
+        { title: 'Hackathon!', url: 'https://www.instagram.com/p/ABC_123/?utm_source=test', author: '@host' },
+        { title: 'Bad source', url: 'https://example.com/p/ABC_123/', author: '@host' },
+    ] } };
+    test('hashtag requests, manual approval, stable deduplication and shared collector auto approval', async () => {
+        const c = await enabled(); let calls = 0;
+        c.store.db.query("UPDATE wall_settings SET settings=json_set(settings,'$.instagramModerationMode','auto') WHERE event_id=?").run(c.id);
+        expect(c.wall.config(c.id).instagramModerationMode).toBeUndefined();
+        const collector = new InstagramCollector(c.store, 'private-key', { request: async (url, options) => {
+            calls++; const params = new URL(url).searchParams;
+            expect(params.get('q')).toBe('hackathon'); expect(params.get('limit')).toBe('50'); expect(params.get('cache')).toBe('false');
+            expect(options.headers.Authorization).toBe('Bearer private-key'); expect(options.redirect).toBe('error');
+            return Response.json(payload);
+        } });
+        expect((await collector.syncEvent(c.name)).imported).toBe(1);
+        let post = c.wall.moderationFeed(c.session, c.name).posts[0];
+        expect(post.platform).toBe('instagram'); expect(post.status).toBe('pending'); expect(post.sourceUrl).toBe('https://www.instagram.com/p/ABC_123/');
+        expect((await collector.syncEvent(c.name)).imported).toBe(0); expect(calls).toBe(2);
+        post = action(c, post, 'reject'); action(c, post, 'delete');
+        expect((await collector.syncEvent(c.name)).imported).toBe(0);
+        const lastPoll = c.wall.config(c.id).instagramLastPollAt;
+        c.wall.updateSettings(c.session, c.name, { moderationMode: 'auto', blacklistedKeywords: ['spam'] }, 2);
+        expect(c.wall.config(c.id).instagramLastPollAt).toBe(lastPoll);
+        expect(c.wall.config(c.id).xEnabled).toBe(false); expect(c.wall.config(c.id).moderationMode).toBe('auto');
+        const fresh = new InstagramCollector(c.store, 'key', { request: async () => Response.json({ success: true, data: { results: [
+            { title: 'A new post', url: 'https://instagram.com/reel/FRESH/', author: '@creator' },
+            { title: 'spam', url: 'https://instagram.com/p/BLOCKED/' },
+        ] } }) });
+        expect((await fresh.syncEvent(c.name)).imported).toBe(1);
+        expect(c.wall.publicFeed(c.name).posts[0].approved).toBe(true);
+        expect(c.wall.submit(c.name, { text: 'Public upload', platform: 'instagram' }).status).toBe('pending');
+        expect(JSON.stringify(c.wall.publicFeed(c.name))).not.toContain('instagramQuery');
+        expect(() => c.wall.updateSettings(c.session, c.name, { instagramQueryHashtags: ['#x'] }, 3)).toThrow('at least 2');
+    });
+    test('absent key, overlap guard, redacted errors and persisted rate-limit scheduling', async () => {
+        let now = Date.now(); const c = await enabled({ now: () => now }); let calls = 0, release;
+        const pending = new Promise(resolve => { release = resolve; });
+        const request = async () => { calls++; return pending; };
+        await new InstagramCollector(c.store, '', { request }).tick(); expect(calls).toBe(0);
+        const collector = new InstagramCollector(c.store, 'key', { request });
+        const first = collector.syncEvent(c.name); await collector.syncEvent(c.name); expect(calls).toBe(1);
+        release(new Response('secret provider body', { status: 429 }));
+        expect((await first).error).toContain('rate limit');
+        await collector.tick(); now += 5 * 60000; await collector.tick(); expect(calls).toBe(1);
+        now += 10 * 60000; await collector.tick(); expect(calls).toBe(2);
+        expect(c.wall.config(c.id).instagramLastPollError).not.toContain('secret');
+        const failure = new InstagramCollector(c.store, 'key', { request: async () => { throw new Error('secret key'); } });
+        expect((await failure.syncEvent(c.name)).error).not.toContain('secret');
+    });
+    test('stop is authorized, fences stale enables and prevents further hashtag requests and imports', async () => {
+        const c = await enabled(); c.wall.updateSettings(c.session, c.name, { instagramQueryHashtags: ['#first', '#second'] }, 2);
+        let release, calls = 0; const pending = new Promise(resolve => { release = resolve; });
+        const collector = new InstagramCollector(c.store, 'key', { request: async () => { calls++; return pending; } });
+        const first = collector.syncEvent(c.name);
+        expect(() => c.wall.action(null, c.name, { action: 'pauseInstagram' })).toThrow('expired');
+        const other = await c.store.createEvent('Other', 'password123');
+        expect(() => c.wall.action(c.store.createSession(other), c.name, { action: 'pauseInstagram' })).toThrow('permission');
+        const stopped = c.wall.action(c.session, c.name, { action: 'pauseInstagram', revision: 0 });
+        expect(stopped.instagramEnabled).toBe(false); expect(stopped.instagramQueryHashtags).toEqual(['#first', '#second']);
+        expect(() => c.wall.updateSettings(c.session, c.name, { instagramEnabled: true }, 3)).toThrow('changed');
+        release(Response.json(payload)); expect((await first).imported).toBe(0); expect(calls).toBe(1);
+        await collector.tick(); expect(calls).toBe(1);
+    });
+});
+
 describe('Optional in-process X collector',() => {
     async function enabled(options) {
         const c=await setup(options);
@@ -127,7 +199,7 @@ describe('Optional in-process X collector',() => {
         expect((await collector.syncEvent(c.name)).imported).toBe(0);
         expect(calls).toBe(3);
     });
-    test('auto-approval is X-only; filters, scheduling and overlap guards apply',async () => {
+    test('auto-approval is collector-only; filters, scheduling and overlap guards apply',async () => {
         let now=Date.now(); const c=await enabled({ now:()=>now });
         c.wall.updateSettings(c.session,c.name,{ moderationMode:'auto' },2);
         let release; const response=new Promise(resolve => { release=resolve; });let calls=0;
