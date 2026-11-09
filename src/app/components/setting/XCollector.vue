@@ -3,13 +3,15 @@
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
       <h1 class="text-xl sm:text-2xl font-bold">X social collector</h1>
       <label class="inline-flex items-center gap-2 cursor-pointer">
-        <input :disabled="saving || !configured" v-model="enabled" type="checkbox" @change="autosave" class="h-4 w-4" />
-        <span class="font-semibold">Enabled</span>
+        <input :disabled="saving || (!configured && !enabled)" v-model="enabled" type="checkbox" @change="autosave" class="h-4 w-4" />
+        <span class="font-semibold">Automatic X polling</span>
       </label>
     </div>
 
     <fieldset :disabled="saving" class="relative flex-1 min-w-0">
       <p class="mb-3 text-sm">{{ configured ? 'X API token configured.' : 'X API token is not configured. Ask the event host to set it.' }}</p>
+      <p class="mb-3 text-sm" role="status">{{ savedEnabled ? `Automatic X polling is on: every ${savedInterval} minutes while the wall is enabled.` : 'Automatic X polling is paused. Existing posts remain on the wall.' }}</p>
+      <p class="mb-3 text-xs">The scheduler checks once a minute. Turning polling off stops future requests; a request already running may finish. The wall refreshes saved posts every 12 seconds without contacting X.</p>
       <p class="mb-3 text-xs">Handle queries collect posts authored by those accounts. Auto-approval applies only to collected X posts; public submissions always require approval.</p>
       <p v-if="lastPoll" class="text-xs">Last attempt: {{ lastPoll }}</p>
       <p v-if="pollError" role="status" class="text-sm text-amber-700">{{ pollError }}</p>
@@ -45,8 +47,10 @@
 const eventName = useState('currentEvent');
 const enabled = ref(false), intervalMinutes = ref(5), hashtags = ref(''), handles = ref('');
 const revision = ref(0), configured = ref(false), lastPoll = ref(null), pollError = ref('');
+const savedEnabled = ref(false), savedInterval = ref(5);
 const error = ref(''), success = ref(false), saving = ref(false);
 function apply(wall) {
+  savedEnabled.value = wall.xEnabled; savedInterval.value = wall.xPollIntervalMinutes;
   enabled.value = wall.xEnabled; intervalMinutes.value = wall.xPollIntervalMinutes;
   hashtags.value = wall.xQueryHashtags.join(', '); handles.value = wall.xQueryHandles.join(', ');
   revision.value = wall.revision; lastPoll.value = wall.xLastPollAt; pollError.value = wall.xLastPollError;

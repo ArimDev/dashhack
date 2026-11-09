@@ -139,6 +139,9 @@ describe('Optional in-process X collector',() => {
         expect(c.wall.submit(c.name,{ text:'Manual' }).status).toBe('pending');
         await collector.tick();expect(calls).toBe(1);
         now+=300001;await collector.tick();expect(calls).toBe(2);
+        c.wall.updateSettings(c.session,c.name,{ xEnabled:false },3);
+        now+=300001;await collector.tick();expect(calls).toBe(2);
+        expect(c.wall.publicFeed(c.name).posts).toHaveLength(1);
     });
     test('no token means no requests; failures are redacted and rate limits delay retries',async () => {
         let now=Date.now();const c=await enabled({ now:()=>now });let calls=0;

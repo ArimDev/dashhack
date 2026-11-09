@@ -60,6 +60,7 @@
       </section>
 
       <PublicWallDisplayControls
+        v-if="canEdit"
         :scrolling-enabled="isScrollingEnabled"
         :fullscreen="isFullscreen"
         :dark-theme="isDarkTheme"
@@ -83,6 +84,7 @@ const route = useRoute();
 const colorMode = useColorMode();
 const eventName = computed(() => route.params.event || "event");
 const posts = ref([]);
+const canEdit = ref(false);
 const wallStatus = ref("loading");
 const qrUrl = ref("");
 const showQr = ref(true);
@@ -171,16 +173,19 @@ async function loadWall() {
   try {
     const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}`);
     if (response?.status !== 200 || !response.data?.wall) {
+      canEdit.value = false;
       wallStatus.value = "error";
       return;
     }
 
+    canEdit.value = response.canEdit === true;
     wallStatus.value = response.data.wall.enabled === false ? "disabled" : "available";
     posts.value = response.data.posts || [];
     cycleSeconds.value = response.data.wall.idleCycleSeconds;
     idleWaitSeconds.value = response.data.wall.idleWaitSeconds;
     uploadsEnabled.value = response.data.wall.publicUploadEnabled;
   } catch (error) {
+    canEdit.value = false;
     console.warn("Wall load failed:", error);
     wallStatus.value = "error";
   } finally { loading = false; }

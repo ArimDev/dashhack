@@ -37,10 +37,9 @@ test('public photo submission stays private until approved and remains subject t
     const approved=await guest.request.get(url);expect(approved.headers()['content-type']).toContain('image/webp');const stored=await approved.body();expect(stored.toString('ascii',8,12)).toBe('WEBP');
     const range=await guest.request.get(url,{ headers:{ Range:'bytes=0-7' } });expect(range.status()).toBe(206);expect(await range.body()).toEqual(stored.subarray(0,8));
     await upload.goto(`/${encodeURIComponent(name)}/wall`);
-    await upload.getByRole('button',{ name:'Wall display settings', exact:true }).click();
-    await upload.getByRole('switch',{ name:'Enable auto-scroll layout' }).uncheck();
-    await expect(upload.getByText('Náš první prototyp!',{ exact:true })).toBeVisible();
-    await expect(upload.getByRole('button',{ name:/Switch to .* mode/ })).toBeVisible();
+    await expect(upload.getByRole('button',{ name:'Wall display settings', exact:true })).toHaveCount(0);
+    await expect(upload.getByText('Náš první prototyp!',{ exact:true }).first()).toBeVisible();
+    await expect(upload.getByRole('button',{ name:/Switch to .* mode/ })).toHaveCount(0);
     await card.getByRole('button',{ name:'Post actions' }).click();
     await changed(page,() => card.getByRole('button',{ name:'Hide',exact:true }).click());
     expect((await (await guest.request.get(url)).json()).status).toBe(404);
@@ -98,6 +97,8 @@ test('moderation rejects stale changes and X settings persist without exposing s
   const publicBody=await (await page.request.get(`/api/wall/${encoded}`)).json();
   expect(JSON.stringify(publicBody)).not.toContain('xQuery');
   expect(JSON.stringify(publicBody)).not.toContain('Bearer');
+  expect(publicBody.canEdit).toBe(true);
+  await expect(page.getByText('Automatic X polling is paused.', { exact:false })).toBeVisible();
 });
 
 
@@ -138,4 +139,35 @@ test('projector wall keeps QR in the top corner and display controls collapsed',
     await page.getByRole('heading', { name }).click();
     await expect(cog).toHaveAttribute('aria-expanded', 'false');
   }
+});
+
+
+test('wall cogwheel and polling settings require a session for the matching event', async ({ page, browser }) => {
+  const name = await setup(page), encoded = encodeURIComponent(name);
+  await page.goto(`/${encoded}/wall`);
+  await expect(page.getByRole('button', { name: 'Wall display settings', exact: true })).toBeVisible();
+  const guest = await browser.newContext();
+  try {
+    const visitor = await guest.newPage();
+    await visitor.goto(`/${encoded}/wall`);
+    await expect(visitor.getByRole('button', { name: 'Wall display settings', exact: true })).toHaveCount(0);
+    expect((await (await guest.request.get(`/api/wall/${encoded}`)).json()).canEdit).toBe(false);
+    const patch = { username:name, setting:'wall.xCollector', revision:0, value:{ enabled:true, intervalMinutes:5, hashtags:['#test'], handles:[] } };
+    expect((await (await guest.request.post('/api/auth/update', { data:patch })).json()).status).toBe(401);
+    const other = `Other ${randomUUID()}`;
+    await guest.request.post('/api/auth/create', { data:{ username:other, password } });
+    await guest.request.post('/api/auth/login', { data:{ username:other, password } });
+    await visitor.reload();
+    await expect(visitor.getByRole('button', { name: 'Wall display settings', exact: true })).toHaveCount(0);
+    expect((await (await guest.request.post('/api/auth/update', { data:patch })).json()).status).toBe(403);
+    // A valid event session can enable and pause collection; no token means no external calls.
+    expect((await (await page.request.post('/api/auth/update', { data:patch })).json()).status).toBe(200);
+    patch.revision = 1; patch.value.enabled = false;
+    expect((await (await page.request.post('/api/auth/update', { data:patch })).json()).status).toBe(200);
+    const settings = (await (await page.request.get(`/api/wall/${encoded}/posts`)).json()).data.wall;
+    expect(settings.xEnabled).toBe(false); expect(settings.xPollIntervalMinutes).toBe(5);
+    await page.context().clearCookies();
+    await page.reload();
+    await expect(page.getByRole('button', { name: 'Wall display settings', exact: true })).toHaveCount(0);
+  } finally { await guest.close(); }
 });

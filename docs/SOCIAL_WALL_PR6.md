@@ -63,3 +63,16 @@ The seed refuses an absent/wrong-schema database or an event missing the existin
 Fixture follow-up validation: **39 unit tests / 241 assertions**, including dry-run behavior, event isolation, valid PNG media, retained teams/notes/settings and idempotence after an organizer rejects a post/disables the wall. The prior 27 browser checks, build and production smoke record above cover unchanged application code.
 
 The later authorized Railway deployment is **SUCCESS**, with identical Czech fixtures seeded in production and original event/team/note/mentor fingerprints retained. See [deployment record and live links](RAILWAY.md#social-wall-deployment--pr-6).
+
+
+## Polling and display access update — 2026-11-09
+
+The X collector defaults to five minutes; event Settings → X social collector accepts 1–180 minutes and an explicit Automatic X polling on/off switch. The scheduler checks once a minute, including at startup, so a due request runs on the next tick. A 429 defers retries for at least 15 minutes. Turning polling off prevents new scheduled requests and preserves existing wall posts. A request already in progress may finish. The UI status reflects the last successfully saved settings, rather than an unsaved switch value. An existing enabled setting can still be turned off if the server token has been removed.
+
+The public wall refreshes stored posts every 12 seconds without making an X API call. The floating display cogwheel now requires a live session belonging to that event, checked by the public wall API (no-store); anonymous visitors and sessions for other events cannot see it. The check repeats on wall refresh, including session expiry. These presentation controls remain browser-local. Server authorization already protects polling and moderation writes; the shared event login does not identify individual mentors.
+
+The only token variable is server-only `NUXT_X_BEARER_TOKEN`, configured on the DashHack Railway service. Do not use plain `X_BEARER_TOKEN`, expose it through public runtime configuration, save it in SQLite or commit it. Add the token with polling off; choose the test hashtag/account, enable briefly for a collection attempt, then disable and read back `xEnabled: false` even if collection fails. Check the last attempt/error and imported posts. The current implementation requests at most 100 recent results per attempt and deduplicates existing posts. No live API test has been performed yet: the token and test query are pending.
+
+Production read-only check found no token and no enabled X collection (effective defaults: disabled, five-minute interval). UI/access changes are prepared locally; deployment is pending separately from the volume expansion work. No production content/settings were changed by this check.
+
+Validation: 48 unit tests (281 assertions), five Chromium social-wall scenarios, 19 desktop/iPhone WebKit social-wall/mobile scenarios and the production build pass. Ownership checks cover anonymous, wrong-event and correct-event sessions; scheduler tests verify disabling stops subsequent collection while approved posts remain.
