@@ -4,27 +4,27 @@ Produkční událost: **Student Hackathon Demo** (přihlašovací jméno zůstá
 
 Všech 15 repozitářů je soukromých. Původní nepoužité `team-01` až `team-15` byly přejmenovány; jejich ID a oprávnění zůstala zachována. README obsahují skutečný název týmu a barvu trička.
 
-**Automatické týmové odkazy jsou aktivní.** Každý student otevře soukromý odkaz svého týmu, zadá vlastní GitHub jméno a přijme automaticky vytvořenou pozvánku na GitHubu. Organizátor nemusí předem shánět jména ani pozvánky schvalovat. Odkazy lze kopírovat v přihlášeném DashHack Settings → GitHub App → Student team invitation links. Soukromý export všech 15 odkazů je lokálně v `.data/team-invites-2026.csv` a `.data/team-invites-2026.txt` (0600, mimo Git). Platnost této sady je do 2026-12-09. Tyto přístupové odkazy nikdy nevkládat do veřejného repozitáře. Níže uvedené veřejné odkazy „Přijetí pozvánky“ slouží až pro následné přijetí jmenovité pozvánky; nejsou to soukromé týmové odkazy.
+**Jeden opakovaně použitelný soukromý odkaz pro každý tým.** Každý člen si přes stejný týmový odkaz vybere a ověří vlastní GitHub účet (OAuth); ruční zadávání jména bylo odstraněno. Poté přijme pozvánku z e-mailu nebo vlastních GitHub oznámení. Organizátor nemusí předem shánět jména ani žádosti schvalovat. Odkazy jsou v přihlášeném Settings → GitHub App → Student team invitations & audit. Get team links vrací stejné aktivní odkazy; lze je jednotlivě nebo všechny odvolat. Aktuální sada platí do 2026-11-16 (23:20 Praha). Předchozí odkazy jsou neplatné. Soukromé exporty `.data/team-invites-2026.{csv,txt,json}` mají oprávnění 0600 a nejsou v Gitu. Nikdy je nevkládat do veřejného repozitáře. Veřejné odkazy níže vedou pouze do osobních oznámení GitHubu; nejsou to týmové přístupové odkazy.
 
 [Veřejný CSV seznam týmů pro doplnění čísel](event-teams-2026.csv)
 
 | Název týmu | Barva trička | HEX | Repozitář | Přijetí pozvánky (po pozvání účtu) |
 | --- | --- | --- | --- | --- |
-| 505 | yellow | `#FFD600` | [505](https://github.com/AT-T-Hackathon-Junior-2026/505) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/505/invitations) |
-| AYA | red | `#E53935` | [aya](https://github.com/AT-T-Hackathon-Junior-2026/aya) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/aya/invitations) |
-| BugBusters | blue | `#1565C0` | [bugbusters](https://github.com/AT-T-Hackathon-Junior-2026/bugbusters) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/bugbusters/invitations) |
-| Detrio | green | `#2E7D32` | [detrio](https://github.com/AT-T-Hackathon-Junior-2026/detrio) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/detrio/invitations) |
-| Indy a Vích | písková | `#C2A477` | [indy-a-vich](https://github.com/AT-T-Hackathon-Junior-2026/indy-a-vich) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/indy-a-vich/invitations) |
-| InovaTeam | yellow | `#F9A825` | [inovateam](https://github.com/AT-T-Hackathon-Junior-2026/inovateam) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/inovateam/invitations) |
-| Last Dance - DOGY | red | `#B71C1C` | [last-dance-dogy](https://github.com/AT-T-Hackathon-Junior-2026/last-dance-dogy) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/last-dance-dogy/invitations) |
-| New6en | blue | `#00ACC1` | [new6en](https://github.com/AT-T-Hackathon-Junior-2026/new6en) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/new6en/invitations) |
-| Ownit | green | `#8BC34A` | [ownit](https://github.com/AT-T-Hackathon-Junior-2026/ownit) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/ownit/invitations) |
-| pan.png | písková | `#E6CBA8` | [pan.png](https://github.com/AT-T-Hackathon-Junior-2026/pan.png) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/pan.png/invitations) |
-| Penguins | yellow | `#D4A000` | [penguins](https://github.com/AT-T-Hackathon-Junior-2026/penguins) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/penguins/invitations) |
-| Pixel_Penguin | red | `#FF7043` | [pixel_penguin](https://github.com/AT-T-Hackathon-Junior-2026/pixel_penguin) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/pixel_penguin/invitations) |
-| Replay | blue | `#3949AB` | [replay](https://github.com/AT-T-Hackathon-Junior-2026/replay) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/replay/invitations) |
-| Velcord | green | `#00897B` | [velcord](https://github.com/AT-T-Hackathon-Junior-2026/velcord) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/velcord/invitations) |
-| YoGurts | písková | `#A67C52` | [yogurts](https://github.com/AT-T-Hackathon-Junior-2026/yogurts) | [Přijmout](https://github.com/AT-T-Hackathon-Junior-2026/yogurts/invitations) |
+| 505 | yellow | `#FFD600` | [505](https://github.com/AT-T-Hackathon-Junior-2026/505) | [Přijmout](https://github.com/notifications) |
+| AYA | red | `#E53935` | [aya](https://github.com/AT-T-Hackathon-Junior-2026/aya) | [Přijmout](https://github.com/notifications) |
+| BugBusters | blue | `#1565C0` | [bugbusters](https://github.com/AT-T-Hackathon-Junior-2026/bugbusters) | [Přijmout](https://github.com/notifications) |
+| Detrio | green | `#2E7D32` | [detrio](https://github.com/AT-T-Hackathon-Junior-2026/detrio) | [Přijmout](https://github.com/notifications) |
+| Indy a Vích | písková | `#C2A477` | [indy-a-vich](https://github.com/AT-T-Hackathon-Junior-2026/indy-a-vich) | [Přijmout](https://github.com/notifications) |
+| InovaTeam | yellow | `#F9A825` | [inovateam](https://github.com/AT-T-Hackathon-Junior-2026/inovateam) | [Přijmout](https://github.com/notifications) |
+| Last Dance - DOGY | red | `#B71C1C` | [last-dance-dogy](https://github.com/AT-T-Hackathon-Junior-2026/last-dance-dogy) | [Přijmout](https://github.com/notifications) |
+| New6en | blue | `#00ACC1` | [new6en](https://github.com/AT-T-Hackathon-Junior-2026/new6en) | [Přijmout](https://github.com/notifications) |
+| Ownit | green | `#8BC34A` | [ownit](https://github.com/AT-T-Hackathon-Junior-2026/ownit) | [Přijmout](https://github.com/notifications) |
+| pan.png | písková | `#E6CBA8` | [pan.png](https://github.com/AT-T-Hackathon-Junior-2026/pan.png) | [Přijmout](https://github.com/notifications) |
+| Penguins | yellow | `#D4A000` | [penguins](https://github.com/AT-T-Hackathon-Junior-2026/penguins) | [Přijmout](https://github.com/notifications) |
+| Pixel_Penguin | red | `#FF7043` | [pixel_penguin](https://github.com/AT-T-Hackathon-Junior-2026/pixel_penguin) | [Přijmout](https://github.com/notifications) |
+| Replay | blue | `#3949AB` | [replay](https://github.com/AT-T-Hackathon-Junior-2026/replay) | [Přijmout](https://github.com/notifications) |
+| Velcord | green | `#00897B` | [velcord](https://github.com/AT-T-Hackathon-Junior-2026/velcord) | [Přijmout](https://github.com/notifications) |
+| YoGurts | písková | `#A67C52` | [yogurts](https://github.com/AT-T-Hackathon-Junior-2026/yogurts) | [Přijmout](https://github.com/notifications) |
 
 ## Záznam změny — 2026-11-09
 
