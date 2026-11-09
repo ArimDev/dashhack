@@ -195,12 +195,12 @@ test('student team link works without event login and hands off to GitHub invita
     await expect(page.getByRole('button', { name: 'Získat přístup k repozitáři' })).toBeEnabled();
     await page.getByLabel('Tvoje GitHub uživatelské jméno').fill('student-dev');
     await page.getByRole('button', { name: 'Získat přístup k repozitáři' }).click();
-    const accept = page.getByRole('link', { name: 'Přijmout pozvánku na GitHubu' });
-    await expect(accept).toHaveAttribute('href', 'https://github.com/school/indy-a-vich/invitations');
+    const accept = page.getByRole('link', { name: 'Otevřít GitHub oznámení' });
+    await expect(accept).toHaveAttribute('href', 'https://github.com/notifications');
+    await expect(page.locator('a[href$="/invitations"]')).toHaveCount(0);
     await expect(page.getByRole('status')).toContainText('student-dev');
     await expect(page.getByRole('status')).toContainText('Otevři e-mailovou schránku');
     await expect(page.getByRole('status')).toContainText('Zobrazuje GitHub chybu 404?');
-    await expect(page.getByRole('link', { name: 'GitHub oznámeních' })).toHaveAttribute('href', 'https://github.com/notifications');
     await expect(page.getByRole('link', { name: 'Po přijetí pozvánky: otevřít repozitář' })).toBeVisible();
     expect(invitations).toBe(1);
     await fits(page);

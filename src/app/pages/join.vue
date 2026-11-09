@@ -25,8 +25,8 @@
                         <li>Na GitHubu ověř, že jsi přihlášen/a jako <strong>{{ result.username }}</strong>. Pokud používáš jiný účet, nejdřív ho odhlas a přihlas se správným.</li>
                         <li>V e-mailu klikni na <strong>View invitation</strong> a na GitHubu pozvánku přijmi. Teprve potom můžeš otevřít soukromý repozitář a nahrávat kód.</li>
                     </ol>
-                    <p class="text-sm text-gray-600 dark:text-gray-300">E-mail zatím nepřišel? Pozvánku můžeš najít také v <a href="https://github.com/notifications" target="_blank" rel="noopener noreferrer" class="underline">GitHub oznámeních</a> nebo otevřít tlačítkem níže.</p>
-                    <a :href="result.invitationUrl" rel="noreferrer" class="flex min-h-12 items-center justify-center rounded-xl bg-bluey-500 px-4 font-semibold text-white">Přijmout pozvánku na GitHubu</a>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">E-mail zatím nepřišel? Otevři GitHub oznámení tlačítkem níže a vyhledej pozvánku k repozitáři svého týmu.</p>
+                    <a href="https://github.com/notifications" target="_blank" rel="noopener noreferrer" class="flex min-h-12 items-center justify-center rounded-xl bg-bluey-500 px-4 font-semibold text-white">Otevřít GitHub oznámení</a>
                     <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
                         <strong>Zobrazuje GitHub chybu 404?</strong> Ověř účet <strong>{{ result.username }}</strong> v profilové nabídce GitHubu a otevři odkaz z e-mailu znovu v prohlížeči s tímto účtem. Soukromý repozitář je přístupný až po přijetí pozvánky. Pokud 404 přetrvává i pod správným účtem, obrať se na organizátora; není potřeba znovu posílat žádost.
                     </div>
