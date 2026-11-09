@@ -218,3 +218,10 @@ Production was still saved as `moderationMode:manual` with all 100 real X import
 The saved mode is now Auto. The 100 pending, unhidden actual imports (`platform:x`, IDs `x-` plus digits) were approved through the existing event-authorized, revision-checked moderation API, respecting current keyword/author filters. No conflicts or filtered exclusions occurred. The public feed contains all 100; other manual/demo posts are unchanged. Previously hidden/rejected/deleted posts were not targeted. Future real X imports auto-approve when collection is deliberately re-enabled; public submissions remain manual.
 
 Polling stays OFF and its query/interval were retained; last attempt remains 2026-11-09 12:35:11.200 UTC / 13:35 CET. This correction made no X API requests and did not deploy/restart the service. The existing mocked X-only auto-approval unit scenario passes (8 assertions). Consistent pre-correction snapshot: `/data/backups/before-x-approval-1794229385251.sqlite`.
+
+
+## Distinct query examples — 2026-11-09
+
+Release `dc47d0d` (feature `e5a076b`), Railway `a3300786-1a9b-4161-8094-93c5c2e3f62a`: **SUCCESS**. Hashtag/handle placeholders now explicitly say Example only and use muted, normal-weight italic text at 75% opacity in both themes; actual entered values retain their normal bold styling. Empty handles show No handles entered and optional hashtag-only guidance. The legacy hashtag field uses the same presentation. No saved example values are inserted.
+
+Two existing Chromium query persistence/draft checks pass. Live 390px checks verify empty handles, the saved hashtag value, placeholder style after theme transitions, no horizontal overflow and unchanged server settings. Polling remains OFF, Auto approval remains saved, and no X requests or event-content/settings writes were made for this verification. Existing 128 MB storage settings remain unchanged.
