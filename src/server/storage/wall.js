@@ -167,7 +167,17 @@ export class WallStore {
             if (!wall.enabled || (collected ? !(platform === 'instagram' ? wall.instagramEnabled : wall.xEnabled) : !wall.publicUploadEnabled)) fail('Public uploads are disabled for this wall.', 403);
             const id = collected ? string(input.id, 100) : randomUUID();
             if (collected && !(platform === 'instagram' ? /^instagram-[a-z\d_-]+$/i : /^x-\d+$/).test(id)) fail('Invalid collected post identifier');
-            if (collected && this.db.query('SELECT 1 FROM wall_posts WHERE event_id=? AND id=?').get(eventId,id)) return null;
+            const existing = collected && this.db.query('SELECT * FROM wall_posts WHERE event_id=? AND id=?').get(eventId,id);
+            if (existing) {
+                if (platform === 'instagram' && !existing.deleted && existing.author_name === 'Instagram' && !existing.handle && existing.text === 'Instagram post') {
+                    const corrected = { authorName: string(input.authorName,80), handle: string(input.handle,80), text: string(input.text,5000) };
+                    if ((corrected.authorName !== existing.author_name || corrected.handle || corrected.text !== existing.text) && filtersAllow(corrected, wall)) {
+                        this.db.query('UPDATE wall_posts SET author_name=?,handle=?,text=?,revision=revision+1 WHERE event_id=? AND id=?')
+                            .run(corrected.authorName,corrected.handle,corrected.text,eventId,id);
+                    }
+                }
+                return null;
+            }
             this.assertUploadCapacity(eventId, media?.data?.length || 0);
             if (this.db.query('SELECT COUNT(*) AS n FROM wall_posts').get().n >= 5000) fail('Wall post storage is full. Ask an organizer to archive the event.', 413);
             const post = { id, platform,

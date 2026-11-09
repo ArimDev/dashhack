@@ -113,7 +113,8 @@ describe('Optional Captapi Instagram collector', () => {
         return c;
     }
     const payload = { success: true, data: { results: [
-        { title: 'Hackathon!', url: 'https://www.instagram.com/p/ABC_123/?utm_source=test', author: '@host' },
+        { caption: 'Hackathon!\n#coding', url: 'https://www.instagram.com/p/ABC_123/?utm_source=test',
+            author: { username: 'javascript.js', displayName: 'JavaScript' } },
         { title: 'Bad source', url: 'https://example.com/p/ABC_123/', author: '@host' },
     ] } };
     test('hashtag requests, manual approval, stable deduplication and shared collector auto approval', async () => {
@@ -131,6 +132,7 @@ describe('Optional Captapi Instagram collector', () => {
         expect((await collector.syncEvent(c.name)).imported).toBe(1);
         expect(logs.find(entry => entry[0].endsWith('Fetch succeeded'))[1]).toMatchObject({ fetched: 2, imported: 1, invalid: 1 });
         let post = c.wall.moderationFeed(c.session, c.name).posts[0];
+        expect(post).toMatchObject({ authorName: 'JavaScript', handle: '@javascript.js', text: 'Hackathon!\n#coding' });
         expect(post.platform).toBe('instagram'); expect(post.status).toBe('pending'); expect(post.sourceUrl).toBe('https://www.instagram.com/p/ABC_123/');
         expect((await collector.syncEvent(c.name)).imported).toBe(0); expect(calls).toBe(2);
         expect(logs.filter(entry => entry[0].endsWith('Fetch succeeded'))[1][1].duplicates).toBe(1);
@@ -150,6 +152,26 @@ describe('Optional Captapi Instagram collector', () => {
         expect(c.wall.submit(c.name, { text: 'Public upload', platform: 'instagram' }).status).toBe('pending');
         expect(JSON.stringify(c.wall.publicFeed(c.name))).not.toContain('instagramQuery');
         expect(() => c.wall.updateSettings(c.session, c.name, { instagramQueryHashtags: ['#x'] }, 3)).toThrow('at least 2');
+    });
+    test('later polls repair placeholders without replacing content or moderation decisions', async () => {
+        const c = await enabled();
+        const input = { id: 'instagram-ABC_123', platform: 'instagram', authorName: 'Instagram', text: 'Instagram post' };
+        let old = c.wall.submit(c.name, input, null, { collected: true });
+        old = action(c, old, 'approve'); old = action(c, old, 'pin');
+        const collector = new InstagramCollector(c.store, 'key', { logger: { info: () => {}, warn: () => {} }, request: async () => Response.json(payload) });
+        expect((await collector.syncEvent(c.name)).imported).toBe(0);
+        let repaired = c.wall.moderationFeed(c.session, c.name).posts[0];
+        expect(repaired).toMatchObject({ authorName: 'JavaScript', handle: '@javascript.js', text: 'Hackathon!\n#coding',
+            status: old.status, hidden: old.hidden, pinned: old.pinned, createdAt: old.createdAt, revision: old.revision + 1 });
+        await collector.syncEvent(c.name);
+        expect(c.wall.moderationFeed(c.session, c.name).posts[0]).toEqual(repaired);
+        repaired = action(c, repaired, 'reject'); action(c, repaired, 'delete');
+        await collector.syncEvent(c.name); expect(c.wall.moderationFeed(c.session, c.name).posts).toHaveLength(0);
+        const blocked = { ...input, id: 'instagram-BLOCKED' };
+        c.wall.submit(c.name, blocked, null, { collected: true });
+        c.wall.updateSettings(c.session, c.name, { blacklistedKeywords: ['spam'] }, 2);
+        c.wall.submit(c.name, { ...blocked, authorName: 'Creator', text: 'spam' }, null, { collected: true });
+        expect(c.wall.moderationFeed(c.session, c.name).posts[0].text).toBe('Instagram post');
     });
     test('absent key, overlap guard, redacted errors and persisted rate-limit scheduling', async () => {
         let now = Date.now(); const c = await enabled({ now: () => now }); let calls = 0, release;
