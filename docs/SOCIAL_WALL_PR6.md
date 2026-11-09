@@ -96,3 +96,14 @@ Read full post opens the existing DialogShell with complete escaped text and med
 Regression coverage explicitly moves loop copy 2 into view and clicks it without forced actions, checks the full text, scrollability, frozen feed transform, Escape/close and focus restoration/keyboard reopen. Existing mobile read-full coverage now checks the reader rather than inline expansion.
 
 Deployed final source `41406e3` / Railway `3bcfaf46-c12b-4e80-9d0e-112a7bb6a258` (SUCCESS). Seven Chromium and 21 desktop/iPhone WebKit wall/mobile checks pass; targeted Chromium/WebKit and live checks verify the five-second close delay. All production content fingerprints remain unchanged; see RAILWAY.md.
+
+
+## Reliable X stop control — 2026-11-09
+
+Stop X polling is an independent action outside the loading/disabled settings fieldset. It remains available during query load/save failures or pending requests, and only disables while its own stop is pending. Unchecking the polling switch uses the same stop action; when the last saved state is ON, the switch remains usable for OFF even while a query save is pending. Enabling may still wait for the save. Loads/saves/stops have bounded request timeouts. Unknown initial status says Checking rather than falsely claiming OFF; stop errors never show a confirmed pause.
+
+Authenticated POST `/api/wall/:event/posts` action `pauseX` ignores a stale caller revision and patches only `xEnabled:false` using current stored state. Every stop advances the revision even if already OFF, invalidating delayed enable requests with older revisions. Enabling still requires a current revision. Server event ownership remains mandatory. A UI operation generation prevents responses from earlier loads/saves from replacing a confirmed OFF state. Draft queries are retained.
+
+The scheduler already filters stored enabled walls, and syncEvent rechecks that setting before sending a request. Token presence and the public 12-second feed refresh do not enable collection. Stopping prevents new requests; a request already sent to X may finish and be billed. There is no claim of an account-wide monetary cap. Tests never call the real X API to verify stopping.
+
+Deployed final source `ac54f89` / Railway `6d547563-c710-4c2b-b317-dcf6b512e357` (SUCCESS). Production OFF was verified repeatedly across restarts with last X attempt unchanged at 13:35 CET. Live stopping tests never enable collection and make no real X requests. Validation and backup details are in RAILWAY.md.
