@@ -182,7 +182,7 @@ test('mobile editing state and login follow the displayed event rather than anot
 test('expanded sharing QR fits phone portrait and landscape',async({page})=>{
     const d=await demo(page);await wall(page,d.encoded);
     await page.route('https://api.qrserver.com/**',route=>route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j0ioAAAAASUVORK5CYII=','base64')}));
-    for(const viewport of [{width:390,height:844},{width:812,height:375}]){
+    for(const viewport of [{width:390,height:844},{width:812,height:375},{width:768,height:1366}]){
         await page.setViewportSize(viewport);await page.goto('/'+d.encoded+'/wall');
         await page.getByRole('button',{name:'Wall display settings',exact:true}).click();
         await page.getByRole('button',{name:'Expand QR code',exact:true}).click();

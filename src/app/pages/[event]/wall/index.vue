@@ -90,7 +90,7 @@
     <DialogShell v-if="qrExpanded" title="Share a moment" centered-title fullscreen @close="closeQr">
       <div class="flex max-w-full flex-col items-center gap-4 text-center">
         <p class="text-xl font-bold">{{ displayTitle }}</p>
-        <img v-if="qrUrl" :src="qrUrl" alt="Scan to upload a post" width="640" height="640" class="aspect-square h-[min(calc(100dvw-2rem),calc(100dvh-14rem))] w-auto max-w-full rounded-2xl bg-white p-4" />
+        <img v-if="qrUrl" :src="qrUrl" alt="Scan to upload a post" width="640" height="640" class="aspect-square w-[min(calc(100dvw-2rem),calc(100dvh-14rem))] h-auto max-w-full rounded-2xl bg-white p-4" />
         <a :href="uploadUrl" target="_blank" rel="noopener noreferrer" class="min-h-11 text-bluey-600 underline dark:text-bluey-300">Share a moment</a>
       </div>
     </DialogShell>
