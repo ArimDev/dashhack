@@ -1,5 +1,8 @@
 # Social Wall — PR #6 integration
 
+**Upload follow-up:** [WALL_UPLOADS.md](WALL_UPLOADS.md) supersedes this initial review's public-upload format, size/quota and runtime details. Public submissions are now photo/text only, with bounded WebP processing, mobile paste and early streaming guards on Bun.
+
+
 Source: [Social wall with X.com collection and moderation, PR #6](https://github.com/ArimDev/dashhack/pull/6), by Matej-V. Reviewed revision: `e9b50d8ae7e5d390178db220c64d40c8606cbb6c`, targeting upstream `2026`. Ported as one separate feature commit onto our Bun/SQLite `feat_alby_design` branch, rather than merging its MongoDB-based backend or replacing our dashboard layout.
 
 ## Review recommendation and feature scope

@@ -33,3 +33,6 @@ These controls bound application work and storage; they are not an edge-level DD
 The Nuxt development proxy stalls raw multi-megabyte multipart requests on this Bun version; normal phone uploads arrive already compressed and pass. The extra production-only oversized-body and stalled-body cases are enabled with `PLAYWRIGHT_LARGE_UPLOADS=1` against an isolated production server using HTTPS. The default dev suite skips those two cases; the production suite runs all five upload cases, including a 1.5 MiB raw photo and pre-parse oversize rejection. A separate chunked 9 MiB request verifies the stream byte cap without Content-Length. A real incomplete request verifies early admission, responsive health during the stall, concurrent rejection, 408 after 20 seconds, and successful recovery. Do not replace this production check with browser-only validation.
 
 WebKit installation is unsupported on this Ubuntu 26.04 host. Mobile Chrome/picker/clipboard checks passed; physical iPhone Safari and HEIC clipboard behavior still need an on-device check.
+
+
+Final deployed source: `8a54f9e`, Railway `e67eccf7-4495-45f6-b7b0-117d441b329c` (**SUCCESS**). Live preview/video rejection/storage usage and unchanged production content fingerprints were verified; see [deployment record](RAILWAY.md#bounded-photo-only-wall-uploads--2026-11-09).

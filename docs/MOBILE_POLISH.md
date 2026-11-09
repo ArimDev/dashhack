@@ -49,3 +49,6 @@ No dependencies, schema or persistence changes. Browser coverage includes 1920×
 
 
 Deployed source `dbc1745` successfully as Railway `ad0ec598-8cf6-4609-9c90-862177cfcad8`. Live projector/phone display checks and unchanged production content fingerprints were verified; see [Railway record](RAILWAY.md#projector-wall-controls--2026-11-09).
+
+
+Photo-only sharing, larger phone originals, clipboard paste and storage/rate protection were added afterward; see [upload behavior and limitations](WALL_UPLOADS.md) and the [verified deployment](RAILWAY.md#bounded-photo-only-wall-uploads--2026-11-09).
