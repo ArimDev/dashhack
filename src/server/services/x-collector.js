@@ -45,9 +45,11 @@ export class XCollector {
                 const user = users.get(tweet.author_id);
                 if (!user || !/^\d+$/.test(tweet.id) || !/^[a-z\d_]{1,15}$/i.test(user.username)) { invalid++; continue; }
                 try {
-                    const post = this.wall.submit(name,{ id: `x-${tweet.id}`, authorName: user.name || user.username,
+                    /** @type {import('../../shared/wallPost').CollectedWallPost} */
+                    const input = { id: `x-${tweet.id}`, platform: 'x', authorName: user.name || user.username,
                         handle: `@${user.username}`, text: tweet.text || '', createdAt: tweet.created_at,
-                        sourceUrl: `https://x.com/${user.username}/status/${tweet.id}`, ...mediaFor(tweet,payload.includes || {}) },null,{ collected: true });
+                        sourceUrl: `https://x.com/${user.username}/status/${tweet.id}`, ...mediaFor(tweet,payload.includes || {}) };
+                    const post = this.wall.submit(name,input,null,{ collected: true });
                     if (post) imported++;
                     else duplicates++;
                 } catch (error) {

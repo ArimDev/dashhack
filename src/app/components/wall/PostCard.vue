@@ -42,7 +42,7 @@
       <button v-if="!fullText && post.text?.length > textPreviewLength" type="button" data-read-post aria-haspopup="dialog" :tabindex="decorative ? -1 : undefined" @click="emit('read', post)"
         class="mt-1 inline-flex min-h-11 items-center text-xs font-semibold underline">Read full post</button>
       <div
-        v-if="post.imageUrl"
+        v-if="post.imageUrl && !post.videoUrl"
         class="mt-3 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800"
       >
         <img
@@ -55,6 +55,7 @@
       <div v-else-if="post.videoUrl" class="mt-3 overflow-hidden rounded-2xl bg-black">
         <video
           :src="post.videoUrl"
+          :poster="post.imageUrl || undefined"
           :controls="!decorative"
           :tabindex="decorative ? -1 : undefined"
           playsinline
@@ -86,7 +87,7 @@ const props = defineProps({
   fullText: Boolean,
   decorative: Boolean,
   post: {
-    type: Object,
+    type: /** @type {import('vue').PropType<import('../../../shared/wallPost').WallPost>} */ (Object),
     required: true,
   },
   textPreviewLength: {

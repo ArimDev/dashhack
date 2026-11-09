@@ -1,5 +1,14 @@
 import { WallStore } from '../storage/wall.js';
 
+function mediaUrl(value) {
+    if (typeof value !== 'string' || value.length > 2000) return '';
+    try {
+        const parsed = new URL(value);
+        return parsed.protocol === 'https:' && !parsed.username && !parsed.password && parsed.href.length <= 2000 ? parsed.href : '';
+    } catch { return ''; }
+}
+
+/** @returns {import('../../shared/wallPost').CollectedWallPost | null} */
 function instagramPost(result) {
     if (!result || typeof result.url !== 'string') return null;
     let source;
@@ -12,10 +21,15 @@ function instagramPost(result) {
     const validHandle = /^[a-z\d._]{1,30}$/i.test(handle);
     const displayName = result.author?.displayName;
     const text = typeof result.caption === 'string' && result.caption.trim() ? result.caption : result.title;
+    const firstMedia = Array.isArray(result.children) ? result.children[0] : null;
+    const publishedAt = typeof result.publishedAt === 'string' ? Date.parse(result.publishedAt) : NaN;
     return { id: `instagram-${match[2]}`, platform: 'instagram',
         authorName: typeof displayName === 'string' && displayName.trim() ? displayName.trim().slice(0, 80) : validHandle ? handle : 'Instagram',
         handle: validHandle ? `@${handle}` : '',
         text: typeof text === 'string' && text.trim() ? text.slice(0, 5000) : 'Instagram post',
+        imageUrl: mediaUrl(result.thumbnailUrl) || mediaUrl(firstMedia?.thumbnailUrl),
+        videoUrl: mediaUrl(result.videoUrl) || mediaUrl(firstMedia?.videoUrl),
+        createdAt: Number.isFinite(publishedAt) ? new Date(publishedAt).toISOString() : undefined,
         sourceUrl: `https://www.instagram.com/${match[1] === 'reels' ? 'reel' : match[1]}/${match[2]}/` };
 }
 
