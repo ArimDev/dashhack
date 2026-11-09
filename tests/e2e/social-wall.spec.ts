@@ -161,7 +161,7 @@ test('projector wall keeps QR in the top corner and display controls collapsed',
   expect((await (await page.request.post(`/api/wall/${encoded}/posts`, { data: { action: 'approve', postId: post.id, revision: 0 } })).json()).status).toBe(200);
   // Avoid an external QR service dependency while verifying the displayed URL and geometry.
   await page.route('https://api.qrserver.com/**', route => route.fulfill({ contentType: 'image/png', body: png }));
-  for (const viewport of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) {
+  for (const viewport of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }, { width: 3440, height: 1440 }, { width: 3840, height: 2160 }]) {
     await page.setViewportSize(viewport);
     await page.goto(`/${encoded}/wall`);
     const cog = page.getByRole('button', { name: 'Wall display settings', exact: true });
@@ -179,13 +179,22 @@ test('projector wall keeps QR in the top corner and display controls collapsed',
     const rail=await page.getByTestId('wall-title-rail').boundingBox();expect(rail.x).toBe(0);
     await expect(page.getByRole('heading',{name:'AT&T Hackathon Junior 2026',exact:true})).toHaveCSS('writing-mode','vertical-rl');
     expect(feed.height).toBeGreaterThan(viewport.height * 0.9);
+    expect(feed.width).toBe(viewport.width);
+    const columns = await page.locator('[data-wall-copy="1"]').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
+    expect(columns).toBe(viewport.width > 1920 ? Math.floor((viewport.width - 96) / 420) : viewport.width >= 1536 ? 4 : 3);
     expect(cogBox.y).toBeGreaterThan(viewport.height - 80);
     await cog.click();
     await expect(page.getByRole('switch', { name: 'Enable auto-scroll layout' })).toBeChecked();
     await page.getByRole('button',{name:'Expand QR code',exact:true}).click();
     const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();
     const full=await dialog.boundingBox();expect(full.width).toBe(viewport.width);expect(full.height).toBe(viewport.height);
-    await expect(dialog.getByRole('img',{name:'Scan to upload a post'})).toBeVisible();
+    const expandedQr = dialog.getByRole('img',{name:'Scan to upload a post'});
+    await expect(expandedQr).toBeVisible();
+    const headingBox = await dialog.getByRole('heading',{name:'Share a moment',exact:true}).boundingBox();
+    expect(Math.abs(headingBox.x + headingBox.width / 2 - viewport.width / 2)).toBeLessThan(2);
+    const expandedBox = await expandedQr.boundingBox();
+    expect(expandedBox.height).toBeGreaterThan(viewport.height * 0.6);
+    expect(expandedBox.y + expandedBox.height).toBeLessThan(viewport.height);
     await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(cog).toBeFocused();await cog.click();
     await page.getByLabel('Show sharing QR code', { exact: true }).uncheck();
     await expect(qr).toHaveCount(0);

@@ -2,7 +2,7 @@
   <div
     class="w-full max-w-2xl overflow-hidden rounded-3xl border border-slate-200 bg-white shadow-2xl shadow-slate-900/10 dark:border-white/10 dark:bg-slate-900 dark:shadow-cyan-950/30"
   >
-    <header class="border-b border-slate-200 bg-linear-to-br from-cyan-500/10 to-indigo-500/10 p-6 sm:p-8 dark:border-white/10">
+    <header class="text-center border-b border-slate-200 bg-linear-to-br from-cyan-500/10 to-indigo-500/10 p-6 sm:p-8 dark:border-white/10">
       <p class="text-xs font-bold uppercase tracking-[0.3em] text-cyan-700 dark:text-cyan-300">
         {{ props.displayTitle || props.eventName }}
       </p>
