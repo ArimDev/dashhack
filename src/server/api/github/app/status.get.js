@@ -4,6 +4,6 @@ export default apiHandler(event => {
     const app = getGitHubApp();
     const connection = getStore().githubConnection(name);
     setHeader(event, 'Cache-Control', 'no-store');
-    return { status: 200, configured: app.configured, installUrl: app.configured ? app.installUrl : null,
+    return { status: 200, configured: app.configured, missingVariables: app.missingVariables, installUrl: app.configured ? app.installUrl : null,
         connection: connection ? { account: connection.account, type: connection.account_type } : null };
 });

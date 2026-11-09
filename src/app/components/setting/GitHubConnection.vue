@@ -1,5 +1,5 @@
 <template>
-    <section class="rounded-3xl shadow-md bg-white dark:bg-gray-800 p-5 space-y-4">
+    <section id="github-app" class="scroll-mt-4 rounded-3xl shadow-md bg-white dark:bg-gray-800 p-5 space-y-4">
         <h1 class="text-2xl font-bold">GitHub App</h1>
         <p v-if="!canEdit" class="text-sm text-gray-500">Log in to connect the event organization.</p>
         <template v-else>
@@ -8,6 +8,10 @@
                 <p v-if="info.connection" class="text-sm">Connected to <strong>{{ info.connection.account }}</strong>.</p>
                 <p v-else class="text-sm">Connect your event organization to select repositories and show team activity.</p>
                 <p v-if="!info.configured" class="text-sm text-gray-500">GitHub App connection is not available yet. Contact the event host.</p>
+                <template v-if="!info.configured">
+                    <GitHubSetup :missing-variables="info.missingVariables" />
+                    <button @click="load" :disabled="loading" class="min-h-11 rounded-lg border border-gray-300 px-3 text-sm dark:border-gray-600">Refresh setup status</button>
+                </template>
                 <div v-else class="flex flex-wrap gap-3 text-sm">
                     <a :href="info.installUrl" target="_blank" rel="noopener noreferrer" class="underline text-bluey-500">Install / configure App</a>
                     <button @click="connect" :disabled="busy" class="rounded-lg bg-bluey-500 hover:bg-bluey-600 text-white px-3 py-2 disabled:opacity-50">{{ busy ? 'Connecting…' : 'Connect GitHub' }}</button>

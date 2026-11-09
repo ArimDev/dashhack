@@ -1,5 +1,6 @@
 import { createHash, sign } from 'node:crypto';
 import { StorageError } from '../storage/sqlite.js';
+import { GITHUB_APP_VARIABLES } from '../../shared/githubAppSetup.js';
 
 export function parseGitHubRepository(value) {
     let url;
@@ -15,9 +16,10 @@ export class GitHubAppService {
         this.config = config; this.request = request; this.now = now;
         this.tokens = new Map();
     }
-    get configured() {
-        return ['githubAppId', 'githubAppClientId', 'githubAppClientSecret', 'githubAppPrivateKey', 'githubAppSlug', 'githubAppBaseUrl'].every(key => !!this.config[key]);
+    get missingVariables() {
+        return Object.entries(GITHUB_APP_VARIABLES).filter(([key]) => !String(this.config[key] ?? '').trim()).map(([, variable]) => variable);
     }
+    get configured() { return this.missingVariables.length === 0; }
     requireConfig() {
         if (!this.configured) throw new StorageError(503, 'GitHub App is not configured on this server yet');
         if (!/^[a-z0-9-]+$/i.test(this.config.githubAppSlug)) throw new StorageError(503, 'Invalid GitHub App configuration');

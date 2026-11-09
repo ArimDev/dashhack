@@ -82,3 +82,24 @@ describe('GitHub App', () => {
         for (const url of ['https://github.com.evil.test/school/team', 'https://token@github.com/school/team', 'http://github.com/school/team', 'https://github.com/school/team/issues', 'https://github.com/school/a%2fb']) expect(() => parseGitHubRepository(url)).toThrow();
     });
 });
+
+describe('GitHub App setup', () => {
+    test('configuration diagnostics contain only missing variable names', () => {
+        const app = new GitHubAppService({ ...config, githubAppClientSecret: '  ', githubAppPrivateKey: '' });
+        expect(app.configured).toBe(false);
+        expect(app.missingVariables).toEqual(['NUXT_GITHUB_APP_CLIENT_SECRET', 'NUXT_GITHUB_APP_PRIVATE_KEY']);
+        expect(new GitHubAppService(config).missingVariables).toEqual([]);
+    });
+    test('registration targets the event organization with read-only grants and exact callbacks', async () => {
+        const { githubAppRegistration } = await import('../../src/shared/githubAppSetup.js');
+        const setup = githubAppRegistration('https://dashhack-production.up.railway.app/app/event/settings');
+        const url = new URL(setup.registrationUrl);
+        expect(url.origin + url.pathname).toBe('https://github.com/organizations/AT-T-Hackathon-Junior-2026/settings/apps/new');
+        for (const permission of ['contents', 'metadata', 'members']) expect(url.searchParams.get(permission)).toBe('read');
+        for (const flag of ['public', 'webhook_active', 'request_oauth_on_install']) expect(url.searchParams.get(flag)).toBe('false');
+        expect(url.searchParams.getAll('callback_urls[]')).toEqual(['https://dashhack-production.up.railway.app/github/callback', 'http://localhost:5002/github/callback']);
+        expect(setup.baseUrl).toBe('https://dashhack-production.up.railway.app');
+        expect(githubAppRegistration('http://localhost:5002').callbackUrl).toBe('http://localhost:5002/github/callback');
+        for (const base of ['http://example.com', 'javascript:alert(1)', 'https://user:secret@example.com']) expect(() => githubAppRegistration(base)).toThrow();
+    });
+});

@@ -39,12 +39,28 @@ test('GitHub App settings show setup state and block guests and other events fro
   await page.getByRole('link', { name: 'Settings', exact: true }).click();
   await expect(page.getByRole('heading', { name: 'GitHub App', exact: true })).toBeVisible();
   await expect(page.getByText('GitHub App connection is not available yet.', { exact: false })).toBeVisible();
+  const setup = page.locator('details').filter({ has: page.getByText('Set up the GitHub App', { exact: true }) });
+  await expect(setup.getByLabel('User authorization callback URL')).toHaveValue('http://127.0.0.1:5010/github/callback');
+  const registration = new URL(await setup.getByRole('link', { name: /Register App for/ }).getAttribute('href'));
+  expect(registration.pathname).toBe('/organizations/AT-T-Hackathon-Junior-2026/settings/apps/new');
+  expect(registration.searchParams.get('contents')).toBe('read');
+  await expect(setup.getByLabel('GitHub App server configuration').getByText('Missing', { exact: true })).toHaveCount(6);
+  await page.getByRole('button', { name: 'Refresh setup status' }).click();
+  await expect(setup).toBeVisible();
+  const appStatus = await (await page.request.get(`/api/github/app/status?event=${eventName}`)).json();
+  expect(appStatus.missingVariables).toHaveLength(6);
+  expect(appStatus).not.toHaveProperty('githubAppPrivateKey');
+  await page.setViewportSize({ width: 390, height: 844 });
+  const sizes = await page.locator('#dashboard-content').evaluate(el => [el.scrollWidth, el.clientWidth]);
+  expect(sizes[0]).toBeLessThanOrEqual(sizes[1] + 1);
+
   const other = `other-${randomUUID()}`;
   expect((await (await page.request.post('/api/auth/create', { data: { username: other, password: PASSWORD } })).json()).status).toBe(200);
   expect((await (await page.request.get(`/api/github/app/repositories?event=${other}`)).json()).status).toBe(403);
   const guest = await browser.newContext();
   try {
     expect((await (await guest.request.get(`/api/github/app/repositories?event=${eventName}`)).json()).status).toBe(401);
+    expect((await (await guest.request.get(`/api/github/app/status?event=${eventName}`)).json()).status).toBe(401);
     expect((await (await guest.request.delete('/api/github/app/connection', { data: { event: eventName } })).json()).status).toBe(401);
   } finally { await guest.close(); }
 });
