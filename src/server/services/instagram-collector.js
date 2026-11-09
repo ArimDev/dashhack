@@ -16,20 +16,26 @@ function instagramPost(result) {
 }
 
 export class InstagramCollector {
-    constructor(store, key, { request = fetch } = {}) {
-        this.store = store; this.wall = new WallStore(store); this.key = key; this.request = request; this.running = new Set();
+    constructor(store, key, { request = fetch, logger = console } = {}) {
+        this.store = store; this.wall = new WallStore(store); this.key = key; this.request = request; this.logger = logger; this.running = new Set();
     }
     async syncEvent(name) {
         const event = this.wall.event(name), config = this.wall.config(event.id);
         if (!this.key || !config.enabled || !config.instagramEnabled || this.running.has(event.id)) return { imported: 0 };
         const hashtags = [...new Set(config.instagramQueryHashtags.map(tag => tag.replace(/^#/, '').toLowerCase()))];
-        if (!hashtags.length) return { imported: 0 };
+        if (!hashtags.length) {
+            this.logger.warn('[Instagram collector] No hashtags configured', { eventId: event.id });
+            return { imported: 0 };
+        }
         this.running.add(event.id);
         let imported = 0;
+        let activeHashtag;
         try {
             for (const hashtag of hashtags) {
                 const current = this.wall.config(event.id);
                 if (!current.enabled || !current.instagramEnabled) break;
+                activeHashtag = hashtag;
+                this.logger.info('[Instagram collector] Fetch started', { eventId: event.id, hashtag });
                 const params = new URLSearchParams({ q: hashtag, limit: '50', cache: 'false' });
                 const response = await this.request(`https://api.captapi.com/v1/instagram/hashtag-search?${params}`, {
                     headers: { Authorization: `Bearer ${this.key}`, Accept: 'application/json' },
@@ -40,20 +46,28 @@ export class InstagramCollector {
                     : `Captapi request failed (${response.status}). Check API access, credits and hashtags.`);
                 const payload = await response.json();
                 if (payload.success !== true || !Array.isArray(payload.data?.results)) throw new Error('Captapi returned an invalid search response.');
-                for (const result of payload.data.results.slice(0, 50)) {
+                const results = payload.data.results.slice(0, 50);
+                let added = 0, duplicates = 0, invalid = 0, rejected = 0;
+                for (const result of results) {
                     const post = instagramPost(result);
-                    if (!post) continue;
+                    if (!post) { invalid++; continue; }
                     try {
-                        if (this.wall.submit(name, post, null, { collected: true })) imported++;
+                        if (this.wall.submit(name, post, null, { collected: true })) { imported++; added++; }
+                        else duplicates++;
                     } catch (error) {
                         if (![400, 403, 422].includes(error.status)) throw error;
+                        rejected++;
                     }
                 }
+                this.logger.info('[Instagram collector] Fetch succeeded', { eventId: event.id, hashtag,
+                    status: response.status, fetched: results.length, imported: added, duplicates, invalid, rejected,
+                    approvalMode: current.moderationMode });
             }
             this.record(event.id, '');
             return { imported };
         } catch (error) {
             const reason = error.message?.startsWith('Captapi ') ? error.message : 'Instagram collection failed. Check API access or available wall storage.';
+            this.logger.warn('[Instagram collector] Fetch failed', { eventId: event.id, hashtag: activeHashtag, imported, error: reason });
             this.record(event.id, reason);
             return { imported, error: reason };
         } finally { this.running.delete(event.id); }

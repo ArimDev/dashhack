@@ -118,18 +118,23 @@ describe('Optional Captapi Instagram collector', () => {
     ] } };
     test('hashtag requests, manual approval, stable deduplication and shared collector auto approval', async () => {
         const c = await enabled(); let calls = 0;
+        const logs = [], warnings = [];
+        const logger = { info: (...args) => logs.push(args), warn: (...args) => warnings.push(args) };
         c.store.db.query("UPDATE wall_settings SET settings=json_set(settings,'$.instagramModerationMode','auto') WHERE event_id=?").run(c.id);
         expect(c.wall.config(c.id).instagramModerationMode).toBeUndefined();
-        const collector = new InstagramCollector(c.store, 'private-key', { request: async (url, options) => {
+        const collector = new InstagramCollector(c.store, 'private-key', { logger, request: async (url, options) => {
             calls++; const params = new URL(url).searchParams;
             expect(params.get('q')).toBe('hackathon'); expect(params.get('limit')).toBe('50'); expect(params.get('cache')).toBe('false');
             expect(options.headers.Authorization).toBe('Bearer private-key'); expect(options.redirect).toBe('error');
             return Response.json(payload);
         } });
         expect((await collector.syncEvent(c.name)).imported).toBe(1);
+        expect(logs.find(entry => entry[0].endsWith('Fetch succeeded'))[1]).toMatchObject({ fetched: 2, imported: 1, invalid: 1 });
         let post = c.wall.moderationFeed(c.session, c.name).posts[0];
         expect(post.platform).toBe('instagram'); expect(post.status).toBe('pending'); expect(post.sourceUrl).toBe('https://www.instagram.com/p/ABC_123/');
         expect((await collector.syncEvent(c.name)).imported).toBe(0); expect(calls).toBe(2);
+        expect(logs.filter(entry => entry[0].endsWith('Fetch succeeded'))[1][1].duplicates).toBe(1);
+        expect(JSON.stringify(logs)).not.toContain('private-key'); expect(warnings).toHaveLength(0);
         post = action(c, post, 'reject'); action(c, post, 'delete');
         expect((await collector.syncEvent(c.name)).imported).toBe(0);
         const lastPoll = c.wall.config(c.id).instagramLastPollAt;
@@ -148,18 +153,21 @@ describe('Optional Captapi Instagram collector', () => {
     });
     test('absent key, overlap guard, redacted errors and persisted rate-limit scheduling', async () => {
         let now = Date.now(); const c = await enabled({ now: () => now }); let calls = 0, release;
+        const warnings = [], logger = { info: () => {}, warn: (...args) => warnings.push(args) };
         const pending = new Promise(resolve => { release = resolve; });
         const request = async () => { calls++; return pending; };
         await new InstagramCollector(c.store, '', { request }).tick(); expect(calls).toBe(0);
-        const collector = new InstagramCollector(c.store, 'key', { request });
+        const collector = new InstagramCollector(c.store, 'key', { request, logger });
         const first = collector.syncEvent(c.name); await collector.syncEvent(c.name); expect(calls).toBe(1);
         release(new Response('secret provider body', { status: 429 }));
         expect((await first).error).toContain('rate limit');
+        expect(warnings[0][1].error).toContain('rate limit');
         await collector.tick(); now += 5 * 60000; await collector.tick(); expect(calls).toBe(1);
         now += 10 * 60000; await collector.tick(); expect(calls).toBe(2);
         expect(c.wall.config(c.id).instagramLastPollError).not.toContain('secret');
-        const failure = new InstagramCollector(c.store, 'key', { request: async () => { throw new Error('secret key'); } });
+        const failure = new InstagramCollector(c.store, 'key', { logger, request: async () => { throw new Error('secret key'); } });
         expect((await failure.syncEvent(c.name)).error).not.toContain('secret');
+        expect(JSON.stringify(warnings)).not.toContain('secret');
     });
     test('stop is authorized, fences stale enables and prevents further hashtag requests and imports', async () => {
         const c = await enabled(); c.wall.updateSettings(c.session, c.name, { instagramQueryHashtags: ['#first', '#second'] }, 2);
