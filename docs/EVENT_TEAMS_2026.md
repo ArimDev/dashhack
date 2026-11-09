@@ -4,9 +4,9 @@ Produkční událost: **Student Hackathon Demo** (přihlašovací jméno zůstá
 
 Všech 15 repozitářů je soukromých. Původní nepoužité `team-01` až `team-15` byly přejmenovány; jejich ID a oprávnění zůstala zachována. README obsahují skutečný název týmu a barvu trička.
 
-**Pozvánky zatím nebyly odeslány.** GitHub vyžaduje uživatelské jméno nebo e-mail příjemce. Odkazy „Přijetí pozvánky“ fungují pro konkrétní účet až po jeho pozvání; samy přístup neudělují. Organizátor může pozvat studenty přes Settings → Collaborators and teams daného repozitáře s oprávněním Write. Členství v organizaci není pro outside collaborator přístup vyžadováno.
+**Automatické týmové odkazy jsou aktivní.** Každý student otevře soukromý odkaz svého týmu, zadá vlastní GitHub jméno a přijme automaticky vytvořenou pozvánku na GitHubu. Organizátor nemusí předem shánět jména ani pozvánky schvalovat. Odkazy lze kopírovat v přihlášeném DashHack Settings → GitHub App → Student team invitation links. Soukromý export všech 15 odkazů je lokálně v `.data/team-invites-2026.csv` a `.data/team-invites-2026.txt` (0600, mimo Git). Platnost této sady je do 2026-12-09. Tyto přístupové odkazy nikdy nevkládat do veřejného repozitáře. Níže uvedené veřejné odkazy „Přijetí pozvánky“ slouží až pro následné přijetí jmenovité pozvánky; nejsou to soukromé týmové odkazy.
 
-[CSV pro doplnění čísel a kopírování odkazů](event-teams-2026.csv)
+[Veřejný CSV seznam týmů pro doplnění čísel](event-teams-2026.csv)
 
 | Název týmu | Barva trička | HEX | Repozitář | Přijetí pozvánky (po pozvání účtu) |
 | --- | --- | --- | --- | --- |
