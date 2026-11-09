@@ -111,3 +111,8 @@ Deployed final source `ac54f89` / Railway `6d547563-c710-4c2b-b317-dcf6b512e357`
 Approval semantics: the X approval mode applies at insertion of newly collected posts. It does not retrospectively change already-pending, rejected or hidden posts. On 2026-11-09 production was corrected from Manual to Auto through the real dropdown and 100 eligible existing X imports were explicitly approved; public uploads remain manual and polling remains OFF. See RAILWAY.md.
 
 Query examples are placeholders, never defaults: Example only prefix, muted italic/normal-weight styling, and No handles entered guidance for an empty optional account list. Preserve this distinction in light and dark themes; saving an empty list must not store the example. Deployed in `dc47d0d`; see RAILWAY.md.
+
+
+## Unified hover/reader idle delay — 2026-11-09
+
+Hover, pointer exit, keyboard focus and reader close now use the same event `idleWaitSeconds` setting. The default and the production Demo value are five seconds (the event had retained 30 seconds). A stationary pointer over a card does not keep the wall paused forever: it resumes after the last interaction's delay without opening a reader. Leaving the feed restarts that same delay. The reader stays paused while open; closing uses the same setting and guards focus restoration. Manual-scroll mode remains manual. The organizer control is Social Wall → Resume scrolling after interaction (seconds).
