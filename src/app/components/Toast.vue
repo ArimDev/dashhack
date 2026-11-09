@@ -1,5 +1,5 @@
 <template>
-	<div v-show="display" :class="[animationClass, 'min-w-50 min-h-22 rounded-3xl bg-white text-black dark:bg-gray-800 dark:text-white p-4 shadow-lg flex items-center']">
+	<div v-show="display" :class="[animationClass, 'min-w-0 min-h-22 break-words rounded-3xl bg-white text-black dark:bg-gray-800 dark:text-white p-4 shadow-lg flex items-center']">
 		<div>
 			<h1 class="font-bold">{{ title }}</h1>
 			<p>{{ message }}</p>

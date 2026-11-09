@@ -1,7 +1,7 @@
 <template>
-  <div class="flex items-center justify-between gap-4">
+  <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
     <h2 class="text-xl font-black">Posts · {{ activeTabLabel }}</h2>
-    <div class="flex items-center gap-2">
+    <div class="flex flex-wrap items-center gap-2">
       <div
         class="inline-flex items-center rounded-full border border-slate-300 bg-white p-1 dark:border-slate-600 dark:bg-slate-800"
       >
@@ -30,7 +30,7 @@
         :href="`/${encodeURIComponent(currentEvent)}/wall`"
         target="_blank"
         rel="noopener noreferrer"
-        class="rounded-full bg-bluey-500 px-4 py-2 text-sm font-bold text-white hover:bg-bluey-600"
+        class="inline-flex min-h-11 items-center justify-center rounded-full bg-bluey-500 px-4 py-2 text-sm font-bold text-white hover:bg-bluey-600"
       >
         Open wall
       </a>

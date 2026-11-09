@@ -99,7 +99,7 @@
         <input
           type="file"
           accept="image/jpeg,image/png,image/gif,image/webp,image/avif,video/mp4,video/webm,video/ogg,video/quicktime"
-          class="mt-2 block w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 file:mr-3 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-sm file:font-bold file:text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
+          class="mt-2 block min-w-0 w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 file:mr-3 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-sm file:font-bold file:text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
           @change="handleFileChange"
         />
       </label>
@@ -121,7 +121,7 @@
         <button
           type="submit"
           :disabled="submitting || (!form.text.trim() && !form.file)"
-          class="inline-flex min-h-12 items-center justify-center rounded-full bg-cyan-400 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-auto"
+          class="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-full bg-cyan-400 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-auto"
         >
           {{ submitting ? "Submitting..." : "Submit for approval" }}
         </button>

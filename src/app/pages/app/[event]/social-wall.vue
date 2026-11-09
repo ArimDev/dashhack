@@ -12,6 +12,11 @@
     />
 
     <div class="grid gap-6 xl:grid-cols-[340px_minmax(0,1fr)]">
+      <div class="min-w-0">
+        <button type="button" @click="wallSettingsOpen = !wallSettingsOpen" :aria-expanded="wallSettingsOpen" class="mb-3 flex min-h-12 w-full items-center justify-between gap-3 rounded-xl border border-gray-200 bg-white px-4 text-sm font-semibold dark:border-gray-700 dark:bg-gray-800 xl:hidden">
+          Wall settings and upload link <Icon :name="wallSettingsOpen ? 'heroicons:chevron-up' : 'heroicons:chevron-down'" size="18px" />
+        </button>
+        <div :class="wallSettingsOpen ? 'block' : 'hidden xl:block'">
       <WallModerationSettingsPanel
         :settings="settings"
         :keywords-text="keywordsText"
@@ -22,6 +27,8 @@
         @update:blacklist-authors-text="blacklistAuthorsText = $event"
         @save="saveSettings"
       />
+        </div>
+      </div>
 
       <section class="space-y-4">
         <WallModerationToolbar
@@ -60,6 +67,7 @@
 <script setup>
 definePageMeta({ layout: 'dashboard', middleware: ['routes'] });
 const currentEvent = useState('currentEvent');
+const wallSettingsOpen = ref(false);
 const canEdit = useState('eventCanEdit');
 const posts = ref([]), stats = ref({}), settings = ref({});
 const keywordsText = ref(''), blacklistAuthorsText = ref('');

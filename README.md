@@ -38,6 +38,10 @@ The feature ported from [PR #6](https://github.com/ArimDev/dashhack/pull/6) adds
 
 Attachments live in the existing SQLite database: maximum 4 MiB per upload, 32 MiB per event and 64 MiB overall. Full SQLite snapshots include them; public JSON event downloads do not. Optional X hashtag/account collection uses server-only `NUXT_X_BEARER_TOKEN` and **Settings → X social collector**, without any added service or dependency. See [PR review, setup, Czech demo fixtures and limits](docs/SOCIAL_WALL_PR6.md).
 
+## Mobile use
+
+Phones have quick navigation, a full event menu and scrollable dialogs with reachable save/cancel actions. Kanban uses column tabs and status dropdowns for touch editing. Public walls start with manual scrolling on phones and include a direct upload link. Settings and rich-text forms adapt to narrow screens, landscape and dark mode. See [mobile behavior and validation](docs/MOBILE_POLISH.md).
+
 ## Tests
 
 ```sh

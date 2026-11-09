@@ -1,6 +1,6 @@
 <template>
-  <div
-    class="mb-6 flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm scrollbar-hide dark:border-slate-700 dark:bg-slate-900"
+  <nav aria-label="Post filters"
+    class="mb-6 flex gap-2 overflow-x-auto rounded-2xl border border-slate-200 bg-white p-2 shadow-sm overscroll-x-contain dark:border-slate-700 dark:bg-slate-900"
   >
     <button
       v-for="tab in tabs"
@@ -22,7 +22,7 @@
         {{ tab.count }}
       </span>
     </button>
-  </div>
+  </nav>
 </template>
 
 <script setup>

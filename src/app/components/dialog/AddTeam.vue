@@ -1,22 +1,20 @@
 <template>
-	<div>
-		<div @click="emit('close', false)" class="absolute inset-0 bg-black opacity-45 z-40"></div>
-		<div class="fixed inset-0 flex justify-center items-center z-[110]">
-			<form @submit.prevent="teamSubmit" class="fixed bg-white text-black dark:bg-gray-800 dark:text-white rounded-3xl w-[90%] md:w-[70%] lg:w-[50%] max-h-[80vh] p-6 flex flex-col gap-6 shadow-xl">
-				<div>
-					<h1 class="text-left text-3xl font-bold">{{ edit ? "Edit Team" : "Add Team" }}</h1>
-				</div>
-
-				<div class="flex flex-col gap-4 overflow-y-auto pr-2">
+    <DialogShell :title="edit ? 'Edit Team' : 'Add Team'" wide @close="emit('close', false)">
+        <form :id="formId" @submit.prevent="teamSubmit">
+				<div class="flex min-w-0 flex-col gap-4">
 					<div class="grid grid-cols-1 md:grid-cols-2 gap-4">
-						<input data-testid="team-name-input" v-model="teamName" required class="p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-gray-300 dark:border-gray-600 dark:placeholder-gray-400 focus:border-bluey-500 focus:ring-bluey-500 dark:bg-gray-700 dark:text-white" name="teamName" placeholder="Team Name">
-						<input data-testid="team-github-input" v-model="teamGithub" type="url" class="p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-gray-300 dark:border-gray-600 dark:placeholder-gray-400 focus:border-bluey-500 focus:ring-bluey-500 dark:bg-gray-700 dark:text-white" name="teamGithub" placeholder="GitHub URL (Optional)">
+                        <label class="block min-w-0 text-sm font-medium">Team name
+<input data-testid="team-name-input" v-model="teamName" required class="mt-2 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-gray-300 dark:border-gray-600 dark:placeholder-gray-400 focus:border-bluey-500 focus:ring-bluey-500 dark:bg-gray-700 dark:text-white" name="teamName" placeholder="Team Name">
+                        </label>
+                        <label class="block min-w-0 text-sm font-medium">GitHub URL (optional)
+<input data-testid="team-github-input" v-model="teamGithub" type="url" class="mt-2 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-gray-300 dark:border-gray-600 dark:placeholder-gray-400 focus:border-bluey-500 focus:ring-bluey-500 dark:bg-gray-700 dark:text-white" name="teamGithub" placeholder="GitHub URL (Optional)">
+                        </label>
 					</div>
                     <div class="relative">
                         <GitHubRepositoryPicker v-if="eventData?.settings?.githubApp && canEdit" @select="teamGithub = $event" />
                         <label for="teamColorInput" class="block text-sm font-medium mb-1">Team Color:</label>
                             <div class="flex items-center gap-3">
-                            <input id="teamColorInput" type="color" v-model="teamColor" class="w-10 h-10 border-none cursor-pointer rounded-full p-0">
+                            <input id="teamColorInput" type="color" v-model="teamColor" class="w-11 h-11 border-none cursor-pointer rounded-full p-0">
                             <span class="text-sm font-mono">{{ teamColor }}</span>
                         </div>
                     </div>
@@ -35,21 +33,17 @@
                     </div>
 				</div>
 
-				<div class="flex justify-between gap-4 flex-row flex-shrink-0 pt-4 border-t border-gray-200 dark:border-gray-700">
-					<button type="button" @click="emit('close', false)" class="cursor-pointer rounded-full bg-gray-200 dark:bg-gray-600 w-full h-[56px] text-xl font-bold text-black dark:text-white hover:bg-gray-300 dark:hover:bg-gray-500 transition-colors">
-						Cancel
-					</button>
-					<button data-testid="submit-team-btn" type="submit" class="cursor-pointer rounded-full bg-bluey-500 w-full h-[56px] text-xl font-bold text-white hover:bg-bluey-600 transition-colors">
-						{{ edit ? "Save Changes" : "Add Team" }}
-					</button>
-				</div>
-			</form>
-		</div>
-	</div>
+        </form>
+        <template #footer>
+            <button type="button" @click="emit('close', false)" class="dialog-secondary">Cancel</button>
+            <button data-testid="submit-team-btn" type="submit" :form="formId" class="dialog-primary">{{ edit ? 'Save Changes' : 'Add Team' }}</button>
+        </template>
+    </DialogShell>
 </template>
 
 <script setup>
 const { showToast } = useToast();
+const formId = useId();
 
 const emit = defineEmits(["close"]);
 const props = defineProps({

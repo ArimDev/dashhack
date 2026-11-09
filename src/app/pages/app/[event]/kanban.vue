@@ -1,15 +1,15 @@
 <template>
-    <div class="max-w-7xl mx-auto space-y-5 pb-8">
+    <div class="max-w-7xl mx-auto min-w-0 space-y-5 pb-8">
         <div class="flex flex-wrap items-end justify-between gap-4">
             <div>
                 <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Kanban notes</h1>
                 <p class="text-sm text-gray-500 dark:text-gray-400 mt-1">
                     {{ allNotes.length }} tracked notes across {{ data.teams.length }} teams.
-                    <span v-if="canEdit">Drag a card's handle or change its status to move it.</span>
+                    <span v-if="canEdit"><span class="md:hidden">Change a note's status to move it.</span><span class="hidden md:inline">Drag a card's handle or change its status to move it.</span></span>
                     <span v-else>Read-only board. Log in to move or edit notes.</span>
                 </p>
             </div>
-            <div class="flex flex-wrap items-end gap-3">
+            <div class="grid w-full grid-cols-2 gap-3 sm:flex sm:w-auto sm:flex-wrap sm:items-end">
                 <label class="text-xs font-medium text-gray-600 dark:text-gray-300">
                     Type
                     <select v-model="selectedType" aria-label="Filter by note type" :disabled="busy"
@@ -22,7 +22,7 @@
                 <label class="text-xs font-medium text-gray-600 dark:text-gray-300">
                     Team
                     <select v-model="selectedTeam" aria-label="Filter by team" :disabled="busy"
-                        class="block mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 text-sm max-w-56">
+                        class="block mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 text-gray-900 dark:text-white px-3 py-2 text-sm w-full max-w-full sm:max-w-56">
                         <option value="">All teams</option>
                         <option v-for="team in data.teams" :key="team._id" :value="team._id">{{ team.name }}</option>
                     </select>
@@ -43,12 +43,18 @@
             <p class="text-sm mt-1">Enable “Track in Kanban” on a team note, or create a help request in Teams.</p>
         </div>
 
+        <nav aria-label="Kanban columns" class="grid grid-cols-3 gap-2 md:hidden">
+            <button v-for="status in NOTE_STATUSES" :key="status" @click="mobileStatus = status" :aria-pressed="mobileStatus === status"
+                class="min-w-0 rounded-xl border px-2 py-2 text-xs font-semibold" :class="mobileStatus === status ? 'bg-bluey-500 border-bluey-500 text-white' : 'border-gray-200 bg-white dark:bg-gray-800 dark:border-gray-700'">
+                {{ status }} <span class="block mt-1 text-xs opacity-75">{{ columnNotes(status).length }}</span>
+            </button>
+        </nav>
         <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
             <section v-for="status in NOTE_STATUSES" :key="status" :data-testid="`kanban-column-${status}`"
                 :aria-label="status" :aria-busy="busy" @dragover.prevent="dragOver = canEdit && !busy ? status : null"
                 @dragleave.self="dragOver = null" @drop.prevent="dropNote($event, status)"
                 class="rounded-xl border p-3 min-h-64 transition-colors"
-                :class="dragOver === status ? 'border-bluey-500 bg-bluey-50 dark:bg-bluey-950' : 'border-gray-200 dark:border-gray-700 bg-gray-100/70 dark:bg-gray-800/40'">
+                :class="[status !== mobileStatus ? 'hidden md:block' : '', dragOver === status ? 'border-bluey-500 bg-bluey-50 dark:bg-bluey-950' : 'border-gray-200 dark:border-gray-700 bg-gray-100/70 dark:bg-gray-800/40']">
                 <header class="flex items-center justify-between gap-2 px-1 pb-3">
                     <h2 class="font-semibold text-sm text-gray-700 dark:text-gray-200">{{ status }}</h2>
                     <span class="text-xs font-medium rounded-full bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 px-2 py-0.5">{{ columnNotes(status).length }}</span>
@@ -62,7 +68,7 @@
                             </NuxtLink>
                             <button v-if="canEdit" :disabled="busy" :draggable="!busy" @dragstart="startDrag($event, item)" @dragend="dragOver = null"
                                 aria-label="Drag note" title="Drag note to a column" data-testid="drag-note"
-                                class="text-gray-400 hover:text-bluey-500 cursor-grab active:cursor-grabbing disabled:opacity-30 px-2">
+                                class="hidden md:inline-flex min-h-11 items-center text-gray-400 hover:text-bluey-500 cursor-grab active:cursor-grabbing disabled:opacity-30 px-2">
                                 <Icon name="heroicons:arrows-up-down" size="16px" />
                             </button>
                         </div>
@@ -79,6 +85,7 @@
 </template>
 
 <script setup>
+const mobileStatus = ref('To Do');
 import { NOTE_STATUSES, noteColumn } from '~~/shared/noteStatuses.js';
 
 definePageMeta({ layout: 'dashboard', middleware: ['routes'] });

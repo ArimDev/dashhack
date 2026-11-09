@@ -1,32 +1,20 @@
 <template>
-    <div>
-        <div @click="close" class="absolute inset-0 bg-black opacity-45"></div>
-        <div class="relative inset-0 flex justify-center items-center z-[100]">
-            <form @submit.prevent="login" class="fixed bg-white text-black dark:bg-gray-800 dark:text-white rounded-3xl w-[50%] h-[40%] p-[2%] flex justify-between flex-col">
-                <div>
-                    <h1 class="text-left text-3xl font-bold">Log In</h1>
-                </div>
-
-                <div>
-                    <p>Enter password to be able making changes.</p>
-                    <input v-model="credentials.pass" @input="resetButton" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300" type="password" autocomplete="current-password" placeholder="Password">
-                </div>
-
-                <div class="flex justify-between gap-70 flex-row">
-                    <button @click="close" class="cursor-pointer rounded-full bg-zinc-300 w-full h-[56px] text-xl font-bold text-black">
-                        Cancel
-                    </button>
-                    <button type="submit" :disabled="buttonDisable" :class="`cursor-pointer rounded-full w-full h-[56px] text-xl font-bold ${buttonClass}`">
-                        {{ buttonText }}
-                    </button>
-                </div>
-            </form>
-        </div>
-    </div>
+    <DialogShell title="Log In" @close="close">
+        <form :id="formId" @submit.prevent="login" class="space-y-4">
+            <p class="text-sm text-gray-600 dark:text-gray-300">Enter the event password to make changes.</p>
+            <label class="block text-sm font-medium">Password
+                <input v-model="credentials.pass" @input="resetButton" required class="mt-2 w-full rounded-xl border border-gray-300 bg-transparent p-3 dark:border-gray-600" type="password" autocomplete="current-password" placeholder="Password">
+            </label>
+        </form>
+        <template #footer>
+            <button type="button" @click="close" class="dialog-secondary">Cancel</button>
+            <button type="submit" :form="formId" :disabled="buttonDisable" :class="buttonClass" class="dialog-primary">{{ buttonText }}</button>
+        </template>
+    </DialogShell>
 </template>
-
 <script setup>
 const { showToast } = useToast();
+const formId = useId();
 const emit = defineEmits(["close"]);
 const route = useRoute();
 const eventName = ref(route.params.event);

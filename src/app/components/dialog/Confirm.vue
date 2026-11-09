@@ -1,34 +1,15 @@
 <template>
-    <div>
-        <div @click="emit('close', false)" class="absolute inset-0 bg-black opacity-45"></div>
-        <div class="relative inset-0 flex justify-center items-center z-[100]">
-            <div class="fixed bg-white text-black dark:bg-gray-800 dark:text-white rounded-3xl w-[50%] h-[30%] p-[2%] flex justify-between flex-col">
-                <div>
-                    <h1 class="text-left text-3xl font-bold">{{ props.subject }}</h1>
-                </div>
-
-                <div class="text-xl">
-                    <template v-if="!!props.team">
-                        {{ messageBeforeTeam }}<strong>{{ props.team.name }}</strong>{{ messageAfterTeam }}
-                    </template>
-                    <template v-else>
-                        {{ props.message }}
-                    </template>
-                </div>
-
-                <div class="flex justify-between gap-70 flex-row">
-                    <button @click="emit('close', false)" class="cursor-pointer rounded-full bg-zinc-300 w-full h-[56px] text-xl font-bold text-black">
-                        Cancel
-                    </button>
-                    <button @click="confirmed()" class="cursor-pointer rounded-full bg-red-800 w-full h-[56px] text-xl font-bold text-white">
-                        Confirm
-                    </button>
-                </div>
-            </div>
-        </div>
-    </div>
+    <DialogShell :title="props.subject" @close="emit('close', false)">
+        <p class="text-base leading-relaxed break-words">
+            <template v-if="props.team">{{ messageBeforeTeam }}<strong>{{ props.team.name }}</strong>{{ messageAfterTeam }}</template>
+            <template v-else>{{ props.message }}</template>
+        </p>
+        <template #footer>
+            <button type="button" @click="emit('close', false)" class="dialog-secondary">Cancel</button>
+            <button type="button" @click="confirmed" class="dialog-primary bg-red-700 hover:bg-red-800">Confirm</button>
+        </template>
+    </DialogShell>
 </template>
-
 <script setup>
 const { showToast } = useToast();
 const emit = defineEmits(["close"]);

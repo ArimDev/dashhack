@@ -1,6 +1,6 @@
 <template>
   <main
-    class="relative h-screen overflow-hidden bg-slate-100 text-slate-900 selection:bg-cyan-300 selection:text-slate-950 dark:bg-slate-950 dark:text-white"
+    class="public-wall relative h-dvh overflow-hidden bg-slate-100 text-slate-900 selection:bg-cyan-300 selection:text-slate-950 dark:bg-slate-950 dark:text-white"
   >
     <div aria-hidden="true" class="pointer-events-none absolute inset-0 overflow-hidden">
       <div
@@ -25,6 +25,29 @@
         @toggle-theme="toggleTheme"
       />
 
+      <a
+        v-if="uploadsEnabled && wallStatus === 'available'"
+        :href="uploadUrl"
+        target="_blank"
+        rel="noopener noreferrer"
+        class="group mx-4 my-3 flex shrink-0 items-center gap-3 rounded-xl border border-cyan-300/40 bg-bluey-500/10 p-2.5 text-left shadow-sm shadow-slate-900/5 backdrop-blur-xl transition hover:border-cyan-300/70 hover:bg-bluey-500/15 dark:border-white/10 dark:bg-white/4 dark:shadow-black/20"
+      >
+        <img v-if="qrUrl"
+          :src="qrUrl"
+          alt="Scan to upload a post"
+          class="hidden lg:block h-14 w-14 shrink-0 rounded-lg bg-white p-1"
+        />
+        <span class="min-w-0">
+          <span
+            class="block text-sm font-bold leading-tight text-slate-900 dark:text-white"
+            >Share a moment</span
+          >
+          <span
+            class="mt-0.5 block text-xs leading-relaxed text-slate-600 dark:text-slate-300"
+            ><span class="lg:hidden">Tap to add a photo, video or message</span><span class="hidden lg:inline">Scan or tap to share</span></span
+          >
+        </span>
+      </a>
       <PublicWallState
         v-if="wallStatus !== 'available' || !posts.length"
         :status="wallStatus"
@@ -48,6 +71,7 @@
             :key="copy"
             :ref="copy === 1 ? setFirstFeedCopy : undefined"
             :aria-hidden="copy > 1 ? 'true' : undefined"
+            :inert="copy > 1"
             :class="{ 'pointer-events-none': copy > 1 }"
             class="columns-1 gap-4 sm:columns-2 xl:columns-3 2xl:columns-4 pb-4"
           >
@@ -61,29 +85,6 @@
         </div>
       </section>
 
-      <a
-        v-if="qrUrl && uploadsEnabled && wallStatus === 'available'"
-        :href="uploadUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="group absolute top-22 right-8 z-99 flex w-44 flex-col items-center gap-2 rounded-xl border border-cyan-300/40 bg-bluey-500/10 p-2.5 text-center shadow-xl shadow-slate-900/5 backdrop-blur-xl transition hover:border-cyan-300/70 hover:bg-bluey-500/15 dark:border-white/10 dark:bg-white/4 dark:shadow-black/20"
-      >
-        <img
-          :src="qrUrl"
-          alt="Scan to upload a post"
-          class="h-18 w-18 shrink-0 rounded-lg bg-white p-1"
-        />
-        <span class="min-w-0">
-          <span
-            class="block text-sm font-bold leading-tight text-slate-900 dark:text-white"
-            >Your moment belongs here.</span
-          >
-          <span
-            class="mt-0.5 block text-xs leading-relaxed text-slate-600 dark:text-slate-300"
-            >Scan to share!</span
-          >
-        </span>
-      </a>
       <footer
         v-if="wallStatus === 'available'"
         class="mt-3 pb-3 px-4 flex shrink-0 items-center justify-between gap-3 px-1 text-xs text-slate-600 dark:text-slate-500"
@@ -123,7 +124,10 @@ const textPreviewLength = 100;
 const cycleSeconds = ref(25), idleWaitSeconds = ref(30), uploadsEnabled = ref(false);
 let pauseUntil = 0, loading = false;
 function pauseForInteraction() { pauseUntil = performance.now() + idleWaitSeconds.value * 1000; }
-let feedResizeObserver;
+let feedResizeObserver, qrMedia;
+function updateQr() {
+  qrUrl.value = qrMedia?.matches ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(uploadUrl.value)}` : '';
+}
 
 const feedCopyCount = computed(() => {
   if (!isScrollingEnabled.value) return 1;
@@ -207,38 +211,47 @@ async function loadWall() {
   } finally { loading = false; }
 }
 
+let refreshInterval, animationFrame = 0, previousFrame = 0;
+function scrollFeed(timestamp) {
+  if (timestamp >= pauseUntil && previousFrame && feedCopyHeight.value) {
+    const elapsedSeconds = Math.min((timestamp - previousFrame) / 1000, 0.1);
+    scrollOffset.value = (scrollOffset.value + Math.max(10, Math.min(80, feedCopyHeight.value / cycleSeconds.value)) * elapsedSeconds) % feedCopyHeight.value;
+  }
+  previousFrame = timestamp;
+  animationFrame = requestAnimationFrame(scrollFeed);
+}
+function syncAnimation() {
+  cancelAnimationFrame(animationFrame);
+  previousFrame = 0;
+  animationFrame = isScrollingEnabled.value && !document.hidden && posts.value.length ? requestAnimationFrame(scrollFeed) : 0;
+}
+function visibilityChanged() {
+  syncAnimation();
+  if (!document.hidden) loadWall();
+}
+watch([isScrollingEnabled, () => posts.value.length], () => { if (import.meta.client) syncAnimation(); });
 onMounted(() => {
-  qrUrl.value = `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(
-    uploadUrl.value
-  )}`;
-  document.addEventListener("fullscreenchange", syncFullscreenState);
+  if (window.matchMedia('(pointer: coarse), (max-width: 767px), (prefers-reduced-motion: reduce)').matches) isScrollingEnabled.value = false;
+  qrMedia = window.matchMedia('(min-width: 1024px)');
+  qrMedia.addEventListener('change', updateQr);
+  updateQr();
+  document.addEventListener('fullscreenchange', syncFullscreenState);
+  document.addEventListener('visibilitychange', visibilityChanged);
   loadWall();
-
-  const refreshInterval = setInterval(loadWall, 12000);
-  let animationFrame = 0;
-  let previousFrame = 0;
+  refreshInterval = setInterval(() => { if (!document.hidden) loadWall(); }, 12000);
   feedResizeObserver = new ResizeObserver(measureFeed);
   if (feedViewport.value) feedResizeObserver.observe(feedViewport.value);
   if (firstFeedCopy.value) feedResizeObserver.observe(firstFeedCopy.value);
   measureFeed();
-
-  const scrollFeed = (timestamp) => {
-    if (isScrollingEnabled.value && timestamp >= pauseUntil && previousFrame && feedCopyHeight.value) {
-      const elapsedSeconds = Math.min((timestamp - previousFrame) / 1000, 0.1);
-      scrollOffset.value =
-        (scrollOffset.value + Math.max(10, Math.min(80, feedCopyHeight.value / cycleSeconds.value)) * elapsedSeconds) % feedCopyHeight.value;
-    }
-    previousFrame = timestamp;
-    animationFrame = requestAnimationFrame(scrollFeed);
-  };
-  animationFrame = requestAnimationFrame(scrollFeed);
-
-  onBeforeUnmount(() => {
-    clearInterval(refreshInterval);
-    cancelAnimationFrame(animationFrame);
-    feedResizeObserver?.disconnect();
-    document.removeEventListener("fullscreenchange", syncFullscreenState);
-  });
+  syncAnimation();
+});
+onBeforeUnmount(() => {
+  clearInterval(refreshInterval);
+  qrMedia?.removeEventListener('change', updateQr);
+  cancelAnimationFrame(animationFrame);
+  feedResizeObserver?.disconnect();
+  document.removeEventListener('fullscreenchange', syncFullscreenState);
+  document.removeEventListener('visibilitychange', visibilityChanged);
 });
 
 watch(
@@ -257,7 +270,7 @@ useHead({
   meta: [
     {
       name: "viewport",
-      content: "width=device-width, initial-scale=1, viewport-fit=cover",
+      content: "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
     },
   ],
 });

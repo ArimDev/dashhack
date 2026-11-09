@@ -2,7 +2,7 @@
   <header
     class="min-h-20 rounded-b-2xl border border-cyan-300/40 bg-bluey-500/10 px-3 py-2.5 shadow-xl shadow-slate-900/5 backdrop-blur-xl sm:px-4 sm:py-3 dark:border-white/10 dark:bg-white/4 dark:shadow-black/20"
   >
-    <div class="flex flex-col gap-2.5 lg:flex-row lg:items-center lg:justify-between">
+    <div class="flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between">
       <div class="min-w-0">
         <div
           class="mb-1 flex items-center gap-2 text-[10px] font-bold uppercase tracking-[0.2em] text-cyan-700 dark:text-cyan-300"
@@ -20,12 +20,12 @@
                 : 'Event wall status'
           }}
         </div>
-        <h1 class="truncate text-2xl font-black tracking-tight text-slate-900 sm:text-3xl lg:text-[2rem] dark:text-white">
+        <h1 class="line-clamp-2 text-xl font-black tracking-tight text-slate-900 sm:text-2xl lg:text-[2rem] dark:text-white">
           {{ eventName }}
         </h1>
       </div>
 
-      <div class="flex flex-col items-end gap-2">
+      <div class="flex shrink-0 flex-col items-start gap-2 sm:items-end">
         <div class="flex flex-wrap items-center gap-2">
           <label
             class="relative inline-flex min-h-10 cursor-pointer items-center gap-2 rounded-xl border border-slate-300 bg-white px-3 text-xs font-semibold transition hover:border-cyan-300/50 hover:bg-cyan-300/10 has-focus-visible:outline-2 has-focus-visible:outline-offset-2 has-focus-visible:outline-cyan-300 dark:border-white/15 dark:bg-white/10"

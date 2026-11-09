@@ -6,7 +6,7 @@
         </div>
         <form v-if="canEdit" @submit.prevent="addMentor" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 space-y-3">
             <label for="mentor-name" class="block text-sm font-medium">Your name</label>
-            <div class="flex flex-wrap gap-3">
+            <div class="flex flex-col gap-3 sm:flex-row">
                 <input id="mentor-name" v-model="name" required maxlength="80" :disabled="saving" autocomplete="name"
                     class="min-w-0 flex-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-transparent px-3 py-2" placeholder="Enter your name">
                 <button :disabled="saving || !name.trim()" class="rounded-lg bg-bluey-500 hover:bg-bluey-600 px-4 py-2 text-white disabled:opacity-50">{{ saving ? 'Adding…' : 'Add myself' }}</button>

@@ -1,13 +1,11 @@
 <template>
     <ClientOnly>
-        <div v-if="!data.teams.length" class="text-center flex justify-center items-center min-h-[81vh]">
-            <h1 class="mt-[-10px] text-3xl text-gray-500 dark:text-gray-400">No teams found.<br>Get started by adding one!</h1>
+        <div v-if="!data.teams.length" class="text-center flex justify-center items-center min-h-[55dvh]">
+            <h1 class="mt-[-10px] text-xl sm:text-3xl text-gray-500 dark:text-gray-400">No teams found.<br>Get started by adding one!</h1>
         </div>
 
-        <div v-show="(openAddTeam || openConfirm)" class="fixed inset-0 flex justify-center items-center z-[150]">
-            <AddTeam v-show="openAddTeam" :team="selectedTeam || false" @close="close" />
-            <Confirm v-show="openConfirm" subject="Delete Team" message="Are you sure you want to delete team $var?" :team="selectedTeam" @close="close" />
-        </div>
+        <AddTeam v-if="openAddTeam" :team="selectedTeam || false" @close="close" />
+        <Confirm v-if="openConfirm" subject="Delete Team" message="Are you sure you want to delete team $var?" :team="selectedTeam" @close="close" />
 
         <div v-if="!!data.teams.length" class="flex flex-col gap-6 w-full pb-24 max-w-7xl mx-auto">
             <Icon style="display: none;" name="heroicons:magnifying-glass-plus-16-solid" />
@@ -26,7 +24,7 @@
             />
         </div>
 
-        <button data-testid="add-team-fab" @click="open(false)" class="fixed z-50 bottom-8 right-8 bg-bluey-500 hover:bg-bluey-600 text-white shadow-xl hover:shadow-2xl cursor-pointer rounded-full w-14 h-14 flex items-center justify-center transition-all duration-300 hover:scale-110">
+        <button v-if="canEdit" data-testid="add-team-fab" @click="open(false)" aria-label="Add team" class="add-team-fab fixed z-40 bg-bluey-500 hover:bg-bluey-600 text-white shadow-xl hover:shadow-2xl cursor-pointer rounded-full w-14 h-14 flex items-center justify-center transition-all duration-300 hover:scale-110">
             <Icon name="heroicons:plus" size="28px" />
         </button>
     </ClientOnly>
@@ -52,6 +50,7 @@ watchEffect(() => {
 
 
 const { showToast } = useToast();
+const canEdit = useState('eventCanEdit', () => false);
 
 const openAddTeam = ref(false),
     openConfirm = ref(false),

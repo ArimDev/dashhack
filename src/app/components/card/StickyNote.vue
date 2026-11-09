@@ -1,17 +1,17 @@
 <template>
     <div class="sticky-note p-4 rounded-xl shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col justify-between min-h-[160px]"
         :style="{ backgroundColor: note.color }">
-        <div class="flex flex-wrap items-center gap-2 mb-3">
+        <div class="grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2">
             <label class="text-xs font-semibold text-black/70">Type
                 <select v-model="editableType" :disabled="readOnly" aria-label="Note type" @change="updateNote"
-                    class="block mt-1 bg-black/10 text-black text-xs rounded px-2 py-1 max-w-full">
+                    class="block mt-1 bg-black/10 text-black text-xs rounded px-2 py-1 w-full min-w-0 max-w-full">
                     <option value="mentor_note">Mentor note</option>
                     <option value="help_request">Help request</option>
                 </select>
             </label>
             <label class="text-xs font-semibold text-black/70 min-w-0">Creator
                 <select v-model="editableCreator" :disabled="readOnly" aria-label="Note creator" @change="updateNote"
-                    class="block mt-1 bg-black/10 text-black text-xs rounded px-2 py-1 max-w-40">
+                    class="block mt-1 bg-black/10 text-black text-xs rounded px-2 py-1 w-full min-w-0 max-w-full">
                     <option value="">No creator selected</option>
                     <option v-for="mentor in mentors" :key="mentor.id" :value="mentor.id">{{ mentor.name }}</option>
                 </select>
@@ -24,7 +24,7 @@
         </label>
         <textarea data-testid="note-content" ref="textarea" v-model="editableContent"
             :readonly="readOnly" aria-label="Note content" @input="autoResize" @blur="updateNote"
-            class="bg-transparent border-none focus:ring-0 focus:outline-none resize-none w-full flex-grow text-sm font-medium text-black placeholder-black/50 overflow-hidden"
+            class="bg-transparent border-none focus:ring-0 focus:outline-none resize-none w-full flex-grow text-sm font-medium text-black placeholder-black/50 min-h-24 max-h-72 overflow-y-auto"
             placeholder="Write your note here..."></textarea>
 
         <div class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-black/10 text-black">
@@ -39,10 +39,10 @@
                 <option v-if="!NOTE_STATUSES.includes(editableStatus)" :value="editableStatus" disabled>{{ editableStatus }}</option>
                 <option v-for="status in NOTE_STATUSES" :key="status" :value="status">{{ status }}</option>
             </select>
-            <div v-if="!readOnly" class="relative w-6 h-6 rounded-full overflow-hidden border border-black/20 cursor-pointer">
+            <div v-if="!readOnly" class="relative w-11 h-11 rounded-full overflow-hidden border border-black/20 cursor-pointer">
                 <input type="color" v-model="editableColor" @input="updateNoteColor"
                     aria-label="Note color" title="Change note color"
-                    class="absolute -top-2 -left-2 w-10 h-10 p-0 border-0 cursor-pointer">
+                    class="absolute inset-0 w-full h-full p-0 border-0 cursor-pointer">
             </div>
             <button v-if="!readOnly" data-testid="delete-note-btn" @click="$emit('delete', note.id)"
                 class="text-black/40 hover:text-red-600 transition-colors p-1 ml-auto" title="Delete note" aria-label="Delete note">

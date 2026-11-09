@@ -4,7 +4,7 @@
   >
     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between p-2">
       <div class="relative min-w-0 flex-1 overflow-hidden rounded-2xl">
-        <div class="mb-2 flex items-center gap-2">
+        <div class="mb-2 flex flex-wrap items-center gap-2">
           <Badge variant="slate" size="xs" upper>
             <Icon
               :name="wallPlatformMeta[post.platform]?.icon || 'heroicons:photo'"
@@ -14,7 +14,7 @@
           <span class="text-sm font-semibold text-slate-800 dark:text-slate-100">
             {{ post.authorName || "Anonymous" }}
           </span>
-          <span v-if="post.handle" class="text-xs text-slate-500">{{ post.handle || wallPlatformMeta[post.platform]?.label || "Community post" }}</span>
+          <span v-if="post.handle" class="min-w-0 break-all text-xs text-slate-500">{{ post.handle || wallPlatformMeta[post.platform]?.label || "Community post" }}</span>
           <Badge v-if="post.pinned" variant="cyan" upper>
             <Icon name="heroicons:map-pin" size="12px" />
             Pinned

@@ -1,41 +1,41 @@
 <template>
     <ClientOnly>
         <div :data-testid="`team-card-${team.name}`" class="rounded-xl overflow-hidden shadow-sm hover:shadow-md transition-all duration-300 bg-white dark:bg-gray-800 border-l-[6px]" :style="{ borderLeftColor: team.color }">
-            
-            <div class="px-4 py-3 flex items-center justify-between bg-white dark:bg-gray-800">
-                <div class="flex flex-col min-w-0 mr-4">
-                    <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100 truncate leading-tight">{{ team.name }}</h1>
-                    <p v-if="!showGraph && !showNotes" class="text-xs text-gray-500 dark:text-gray-400 truncate mt-0.5">{{ team.description || 'No description provided.' }}</p>
+
+            <div class="px-4 py-3 flex flex-col gap-3 sm:flex-row sm:items-center sm:justify-between bg-white dark:bg-gray-800">
+                <div class="flex flex-col min-w-0 sm:mr-4 sm:flex-1">
+                    <h1 class="text-lg font-bold text-gray-900 dark:text-gray-100 break-words leading-snug">{{ team.name }}</h1>
+                    <p v-if="!showGraph && !showNotes" class="text-xs text-gray-500 dark:text-gray-500 line-clamp-2 mt-0.5">{{ team.description || 'No description provided.' }}</p>
                 </div>
 
-                <div class="flex items-center gap-1 flex-shrink-0">
-                    <button 
+                <div class="flex flex-wrap items-center justify-end gap-1 shrink-0">
+                    <button
                         data-testid="toggle-graph-btn"
-                        @click="toggleGraph" 
-                        class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400"
+                        @click="toggleGraph"
+                        class="icon-button p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-500"
                         :class="{ 'text-bluey-500 bg-bluey-50 dark:bg-bluey-900/30': showGraph }"
-                        title="Activity"
+                        title="Activity" aria-label="Activity" :aria-expanded="showGraph"
                     >
                         <Icon name="heroicons:presentation-chart-line" size="18px" />
                     </button>
 
-                    <button 
+                    <button
                         data-testid="toggle-notes-btn"
-                        @click="toggleNotes" 
-                        class="p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-400"
+                        @click="toggleNotes"
+                        class="icon-button p-1.5 rounded-md hover:bg-gray-100 dark:hover:bg-gray-700 transition-colors text-gray-500"
                         :class="{ 'text-bluey-500 bg-bluey-50 dark:bg-bluey-900/30': showNotes }"
-                        title="Notes"
+                        title="Notes" aria-label="Notes" :aria-expanded="showNotes"
                     >
                         <Icon name="heroicons:document-text" size="18px" />
                     </button>
 
                     <div class="w-px h-4 bg-gray-200 dark:bg-gray-700 mx-1"></div>
 
-                    <button @click="emit('edit', team)" class="p-1.5 text-gray-400 hover:text-bluey-500 transition-colors">
+                    <button v-if="canEdit" aria-label="Edit team" @click="emit('edit', team)" class="icon-button p-1.5 text-gray-500 hover:text-bluey-500 transition-colors">
                         <Icon name="heroicons:pencil-square" size="16px" />
                     </button>
 
-                    <button @click="emit('delete', team)" class="p-1.5 text-gray-400 hover:text-red-500 transition-colors">
+                    <button v-if="canEdit" aria-label="Delete team" @click="emit('delete', team)" class="icon-button p-1.5 text-gray-500 hover:text-red-500 transition-colors">
                         <Icon name="heroicons:trash" size="16px" />
                     </button>
                 </div>
@@ -43,15 +43,15 @@
 
             <div class="border-t border-gray-100 dark:border-gray-700 px-4 py-3 space-y-3 text-gray-800 dark:text-gray-200">
                 <div>
-                    <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Originalita</h2>
+                    <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-500 mb-1">Originalita</h2>
                     <p data-testid="team-originality" class="text-sm whitespace-pre-wrap break-words">{{ team.originality || 'Not provided.' }}</p>
                 </div>
                 <details v-if="team.projectAbstract?.length" open>
-                    <summary class="text-xs font-semibold text-gray-500 dark:text-gray-400 cursor-pointer mb-2">Project Abstract</summary>
+                    <summary class="text-xs font-semibold text-gray-500 dark:text-gray-500 cursor-pointer mb-2">Project Abstract</summary>
                     <ProjectAbstract :model-value="team.projectAbstract" read-only data-testid="team-abstract" />
                 </details>
                 <div v-else>
-                    <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-400 mb-1">Project Abstract</h2>
+                    <h2 class="text-xs font-semibold text-gray-500 dark:text-gray-500 mb-1">Project Abstract</h2>
                     <p class="text-sm">Not provided.</p>
                 </div>
             </div>
@@ -63,7 +63,7 @@
 
             <div v-if="showGraph" class="border-t border-gray-100 dark:border-gray-700/50 p-2 bg-gray-50 dark:bg-gray-900/30">
                  <div class="h-48 w-full flex items-center justify-center">
-                    <div v-if="chartLoading" class="text-center text-gray-400 text-xs italic flex flex-col items-center gap-2">
+                    <div v-if="chartLoading" class="text-center text-gray-500 text-xs italic flex flex-col items-center gap-2">
                         <Icon name="heroicons:arrow-path" class="animate-spin" size="16px"/>
                         <span>Loading Data...</span>
                     </div>
@@ -84,30 +84,30 @@
                             </apexchart>
                         </div>
                     </ClientOnly>
-                    <div v-else class="text-center text-gray-400 text-xs italic">
+                    <div v-else class="text-center text-gray-500 text-xs italic">
                         <p>{{ chartReason || 'No data available' }}</p>
                     </div>
                 </div>
             </div>
 
             <div v-if="showNotes" class="border-t border-gray-100 dark:border-gray-700/50 p-4 bg-gray-50 dark:bg-gray-900/50">
-                <div class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-3 grid-flow-dense">
+                <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 gap-3 grid-flow-dense">
                     <StickyNote
                         v-for="note in team.stickyNotes || []"
                         :key="note.id"
                         :note="note"
                         :mentors="eventData.mentors || []"
                         :read-only="!canEdit"
-                        :class="{ 'md:col-span-2': note.content && note.content.length > 100, 'row-span-2': note.content && note.content.length > 200 }" 
+                        :class="{ 'md:col-span-2': note.content && note.content.length > 100, 'md:row-span-2': note.content && note.content.length > 200 }"
                         @update="note => $emit('update-note', { teamName: team.name, note })"
                         @delete="noteId => $emit('delete-note', { teamName: team.name, noteId })"
                     />
-                    
-                    <button 
+
+                    <button
                         data-testid="add-note-btn"
                         v-if="canEdit"
                         @click="emit('add-note', { teamName: team.name, type: 'mentor_note' })"
-                        class="h-full min-h-[140px] rounded-lg border border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-400 hover:text-bluey-500 dark:hover:text-bluey-400 hover:border-bluey-400 dark:hover:border-bluey-500 hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 group"
+                        class="h-full min-h-[88px] sm:min-h-[140px] rounded-lg border border-dashed border-gray-300 dark:border-gray-600 flex flex-col items-center justify-center text-gray-500 hover:text-bluey-500 dark:hover:text-bluey-400 hover:border-bluey-400 dark:hover:border-bluey-500 hover:bg-white dark:hover:bg-gray-800 transition-all duration-200 group"
                         title="Add new note"
                     >
                         <Icon name="heroicons:plus" size="24px" class="group-hover:scale-110 transition-transform mb-1" />
@@ -115,7 +115,7 @@
                     </button>
                     <button v-if="canEdit" data-testid="add-help-btn"
                         @click="emit('add-note', { teamName: team.name, type: 'help_request' })"
-                        class="min-h-[140px] rounded-lg border border-dashed border-amber-400 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 flex flex-col items-center justify-center gap-2 hover:border-amber-600">
+                        class="min-h-[88px] sm:min-h-[140px] rounded-lg border border-dashed border-amber-400 bg-amber-50 dark:bg-amber-950/20 text-amber-800 dark:text-amber-300 flex flex-col items-center justify-center gap-2 hover:border-amber-600">
                         <Icon name="heroicons:hand-raised" size="24px" />
                         <span class="text-xs font-medium">New Help Request</span>
                     </button>
@@ -165,9 +165,9 @@ async function loadChartData() {
         chartReason.value = "No GitHub URL";
         return;
     }
-    
+
     chartLoading.value = true;
-    
+
     try {
         const res = await getSeries(props.team.github);
         if (res.status !== 200) {
@@ -192,7 +192,7 @@ async function loadChartData() {
                 },
                 stroke: { curve: 'smooth', width: 2 },
                 dataLabels: { enabled: false },
-                xaxis: { 
+                xaxis: {
                     categories: hours,
                     labels: { show: false },
                     axisBorder: { show: false },

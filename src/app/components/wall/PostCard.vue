@@ -36,8 +36,10 @@
 
     <div class="p-4">
       <p v-if="post.text" class="whitespace-pre-wrap wrap-break-word text-sm leading-6">
-        {{ truncatedText }}
+        {{ expanded ? post.text : truncatedText }}
       </p>
+      <button v-if="post.text?.length > textPreviewLength" type="button" :aria-expanded="expanded" @click="expanded = !expanded"
+        class="mt-1 inline-flex min-h-11 items-center text-xs font-semibold underline">{{ expanded ? 'Show less' : 'Read full post' }}</button>
       <div
         v-if="post.imageUrl"
         class="mt-3 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800"
@@ -87,6 +89,7 @@ const props = defineProps({
   },
 });
 
+const expanded = ref(false);
 const truncatedText = computed(() => {
   const text = props.post?.text || "";
   if (text.length <= props.textPreviewLength) return text;

@@ -1,53 +1,32 @@
 <template>
-    <form @submit.prevent class="rounded-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white h-50 max-h-50 p-5 flex flex-col justify-between transition-colors duration-500">
-        <div class="flex flex-row items-center gap-3 mb-4">
-            <h1 class="text-3xl font-bold">Event Password</h1>
-        </div>
-        <div class="relative">
-            <p class="mb-1">Change login access password:</p>
-            <div class="flex flex-row gap-5">
-                <div class="w-full">
-                    <input v-model="oldPassword" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300 transition-colors duration-500" type="password" autocomplete="current-password" placeholder="Current Password">
-                </div>
-                <div class="w-full">
-                    <input v-model="newPassword" @change="autosave" @input="error = false, success = false" required class="mb-4 p-3 border-2 h-[50px] rounded-xl text-sm font-semibold w-full trans-all-linear border-black dark:border-white dark:placeholder-slate-300 transition-colors duration-500" type="password" autocomplete="new-password" placeholder="New Password">
-                </div>
-            </div>
-        </div>
+    <form @submit.prevent="save" class="min-w-0 space-y-4 rounded-3xl bg-white p-5 text-black shadow-md dark:bg-gray-800 dark:text-white">
+        <h1 class="text-xl font-bold sm:text-2xl">Event Password</h1>
+        <p class="text-sm text-gray-600 dark:text-gray-300">Change the shared event login password.</p>
+        <label class="block text-sm font-medium">Current password
+            <input v-model="oldPassword" required :disabled="saving" class="mt-2 w-full rounded-xl border border-gray-300 bg-transparent p-3 dark:border-gray-600" type="password" autocomplete="current-password" placeholder="Current Password">
+        </label>
+        <label class="block text-sm font-medium">New password
+            <input v-model="newPassword" required :disabled="saving" class="mt-2 w-full rounded-xl border border-gray-300 bg-transparent p-3 dark:border-gray-600" type="password" autocomplete="new-password" placeholder="New Password">
+        </label>
+        <button type="submit" :disabled="saving || !oldPassword || !newPassword" class="min-h-12 w-full rounded-xl bg-bluey-500 px-4 py-3 text-sm font-semibold text-white hover:bg-bluey-600 disabled:opacity-50">{{ saving ? 'Saving…' : 'Save password' }}</button>
+        <p v-if="error" role="alert" class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+        <p v-if="success" role="status" class="text-sm text-green-700 dark:text-green-400">Password updated.</p>
     </form>
 </template>
-
 <script setup>
-const { showToast } = useToast();
 const route = useRoute();
-const eventName = ref(route.params.event);
-const error = ref(false);
-const success = ref(false);
-
-const oldPassword = ref(undefined),
-    newPassword = ref(undefined);
-
-async function autosave() {
-    if (!oldPassword.value) return console.log("Old password not filled");
-
-    const passCheck = await $fetch(`/api/auth/password`, {
-        method: "POST",
-        body: { username: eventName.value, password: oldPassword.value }
-    });
-
-    if (!passCheck || passCheck.status !== 200) {
-        if (passCheck) console.warn("Error while updating password:", passCheck);
-        return showToast("Failed to update password!", passCheck?.message);
-    }
-
-    let data = await $fetch(`/api/auth/update`, {
-        method: "POST",
-        body: { username: route.params.event, setting: "password", value: newPassword.value, oldPassword: oldPassword.value },
-    });
-
-    if (data && data?.status !== 200) {
-        console.warn("Error while updating password:", data);
-        showToast("Failed to update password!", data.message);
-    }
+const oldPassword = ref(''), newPassword = ref(''), saving = ref(false), success = ref(false), error = ref('');
+async function save() {
+    if (saving.value) return;
+    saving.value = true; error.value = ''; success.value = false;
+    try {
+        const response = await $fetch('/api/auth/update', { method: 'POST', body: {
+            username: route.params.event, setting: 'password', value: newPassword.value, oldPassword: oldPassword.value,
+        } });
+        if (response.status !== 200) throw new Error(response.message || 'Could not update password.');
+        oldPassword.value = ''; newPassword.value = ''; success.value = true;
+        refreshCookie('sessionExists');
+    } catch (failure) { error.value = failure.message || 'Could not update password.'; }
+    finally { saving.value = false; }
 }
 </script>

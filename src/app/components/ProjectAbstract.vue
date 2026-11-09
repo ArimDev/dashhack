@@ -3,7 +3,7 @@
         <div v-for="(block, index) in modelValue" :key="index" class="min-h-5 whitespace-pre-wrap mb-1"
             :class="{ 'flex gap-2': block.type === 'bullet' }">
             <span v-if="block.type === 'bullet'" aria-hidden="true">•</span>
-            <span><span v-for="(run, runIndex) in block.runs" :key="runIndex"
+            <span class="min-w-0"><span v-for="(run, runIndex) in block.runs" :key="runIndex"
                 :class="{ 'font-bold': run.bold, italic: run.italic }">{{ run.text }}</span></span>
         </div>
     </div>
@@ -11,7 +11,7 @@
         <div role="toolbar" :aria-label="`${label} formatting`" class="flex flex-wrap gap-1 border-b border-gray-200 dark:border-gray-600 p-2 bg-gray-50 dark:bg-gray-900/30">
             <button v-for="tool in tools" :key="tool.command" type="button" @mousedown.prevent @click="format(tool.command)"
                 :aria-label="`${label}: ${tool.label}`" :title="tool.label"
-                class="px-3 py-1 text-sm rounded hover:bg-gray-200 dark:hover:bg-gray-600" :class="tool.class">{{ tool.label }}</button>
+                class="min-h-11 px-3 py-1 text-sm rounded hover:bg-gray-200 dark:hover:bg-gray-600" :class="tool.class">{{ tool.label }}</button>
         </div>
         <div ref="editor" contenteditable="true" role="textbox" :aria-label="label" aria-multiline="true"
             @input="publish" @blur="publish" @paste.prevent="pasteText" @drop.prevent
