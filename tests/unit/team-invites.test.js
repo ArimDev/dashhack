@@ -13,38 +13,84 @@ async function fixture(){
  const app=new GitHubAppService(config),invites=new TeamInvites(store,app,key);
  return {store,app,invites,session,eventId,teamId,setNow:value=>{now=value}};
 }
-describe('Reusable team invitation links',()=>{
- test('event owners issue a repository-bound expiring link, absent from public event data',async()=>{
+describe('Private reusable GitHub-verified team invitations',()=>{
+ const browser='A'.repeat(43),ctx={ip:'127.0.0.1',userAgent:'Test browser',requestId:'request-1'};
+ const first=c=>{const issued=c.invites.issue(c.session,'Event');return {...issued.links[0],token:new URL(issued.links[0].url).hash.slice(1)};};
+ function userProvider(c){
+  const calls=[];c.app.exchange=async(code,verifier)=>{calls.push(['exchange',code,verifier]);return 'temporary-user-token';};
+  c.app.api=async(path,token)=>{expect(path).toBe('/user');expect(token).toBe('temporary-user-token');return {id:12345,login:'RealStudent',type:'User'};};
+  c.app.revokeUserToken=async token=>{calls.push(['revoke',token]);};
+  c.app.inviteCollaborator=async(id,repository,username)=>{calls.push(['invite',id,repository,username]);return {username,alreadyHasAccess:false,repositoryUrl:'https://github.com/'+repository};};
+  return calls;
+ }
+ test('only event owners issue opaque, short-lived links; no raw secrets in DB/public data',async()=>{
   const c=await fixture();expect(()=>c.invites.issue(null,'Event')).toThrow('expired');
   const other=await c.store.createEvent('Other','password123');expect(()=>c.invites.issue(c.store.createSession(other),'Event')).toThrow('permission');
-  const issued=c.invites.issue(c.session,'Event'),url=new URL(issued.links[0].url),token=url.hash.slice(1);
-  expect(url.pathname).toBe('/join');expect(url.search).toBe('');
-  expect(c.invites.resolve(token)).toMatchObject({teamId:c.teamId,name:'505',repository:'school/505',installationId:123});
-  expect(JSON.stringify(publicEvent(c.store.getEvent('Event')))).not.toContain(token);
-  expect(()=>c.invites.resolve(token.slice(0,-1)+(token.endsWith('a')?'b':'a'))).toThrow('invalid');
-  const parts=token.split('.');parts[0]=Buffer.from(JSON.stringify({teamId:c.teamId,repository:'school/other',expiresAt:issued.expiresAt})).toString('base64url');expect(()=>c.invites.resolve(parts.join('.'))).toThrow('invalid');
-  expect(()=>new TeamInvites(c.store,c.app,'another-secret-key-1234567890123456').resolve(token)).toThrow('invalid');
-  c.setNow(issued.expiresAt);expect(()=>c.invites.resolve(token)).toThrow('expired');
+  const l=first(c);expect(l.token).toMatch(/^[a-f0-9-]{36}\.[a-f0-9]{64}$/);expect(l.expiresAt-c.store.now()).toBe(7*86400000);
+  expect(c.invites.resolve(l.token)).toMatchObject({teamId:c.teamId,repository:'school/505'});
+  expect(JSON.stringify(c.store.db.query('SELECT * FROM team_invite_links').all())).not.toContain(l.token);
+  expect(JSON.stringify(publicEvent(c.store.getEvent('Event')))).not.toContain(l.token);
+  expect(()=>c.invites.resolve(l.token+'x')).toThrow('invalid');
+  expect(()=>new TeamInvites(c.store,c.app,'different-key-123456789012345678901234').resolve(l.token)).toThrow('invalid');
+  expect(()=>c.invites.resolve('old.payload.signature')).toThrow('invalid');
+  c.setNow(l.expiresAt);expect(()=>c.invites.resolve(l.token)).toThrow('expired');
  });
- test('repository changes, disconnection and deletion invalidate existing links',async()=>{
-  const c=await fixture(),token=new URL(c.invites.issue(c.session,'Event').links[0].url).hash.slice(1);
-  c.store.db.query('UPDATE teams SET github=? WHERE id=?').run('https://github.com/school/other',c.teamId);expect(()=>c.invites.resolve(token)).toThrow('changed');
-  c.store.db.query('UPDATE teams SET github=? WHERE id=?').run('https://github.com/school/505',c.teamId);
-  c.store.disconnectGitHub(c.session,'Event');expect(()=>c.invites.resolve(token)).toThrow('changed');
-  c.store.deleteTeam(c.session,'Event',{teamId:c.teamId});expect(()=>c.invites.resolve(token)).toThrow('no longer');
+ test('OAuth is browser-bound, expires, cannot be replayed and only invites GitHub verified identity',async()=>{
+  const c=await fixture(),l=first(c),calls=userProvider(c),flow=c.invites.begin(l.token,browser,ctx);
+  await expect(c.invites.verify(flow.id,'B'.repeat(43),'code',ctx)).rejects.toThrow('expired');
+  await expect(c.invites.claim(flow.id,browser,ctx)).rejects.toThrow('Sign in');
+  const verified=await c.invites.verify(flow.id,browser,'code',ctx);expect(verified.username).toBe('RealStudent');
+  expect(calls[0]).toEqual(['exchange','code',flow.verifier]);expect(calls[1]).toEqual(['revoke','temporary-user-token']);
+  await expect(c.invites.verify(flow.id,browser,'code',ctx)).rejects.toThrow('already used');
+  const result=await c.invites.claim(flow.id,browser,ctx);expect(result.username).toBe('RealStudent');
+  expect(calls.filter(x=>x[0]==='invite')).toEqual([['invite',123,'school/505','RealStudent']]);
+  expect(await c.invites.claim(flow.id,browser,ctx)).toEqual(result);expect(calls.filter(x=>x[0]==='invite')).toHaveLength(1);
+  expect(c.invites.resolve(l.token).teamId).toBe(c.teamId);
+  const log=c.invites.manage(c.session,'Event',{action:'list'}).audit;
+  expect(log.some(e=>e.action==='claim' && e.outcome==='invitation_sent' && e.verified===1 && e.username==='RealStudent' && e.githubUserId==='12345' && e.ip===ctx.ip)).toBe(true);
+  expect(JSON.stringify(log)).not.toContain('temporary-user-token');expect(JSON.stringify(log)).not.toContain(l.token);
  });
- test('unconnected or foreign repositories cannot generate access links',async()=>{
-  const c=await fixture();c.store.db.query('UPDATE teams SET github=? WHERE id=?').run('https://github.com/another-org/repo',c.teamId);
-  expect(c.invites.issue(c.session,'Event').links[0].error).toContain('outside');
-  c.store.disconnectGitHub(c.session,'Event');expect(()=>c.invites.issue(c.session,'Event')).toThrow('Connect');
-  expect(()=>new TeamInvites(c.store,c.app,'').resolve('bad')).toThrow('not enabled');
+ test('one stable link serves multiple verified teammates and repeat issuance preserves it',async()=>{
+  const c=await fixture(),l=first(c),calls=userProvider(c);
+  expect(first(c).url).toBe(l.url);
+  const a=c.invites.begin(l.token,browser);await c.invites.verify(a.id,browser,'a');await c.invites.claim(a.id,browser);
+  c.app.api=async()=>({id:6789,login:'Teammate',type:'User'});
+  const b=c.invites.begin(l.token,browser);await c.invites.verify(b.id,browser,'b');await c.invites.claim(b.id,browser);
+  expect(calls.filter(x=>x[0]==='invite').map(x=>x[3])).toEqual(['RealStudent','Teammate']);
+  expect(first(c).url).toBe(l.url);
  });
- test('admission bounds duplicate/in-flight requests and per-user attempts, then recovers',()=>{
-  let now=0;const gate=new TeamInviteGate({now:()=>now});
-  const release=gate.enter('team','Student','school-network');expect(()=>gate.enter('team','student','school-network')).toThrow('processed');release();gate.enter('team','student','school-network')();
-  expect(()=>gate.enter('team','student','school-network')).toThrow('Too many');
-  const held=['a','b','c','d'].map(name=>gate.enter('team',name,'school-network'));expect(()=>gate.enter('team','e','school-network')).toThrow('processed');held.forEach(release=>release());
-  now=600001;gate.enter('team','student','school-network')();expect(gate.running.size).toBe(0);
+ test('revocation blocks existing OAuth flows, new claims and only the selected event',async()=>{
+  const c=await fixture(),l=first(c);userProvider(c);const flow=c.invites.begin(l.token,browser,ctx);await c.invites.verify(flow.id,browser,'code',ctx);
+  c.invites.manage(c.session,'Event',{action:'revoke',linkId:l.linkId});await expect(c.invites.claim(flow.id,browser,ctx)).rejects.toThrow('invalid');
+  const l2=first(c);c.invites.manage(c.session,'Event',{action:'revokeAll'});expect(()=>c.invites.resolve(l2.token)).toThrow('invalid');
+  expect(()=>c.invites.manage(null,'Event',{action:'list'})).toThrow('expired');
+ });
+ test('concurrent requests for one verified account grant once; provider failure leaves an audit',async()=>{
+  const c=await fixture(),l=first(c);userProvider(c);const a=c.invites.begin(l.token,browser),b=c.invites.begin(l.token,browser);
+  await c.invites.verify(a.id,browser,'a');await c.invites.verify(b.id,browser,'b');
+  let release;const wait=new Promise(r=>{release=r;});let grants=0;c.app.inviteCollaborator=async()=>{grants++;await wait;throw new Error('timeout');};
+  const claim=c.invites.claim(a.id,browser);await expect(c.invites.claim(b.id,browser)).rejects.toThrow('already being processed');release();await expect(claim).rejects.toThrow('timeout');
+  expect(grants).toBe(1);expect(c.invites.resolve(l.token).teamId).toBe(c.teamId);
+  expect(c.invites.manage(c.session,'Event',{action:'list'}).audit.some(e=>e.outcome==='provider_error')).toBe(true);
+ });
+ test('OAuth expiry, repository changes and team deletion block grants',async()=>{
+  const c=await fixture(),l=first(c),flow=c.invites.begin(l.token,browser);userProvider(c);
+  c.setNow(c.store.now()+600001);await expect(c.invites.verify(flow.id,browser,'code')).rejects.toThrow('expired');
+  c.store.db.query('UPDATE teams SET github=? WHERE id=?').run('https://github.com/school/other',c.teamId);expect(()=>c.invites.resolve(l.token)).toThrow('changed');
+  c.store.deleteTeam(c.session,'Event',{teamId:c.teamId});expect(()=>c.invites.resolve(l.token)).toThrow('invalid');
+ });
+ test('foreign repositories and rate bursts are rejected',async()=>{
+  const c=await fixture();
+  c.store.db.query('UPDATE teams SET github=? WHERE id=?').run('https://github.com/another/repo',c.teamId);expect(c.invites.issue(c.session,'Event').links[0].error).toContain('outside');
+  expect(()=>new TeamInvites(c.store,c.app,'').resolve('bad')).toThrow('disabled');
+  let now=0;const gate=new TeamInviteGate({now:()=>now});const held=['a','b','c','d'].map(x=>gate.enter('team',x,'network'));
+  expect(()=>gate.enter('team','e','network')).toThrow('processed');held.forEach(r=>r());
+  for(let i=0;i<300;i++)gate.enter('same','user','shared-school-ip')();expect(()=>gate.enter('same','user','shared-school-ip')).toThrow('Too many');
+  now=600001;gate.enter('same','user','shared-school-ip')();
+ });
+ test('schema 7 upgrades preserve existing event and wall data',async()=>{
+  const c=await fixture();expect(c.store.db.query('PRAGMA user_version').get().user_version).toBe(8);
+  expect(c.store.getEvent('Event').teams[0]._id).toBe(c.teamId);
  });
 });
 const response=(value,status=200)=>new Response(status===204?null:JSON.stringify(value),{status});
@@ -75,6 +121,14 @@ describe('GitHub collaborator grants',()=>{
   for(const bad of ['https://example.com/invitations','https://github.com/other/repo/invitations','https://api.github.com/user/repository_invitations/100','not a URL']) {
    expect((await service({invitationUrl:bad}).app.inviteCollaborator(123,'school/505','student')).invitationUrl).toBe('https://github.com/school/505/invitations');
   }
+ });
+ test('a renamed or substituted username cannot invite a different account ID',async()=>{
+  const {app,calls}=service();await expect(app.inviteCollaborator(123,'school/505','student','different-id')).rejects.toThrow('account changed');expect(calls.some(c=>c.method==='PUT')).toBe(false);
+ });
+ test('temporary user OAuth tokens are revoked with app credentials without revoking authorization',async()=>{
+  let call;const app=new GitHubAppService(config,{request:async(url,options)=>{call={url,options};return response(null,204);}});
+  await app.revokeUserToken('temporary-token');expect(new URL(call.url).pathname).toBe('/applications/client/token');expect(call.options.method).toBe('DELETE');expect(JSON.parse(call.options.body)).toEqual({access_token:'temporary-token'});
+  expect(call.options.headers.Authorization).toBe('Basic '+Buffer.from('client:secret').toString('base64'));
  });
  test('upgrading an existing reader requires no invitation acceptance',async()=>{
   const {app}=service({permission:'read',updatedExisting:true});expect((await app.inviteCollaborator(123,'school/505','student')).alreadyHasAccess).toBe(true);

@@ -99,7 +99,7 @@ export class SqliteStore {
             PRAGMA mmap_size = 0;
         `);
         const version = this.db.query('PRAGMA user_version').get().user_version;
-        if (version > 7) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
+        if (version > 8) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
         if (version === 0) this.db.transaction(() => {
             this.db.exec(`
                 CREATE TABLE events (
@@ -195,6 +195,37 @@ export class SqliteStore {
             );
             PRAGMA user_version = 7;`);
         })();
+        if (version < 8) this.db.transaction(() => {
+            this.db.exec(`CREATE TABLE team_invite_links (
+                id TEXT PRIMARY KEY, event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+                team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+                repository TEXT NOT NULL, installation_id INTEGER NOT NULL,
+                token_hash TEXT NOT NULL,
+                created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL,
+                state TEXT NOT NULL DEFAULT 'active' CHECK(state IN ('active','revoked'))
+            );
+            CREATE INDEX team_invite_event ON team_invite_links(event_id,created_at);
+            CREATE UNIQUE INDEX team_invite_active ON team_invite_links(team_id) WHERE state='active';
+            CREATE TABLE team_invite_flows (
+                id TEXT PRIMARY KEY, link_id TEXT NOT NULL REFERENCES team_invite_links(id) ON DELETE CASCADE,
+                browser_hash TEXT NOT NULL, verifier TEXT NOT NULL,
+                expires_at INTEGER NOT NULL, state TEXT NOT NULL DEFAULT 'started',
+                github_user_id TEXT NOT NULL DEFAULT '', username TEXT NOT NULL DEFAULT '',
+                result TEXT
+            );
+            CREATE INDEX team_invite_flows_expiry ON team_invite_flows(expires_at);
+            CREATE TABLE team_invite_audit (
+                id TEXT PRIMARY KEY, event_id TEXT REFERENCES events(id) ON DELETE CASCADE,
+                team_id TEXT NOT NULL DEFAULT '', link_id TEXT NOT NULL DEFAULT '',
+                created_at INTEGER NOT NULL, action TEXT NOT NULL, outcome TEXT NOT NULL,
+                username TEXT NOT NULL DEFAULT '', verified INTEGER NOT NULL DEFAULT 0,
+                github_user_id TEXT NOT NULL DEFAULT '', actor TEXT NOT NULL DEFAULT '',
+                ip TEXT NOT NULL DEFAULT '', user_agent TEXT NOT NULL DEFAULT '', request_id TEXT NOT NULL
+            );
+            CREATE INDEX team_invite_audit_event ON team_invite_audit(event_id,created_at);
+            PRAGMA user_version = 8;`);
+        })();
+
     }
 
     close() { this.db.close(); }

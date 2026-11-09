@@ -61,6 +61,14 @@ export class GitHubAppService {
         if (!response.ok || !data.access_token || data.error) throw new StorageError(400, 'GitHub authorization expired. Connect again.');
         return data.access_token;
     }
+    async revokeUserToken(token) {
+        const response=await this.request(`https://api.github.com/applications/${encodeURIComponent(this.config.githubAppClientId)}/token`, {
+            method:'DELETE',redirect:'error',signal:AbortSignal.timeout(15000),
+            headers:{Authorization:'Basic '+Buffer.from(this.config.githubAppClientId+':'+this.config.githubAppClientSecret).toString('base64'),Accept:'application/vnd.github+json','Content-Type':'application/json','X-GitHub-Api-Version':'2026-03-10'},
+            body:JSON.stringify({access_token:token})
+        });
+        if(!response.ok) throw new StorageError(502,'Could not revoke temporary GitHub sign-in token.');
+    }
     async eligibleInstallations(userToken) {
         const user = await this.api('/user', userToken);
         const choices = [];
@@ -98,7 +106,7 @@ export class GitHubAppService {
         this.tokens.set(id, entry);
         return entry.promise;
     }
-    async inviteCollaborator(id, repository, username) {
+    async inviteCollaborator(id, repository, username, expectedUserId) {
         this.requireConfig();
         if (typeof username !== 'string' || !/^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(username)) throw new StorageError(400, 'Enter your GitHub username, without @ or a URL.');
         repository = parseGitHubRepository('https://github.com/' + repository);
@@ -107,6 +115,7 @@ export class GitHubAppService {
         let user;
         try { user = await this.api(`/users/${encodeURIComponent(username)}`, readToken); }
         catch (error) { if (error.status === 404) throw new StorageError(400, 'GitHub username not found. Check the spelling.'); throw error; }
+        if (expectedUserId !== undefined && String(user.id) !== String(expectedUserId)) throw new StorageError(409, 'Your GitHub account changed. Sign in again before requesting access.');
         if (user.type !== 'User' || !/^[a-z\d-]{1,39}$/i.test(user.login)) throw new StorageError(400, 'Use a personal GitHub account.');
         let invitationUrl = `https://github.com/${repository}/invitations`;
         try {

@@ -1,30 +1,30 @@
-import { isIP } from 'node:net';
+import { randomBytes } from 'node:crypto';
 import { StorageError } from '../../storage/sqlite.js';
 import { TeamInvites, TeamInviteGate } from '../../services/team-invites.js';
-import { readWallNodeBody, stopWallBody } from '../../services/wall-body.js';
-const gate = new TeamInviteGate();
-export default apiHandler(async event => {
-    setHeader(event, 'Cache-Control', 'no-store');
-    setHeader(event, 'Referrer-Policy', 'no-referrer');
-    const config = useRuntimeConfig(), origin = getHeader(event, 'origin');
-    if (!config.githubAppBaseUrl) throw new StorageError(503, 'Team invitation links are not enabled.');
-    if (origin && origin !== new URL(config.githubAppBaseUrl).origin) throw new StorageError(403, 'Open the team link directly in DashHack.');
-    if (!(getHeader(event, 'content-type') || '').startsWith('application/json')) throw new StorageError(415, 'Expected a JSON request.');
-    if (Number(getHeader(event, 'content-length')) > 4096) { stopWallBody(event.node.req, event.node.res); throw new StorageError(413, 'Request is too large.'); }
-    let body;
-    try { body = JSON.parse((await readWallNodeBody(event.node.req, event.node.res, { limit: 4096, timeoutMs: 10000 })).toString()); }
-    catch (error) { throw new StorageError(error.status || 400, 'Could not read invitation request. Open the link again and retry.'); }
-    const app = getGitHubApp(), invites = new TeamInvites(getStore(), app, config.githubTeamInviteSecret);
-    const team = invites.resolve(body?.token);
-    if (body.action === 'preview') return { status: 200, team: { name: team.name, repository: team.repository, expiresAt: team.expiresAt } };
-    if (body.action !== 'invite') throw new StorageError(400, 'Invalid invitation action.');
-    const username = typeof body.username === 'string' ? body.username.trim().replace(/^@/, '') : '';
-    if (!/^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(username)) throw new StorageError(400, 'Enter your GitHub username, without a URL.');
-    const edgeIP = process.env.RAILWAY_ENVIRONMENT_ID && getHeader(event, 'x-real-ip');
-    const network = edgeIP && isIP(edgeIP) ? edgeIP : getRequestIP(event) || 'unknown';
-    let release;
-    try { release = gate.enter(team.teamId, username, network); }
-    catch (error) { if (error.status === 429) setHeader(event, 'Retry-After', '600'); throw error; }
-    try { return { status: 200, ...await app.inviteCollaborator(team.installationId, team.repository, username) }; }
-    finally { release(); }
+const gate=new TeamInviteGate();
+export default apiHandler(async event=>{
+    const context=teamInviteContext(event),config=useRuntimeConfig(),app=getGitHubApp(),invites=new TeamInvites(getStore(),app,config.githubTeamInviteSecret);
+    setHeader(event,'X-Request-ID',context.requestId);
+    let release,team;
+    try {
+        release=gate.enter('network',context.ip,context.ip);
+        const body=await teamInviteBody(event);
+        if(body.action==='invite') {
+            // The supplied username is never read: only GitHub's verified /user identity is used.
+            const result=await invites.claim(body.claimId,getCookie(event,'github_student_browser'),context);
+            return {status:200,...result};
+        }
+        team=invites.resolve(body.token);
+        if(body.action==='preview') {invites.audit({...context,...team},'preview','allowed');return {status:200,team:{name:team.name,repository:team.repository,expiresAt:team.expiresAt}};}
+        if(body.action!=='start') throw new StorageError(400,'Invalid invitation action.');
+        const browser=randomBytes(32).toString('base64url'),flow=invites.begin(body.token,browser,context);
+        setCookie(event,'github_student_browser',browser,{httpOnly:true,secure:!import.meta.dev,sameSite:'lax',path:'/',maxAge:600});
+        const url=new URL(app.authorizeUrl(flow));url.searchParams.set('prompt','select_account');
+        return {status:200,url:url.href};
+    } catch(error) {
+        if(error.status===429) setHeader(event,'Retry-After','600');
+        invites.audit({...context,...(team || {})},'request','denied_'+(error.status || 500));
+        console.info(JSON.stringify({type:'team_invite',requestId:context.requestId,linkId:team?.linkId || '',outcome:'denied',status:error.status || 500}));
+        throw error;
+    } finally {release?.();}
 });

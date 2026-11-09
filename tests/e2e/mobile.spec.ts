@@ -179,33 +179,48 @@ test('mobile editing state and login follow the displayed event rather than anot
     await expect(page.getByTestId('add-team-fab')).toBeVisible();
 });
 
-test('student team link works without event login and hands off to GitHub invitation acceptance', async ({ page }) => {
-    const token = 'private-team-link-token';
-    let invitations = 0;
-    await page.route('**/api/github/join', async route => {
-        const body = route.request().postDataJSON();
-        expect(body.token).toBe(token);
-        if (body.action === 'preview') return route.fulfill({ json: { status: 200, team: { name: 'Indy a Vích', repository: 'school/indy-a-vich', expiresAt: Date.now() + 86400000 } } });
-        invitations++;
-        expect(body.username).toBe('student-dev');
-        return route.fulfill({ json: { status: 200, username: 'student-dev', alreadyHasAccess: false, invitationUrl: 'https://github.com/school/indy-a-vich/invitations', repositoryUrl: 'https://github.com/school/indy-a-vich' } });
+test('student team link signs in with GitHub and only confirms the verified account', async ({ page }) => {
+    const token='private-team-link-token',state='student_'+'A'.repeat(43);let invitations=0;
+    await page.route('**/api/github/join',async route=>{
+        const body=route.request().postDataJSON();expect(body.username).toBeUndefined();
+        if(body.action==='preview') {expect(body.token).toBe(token);return route.fulfill({json:{status:200,team:{name:'Indy a Vích',repository:'school/indy-a-vich'}}});}
+        if(body.action==='start') {expect(body.token).toBe(token);return route.fulfill({json:{status:200,url:'https://github.com/login/oauth/authorize?state='+state}});}
+        expect(body.action).toBe('invite');expect(body.claimId).toBe(state);invitations++;
+        return route.fulfill({json:{status:200,username:'RealStudent',alreadyHasAccess:false,repositoryUrl:'https://github.com/school/indy-a-vich'}});
     });
-    await page.goto('/join#' + token);
-    await expect(page.getByRole('heading', { name: 'Indy a Vích' })).toBeVisible();
-    await expect(page.getByRole('button', { name: 'Získat přístup k repozitáři' })).toBeEnabled();
-    await page.getByLabel('Tvoje GitHub uživatelské jméno').fill('student-dev');
-    await page.getByRole('button', { name: 'Získat přístup k repozitáři' }).click();
-    const accept = page.getByRole('link', { name: 'Otevřít GitHub oznámení' });
-    await expect(accept).toHaveAttribute('href', 'https://github.com/notifications');
+    await page.route('https://github.com/login/oauth/authorize**',route=>route.fulfill({contentType:'text/html',body:'<script>location.replace('+JSON.stringify('http://127.0.0.1:5010/github/callback?state='+state+'&code=test-code')+')</script>'}));
+    await page.route('**/api/github/join/callback',async route=>{
+        expect(route.request().postDataJSON()).toEqual({state,code:'test-code'});
+        return route.fulfill({json:{status:200,claimId:state,username:'RealStudent',team:{name:'Indy a Vích',repository:'school/indy-a-vich'}}});
+    });
+    await page.goto('/join#'+token);
+    await expect(page.getByRole('heading',{name:'Indy a Vích'})).toBeVisible();
+    await expect(page.getByRole('textbox')).toHaveCount(0);await expect(page).toHaveURL(/\/join$/);
+    await page.getByRole('button',{name:'Vybrat svůj GitHub účet'}).click();
+    await expect(page.getByRole('button',{name:'Získat přístup jako RealStudent'})).toBeVisible();
+    await expect(page).toHaveURL(/\/github\/callback$/);await fits(page);
+    await page.getByRole('button',{name:'Získat přístup jako RealStudent'}).click();
+    await expect(page.getByRole('link',{name:'Otevřít GitHub oznámení'})).toHaveAttribute('href','https://github.com/notifications');
     await expect(page.locator('a[href$="/invitations"]')).toHaveCount(0);
-    await expect(page.getByRole('status')).toContainText('student-dev');
-    await expect(page.getByRole('status')).toContainText('Otevři e-mailovou schránku');
-    await expect(page.getByRole('status')).toContainText('Zobrazuje GitHub chybu 404?');
-    await expect(page.getByRole('link', { name: 'Po přijetí pozvánky: otevřít repozitář' })).toBeVisible();
-    expect(invitations).toBe(1);
-    await fits(page);
-    await page.getByRole('button', { name: 'Zadat jiné GitHub jméno' }).click();
-    await expect(page.getByLabel('Tvoje GitHub uživatelské jméno')).toBeVisible();
+    await expect(page.getByRole('status')).toContainText('Otevři e-mailovou schránku');expect(invitations).toBe(1);await fits(page);
+});
+
+test('team invitation audit and revocation controls fit phones',async({page})=>{
+    const d=await demo(page),linkId='team-link-id',expiresAt=Date.now()+7*86400000;let revoked=false;
+    await page.route('**/api/github/app/status?*',route=>route.fulfill({json:{status:200,configured:true,connection:{account:'school'},installUrl:'https://github.com/apps/test-app/installations/new'}}));
+    await page.route('**/api/github/app/team-invites',async route=>{
+        const body=route.request().postDataJSON();expect(body.event).toBe(d.name);
+        if(body.action==='issue')return route.fulfill({json:{status:200,links:[{linkId,name:'Indy a Vích',url:'https://dashhack.test/join#'+'a'.repeat(101),expiresAt}]}});
+        if(body.action==='revoke'){expect(body.linkId).toBe(linkId);revoked=true;}
+        return route.fulfill({json:{status:200,invitations:[{id:linkId,name:'Indy a Vích',expiresAt,state:revoked?'revoked':'active'}],audit:[{id:'audit-id',createdAt:Date.now(),action:'claim',outcome:'invitation_sent',username:'RealStudent',verified:1,githubUserId:'12345',ip:'192.0.2.1',userAgent:'Test mobile browser',requestId:'request-id'}]}});
+    });
+    await page.goto('/app/'+d.encoded+'/settings');
+    await page.getByText('Student team invitations & audit',{exact:true}).click();
+    await expect(page.getByText('GitHub verified (ID 12345)',{exact:false})).toBeVisible();
+    await page.getByRole('button',{name:'Get team links',exact:true}).click();
+    await expect(page.getByRole('button',{name:'Copy all team links'})).toBeVisible();await fits(page);
+    await page.getByRole('button',{name:'Revoke this link',exact:true}).click();
+    await expect(page.getByRole('button',{name:'Revoke this link',exact:true})).toHaveCount(0);expect(revoked).toBe(true);await fits(page);
 });
 
 test('invalid student invitation links fail clearly without exposing an invite form', async ({ page }) => {

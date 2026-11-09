@@ -1,5 +1,6 @@
 <template>
-    <main class="max-w-xl mx-auto px-5 py-8 sm:p-6 sm:mt-12 space-y-5 text-gray-900 dark:text-white">
+    <StudentJoin v-if="studentOauth" :oauth="studentOauth" />
+    <main v-else class="max-w-xl mx-auto px-5 py-8 sm:p-6 sm:mt-12 space-y-5 text-gray-900 dark:text-white">
         <h1 class="text-2xl font-semibold">Connect GitHub to DashHack</h1>
         <p v-if="loading" role="status">Verifying your GitHub authorization…</p>
         <p v-if="error" role="alert" class="text-red-600 dark:text-red-400">{{ error }}</p>
@@ -16,9 +17,11 @@
 </template>
 <script setup>
 const route = useRoute();
+const studentOauth=typeof route.query.state==='string' && route.query.state.startsWith('student_') ? {state:route.query.state,code:route.query.code} : null;
 const result = ref(null), loading = ref(true), error = ref('');
 useHead({ title: 'Connect GitHub | DashHack', meta: [{ name: 'referrer', content: 'no-referrer' }] });
 onMounted(async () => {
+    if(studentOauth) return;
     const { state, code } = route.query;
     window.history.replaceState({}, '', '/github/callback');
     try {
