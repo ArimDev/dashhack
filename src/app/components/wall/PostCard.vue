@@ -35,7 +35,7 @@
       </Badge>
     </div>
 
-    <div class="p-4">
+    <div class="p-4 flex flex-col">
       <p v-if="post.text" class="whitespace-pre-wrap wrap-break-word text-sm leading-6">
         {{ fullText ? post.text : truncatedText }}
       </p>
