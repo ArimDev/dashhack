@@ -34,8 +34,8 @@
       <button type="button" :disabled="!qrAvailable" @click="$emit('open-qr'); open = false" class="min-h-11 rounded-xl border border-slate-300 px-3 text-sm disabled:opacity-40 dark:border-white/15">Expand QR code</button>
       <p class="text-xs text-slate-500 dark:text-slate-400">{{ postCount }} shared moments · Updates automatically</p>
     </section>
-    <button ref="toggle" type="button" aria-label="Wall display settings" aria-controls="wall-display-settings" :aria-expanded="open"
-      class="ml-auto flex h-11 w-11 items-center justify-center rounded-full border border-slate-300/60 bg-white/80 text-slate-600 shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline-2 focus-visible:outline-cyan-500 dark:border-white/15 dark:bg-slate-900/80 dark:text-slate-300"
+    <button ref="toggle" type="button" aria-label="Wall display settings" title="Wall settings" aria-controls="wall-display-settings" :aria-expanded="open"
+      class="ml-auto flex h-12 w-12 items-center justify-center rounded-full border border-slate-400 bg-white text-bluey-600 shadow-lg transition hover:bg-slate-100 focus-visible:outline-2 focus-visible:outline-cyan-500 dark:border-slate-500 dark:bg-slate-900 dark:text-bluey-300"
       @click="open = !open">
       <Icon :name="open ? 'heroicons:x-mark' : 'heroicons:cog-6-tooth'" size="20px" />
     </button>

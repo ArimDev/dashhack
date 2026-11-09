@@ -37,7 +37,7 @@
         @pointerleave="pauseForInteraction"
         @focusin="pauseForInteraction"
         @wheel.passive="pauseForInteraction"
-        class="relative min-h-0 flex-1 pb-4 pl-12 pr-4 pt-4 sm:pl-16"
+        class="relative min-h-0 flex-1 pb-4 pl-16 pr-4 pt-4 sm:pl-24"
         :class="isScrollingEnabled ? 'overflow-hidden' : 'overflow-y-auto mt-2'"
       >
         <div

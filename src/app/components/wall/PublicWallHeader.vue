@@ -1,6 +1,6 @@
 <template>
-  <header class="fixed inset-y-0 left-0 z-20 flex w-10 items-center justify-center sm:w-14" data-testid="wall-title-rail">
-    <h1 class="max-h-[calc(100dvh-2rem)] overflow-hidden text-ellipsis whitespace-nowrap text-sm font-black tracking-wide text-slate-600 [writing-mode:vertical-rl] rotate-180 dark:text-slate-300 sm:text-lg">{{ eventName }}</h1>
+  <header class="fixed inset-y-0 left-0 z-20 flex w-14 items-center justify-center sm:w-20" data-testid="wall-title-rail">
+    <h1 class="max-h-[calc(100dvh-2rem)] overflow-hidden text-ellipsis whitespace-nowrap text-2xl font-black tracking-wide text-slate-800 [writing-mode:vertical-rl] rotate-180 dark:text-slate-100 sm:text-4xl [@media(max-height:500px)]:text-xl">{{ eventName }}</h1>
   </header>
   <a v-if="uploadsEnabled && wallStatus === 'available'" :href="uploadUrl" target="_blank" rel="noopener noreferrer"
     data-testid="wall-sharing-qr" class="fixed right-[max(1rem,env(safe-area-inset-right))] top-[max(1rem,env(safe-area-inset-top))] z-30 flex min-h-11 flex-col items-center gap-2 rounded-2xl border border-slate-200 bg-white p-3 text-sm font-semibold text-slate-900 shadow-lg dark:border-slate-700 dark:bg-slate-900 dark:text-white">
