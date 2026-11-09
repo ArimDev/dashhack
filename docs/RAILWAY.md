@@ -13,7 +13,7 @@ Updated 2026-11-09 for the SQLite branch and mobile UI. This project is separate
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `65f904ea-797a-4a08-82da-d2f208c09118` — SUCCESS, profile invitation link / schema 8 |
+| Latest verified deployment | `4407f97e-2350-4877-9774-1c0bd18d38ed` — SUCCESS, larger wall title/cogwheel / schema 8 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -341,3 +341,7 @@ Backup: `/data/backups/before-wall-layout-1794264018260.sqlite`, 0600. SQLite sc
 ## Profile invitation destination — 2026-11-09
 
 Source `60f4ae8`, deployment **`65f904ea-797a-4a08-82da-d2f208c09118` — SUCCESS**. At the user's explicit request, the student success button now opens `https://github.com/settings/organizations` and reads “Otevřít pozvánky na GitHubu”; inbox wording/links in the current student UI and public roster were updated. Email remains an acceptance option. This is navigation/copy only, with no change to OAuth, invitation type/permissions, team links, variables, schema or infrastructure. Targeted Chromium OAuth UI check and production build pass. Live phone UI confirmed the exact URL and no remaining inbox link, using browser-only mocked callback/claim responses; no real invitation or content change was made.
+
+## Larger wall title and clearer cogwheel — 2026-11-09
+
+Source `0101aa2`, deployment **`4407f97e-2350-4877-9774-1c0bd18d38ed` — SUCCESS**. Vertical title is 36px desktop, 24px phone, and 20px on short screens; rail/feed padding increased to match. Bottom-right cogwheel is a solid, higher-contrast 48px button with a hover label. It still requires the matching event password session; GitHub student authorization does not grant event editing. Three targeted Chromium scenarios, production build and live desktop/portrait/landscape typography plus authenticated/guest button checks pass. No production data, settings, variables, permissions, schema or infrastructure changed.
