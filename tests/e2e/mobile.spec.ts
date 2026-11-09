@@ -112,7 +112,7 @@ test('mobile public wall is manually readable and uploads/moderation fit without
         await expect(visitor.getByRole('switch',{name:'Enable auto-scroll layout'})).toHaveCount(0);
         await expect(visitor.getByRole('button',{name:'Wall display settings',exact:true})).toHaveCount(0);
         await expect(visitor.locator('article')).toHaveCount(1);
-        await visitor.getByRole('button',{name:'Read full post'}).tap();await expect(visitor.locator('article')).toContainText(post.text);
+        await visitor.getByRole('button',{name:'Read full post'}).tap();await expect(visitor.getByRole('dialog')).toContainText(post.text);await visitor.getByRole('button',{name:'Close dialog',exact:true}).tap();
         await fits(visitor);
         await visitor.getByRole('link',{name:/Share a moment/}).getAttribute('href');
         await visitor.goto(`/${d.encoded}/wall/upload`);

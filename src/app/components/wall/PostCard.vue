@@ -1,5 +1,6 @@
 <template>
   <article
+    :data-wall-post-id="post.id"
     class="mb-4 w-full break-inside-avoid-column overflow-hidden rounded-3xl border shadow-xl transition duration-300 hover:-translate-y-0.5"
     :class="
       isBlueCard
@@ -36,10 +37,10 @@
 
     <div class="p-4">
       <p v-if="post.text" class="whitespace-pre-wrap wrap-break-word text-sm leading-6">
-        {{ expanded ? post.text : truncatedText }}
+        {{ fullText ? post.text : truncatedText }}
       </p>
-      <button v-if="post.text?.length > textPreviewLength" type="button" :aria-expanded="expanded" @click="expanded = !expanded"
-        class="mt-1 inline-flex min-h-11 items-center text-xs font-semibold underline">{{ expanded ? 'Show less' : 'Read full post' }}</button>
+      <button v-if="!fullText && post.text?.length > textPreviewLength" type="button" data-read-post aria-haspopup="dialog" :tabindex="decorative ? -1 : undefined" @click="emit('read', post)"
+        class="mt-1 inline-flex min-h-11 items-center text-xs font-semibold underline">Read full post</button>
       <div
         v-if="post.imageUrl"
         class="mt-3 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800"
@@ -54,7 +55,8 @@
       <div v-else-if="post.videoUrl" class="mt-3 overflow-hidden rounded-2xl bg-black">
         <video
           :src="post.videoUrl"
-          controls
+          :controls="!decorative"
+          :tabindex="decorative ? -1 : undefined"
           playsinline
           muted
           class="max-h-105 w-full object-contain"
@@ -63,6 +65,7 @@
       <a
         v-if="post.sourceUrl"
         :href="post.sourceUrl"
+        :tabindex="decorative ? -1 : undefined"
         target="_blank"
         rel="noopener noreferrer"
         class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-300 dark:hover:text-cyan-200"
@@ -78,7 +81,10 @@
 import Badge from "../ui/Badge.vue";
 import { wallPlatformMeta } from "../../utils/wallPlatforms";
 
+const emit = defineEmits(['read']);
 const props = defineProps({
+  fullText: Boolean,
+  decorative: Boolean,
   post: {
     type: Object,
     required: true,
@@ -89,7 +95,6 @@ const props = defineProps({
   },
 });
 
-const expanded = ref(false);
 const truncatedText = computed(() => {
   const text = props.post?.text || "";
   if (text.length <= props.textPreviewLength) return text;

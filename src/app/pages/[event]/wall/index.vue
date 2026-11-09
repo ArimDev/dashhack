@@ -32,11 +32,15 @@
         v-else
         ref="feedViewport"
         @pointerdown="pauseForInteraction"
+        @pointerenter="pauseForInteraction"
+        @pointermove="pauseForInteraction"
+        @focusin="pauseForInteraction"
         @wheel.passive="pauseForInteraction"
         class="relative min-h-0 flex-1 px-4"
         :class="isScrollingEnabled ? 'overflow-hidden' : 'overflow-y-auto mt-2'"
       >
         <div
+          data-testid="wall-feed-track"
           :class="{ 'will-change-transform': isScrollingEnabled }"
           :style="feedTrackStyle"
         >
@@ -45,14 +49,15 @@
             :key="copy"
             :ref="copy === 1 ? setFirstFeedCopy : undefined"
             :aria-hidden="copy > 1 ? 'true' : undefined"
-            :inert="copy > 1"
-            :class="{ 'pointer-events-none': copy > 1 }"
+            :data-wall-copy="copy"
             class="columns-1 gap-4 sm:columns-2 xl:columns-3 2xl:columns-4 pb-4"
           >
             <WallPostCard
               v-for="post in posts"
               :key="`${copy}-${post.id}`"
               :post="post"
+              :decorative="copy > 1"
+              @read="openPost"
               :text-preview-length="textPreviewLength"
             />
           </div>
@@ -72,6 +77,9 @@
         @toggle-qr="showQr = $event"
       />
     </div>
+    <DialogShell v-if="readingPost" title="Full post" @close="closePost">
+      <WallPostCard :post="readingPost" full-text />
+    </DialogShell>
   </main>
 </template>
 
@@ -84,6 +92,14 @@ const route = useRoute();
 const colorMode = useColorMode();
 const eventName = computed(() => route.params.event || "event");
 const posts = ref([]);
+const readingPost = ref(null);
+function openPost(post) {
+  pauseForInteraction();
+  // Loop copies support pointer input, but focus returns to the one accessible card.
+  feedViewport.value?.querySelector(`[data-wall-copy="1"] [data-wall-post-id="${CSS.escape(post.id)}"] [data-read-post]`)?.focus({ preventScroll: true });
+  readingPost.value = post;
+}
+function closePost() { pauseForInteraction(); readingPost.value = null; }
 const canEdit = ref(false);
 const wallStatus = ref("loading");
 const qrUrl = ref("");
@@ -203,13 +219,13 @@ function scrollFeed(timestamp) {
 function syncAnimation() {
   cancelAnimationFrame(animationFrame);
   previousFrame = 0;
-  animationFrame = isScrollingEnabled.value && !document.hidden && posts.value.length ? requestAnimationFrame(scrollFeed) : 0;
+  animationFrame = isScrollingEnabled.value && !readingPost.value && !document.hidden && posts.value.length ? requestAnimationFrame(scrollFeed) : 0;
 }
 function visibilityChanged() {
   syncAnimation();
   if (!document.hidden) loadWall();
 }
-watch([isScrollingEnabled, () => posts.value.length], () => { if (import.meta.client) syncAnimation(); });
+watch([isScrollingEnabled, () => posts.value.length, readingPost], () => { if (import.meta.client) syncAnimation(); });
 onMounted(() => {
   if (window.matchMedia('(pointer: coarse), (max-width: 767px), (prefers-reduced-motion: reduce)').matches) isScrollingEnabled.value = false;
   qrMedia = window.matchMedia('(min-width: 1024px)');
