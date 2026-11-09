@@ -214,7 +214,7 @@ test('student team link signs in with GitHub and only confirms the verified acco
     await expect(page.getByRole('button',{name:'Získat přístup jako RealStudent'})).toBeVisible();
     await expect(page).toHaveURL(/\/github\/callback$/);await fits(page);
     await page.getByRole('button',{name:'Získat přístup jako RealStudent'}).click();
-    await expect(page.getByRole('link',{name:'Otevřít GitHub oznámení'})).toHaveAttribute('href','https://github.com/notifications');
+    await expect(page.getByRole('link',{name:'Otevřít pozvánky na GitHubu'})).toHaveAttribute('href','https://github.com/settings/organizations');
     await expect(page.locator('a[href$="/invitations"]')).toHaveCount(0);
     await expect(page.getByRole('status')).toContainText('Otevři e-mail od GitHubu');expect(invitations).toBe(1);await fits(page);
 });

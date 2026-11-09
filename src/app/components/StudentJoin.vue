@@ -27,8 +27,8 @@
                         <li>Otevři e-mail od GitHubu (zkontroluj i spam).</li>
                         <li>Klikni na <strong>View invitation</strong> a přijmi pozvánku účtem <strong>{{ result.username }}</strong>.</li>
                     </ol>
-                    <p class="text-sm text-gray-600 dark:text-gray-300">E-mail chybí? Zkus GitHub oznámení.</p>
-                    <a href="https://github.com/notifications" target="_blank" rel="noopener noreferrer" class="flex min-h-12 items-center justify-center rounded-xl bg-bluey-500 px-4 font-semibold text-white">Otevřít GitHub oznámení</a>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">E-mail chybí? Otevři pozvánky na GitHubu.</p>
+                    <a href="https://github.com/settings/organizations" target="_blank" rel="noopener noreferrer" class="flex min-h-12 items-center justify-center rounded-xl bg-bluey-500 px-4 font-semibold text-white">Otevřít pozvánky na GitHubu</a>
                     <details class="text-sm text-gray-600 dark:text-gray-300">
                         <summary class="cursor-pointer py-2">GitHub hlásí 404?</summary>
                         <p>Ověř, že jsi na GitHubu přihlášen/a jako <strong>{{ result.username }}</strong>. Pak otevři pozvánku z e-mailu znovu.</p>
