@@ -13,7 +13,7 @@ Updated 2026-11-09 for the SQLite branch and mobile UI. This project is separate
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `03e38078-fc20-4b62-a6e7-7d9916188c10` — SUCCESS, projector wall / moderation pages / schema 8 |
+| Latest verified deployment | `65f904ea-797a-4a08-82da-d2f208c09118` — SUCCESS, profile invitation link / schema 8 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -337,3 +337,7 @@ Moderation requests server pages of 10/20/50 posts (default 20, API maximum 100)
 Validation: **76 unit tests / 503 assertions**, eight distinct Chromium scenarios and ten Safari/iPhone WebKit checks covering paging/search, header/QR geometry/modal, original/loop-copy reader, progressive media/startup, five-second hover resume, saved speeds, concise OAuth, responsive routes and phone QR landscape. Production build and isolated production API smoke pass. Live tests verify title, paged/search results and 20-row rendering, floating QR/vertical rail, full-screen modal, guest cogwheel absence, concise join text and the current test-team capability. Live screenshots were inspected locally; no screenshots/private links were committed.
 
 Backup: `/data/backups/before-wall-layout-1794264018260.sqlite`, 0600. SQLite schema remains 8, integrity ok. All seven core content fingerprints outside wall settings match: 3 events, 16 teams, 3 notes, 1 mentor, 1 GitHub connection, 110 wall posts and 3 media. Wall settings changed only for the authorized title/revision. Other wall fields and both OFF polling flags were verified directly before/after the patch. Existing volume, budgets, one replica, dependencies and schema are unchanged.
+
+## Profile invitation destination — 2026-11-09
+
+Source `60f4ae8`, deployment **`65f904ea-797a-4a08-82da-d2f208c09118` — SUCCESS**. At the user's explicit request, the student success button now opens `https://github.com/settings/organizations` and reads “Otevřít pozvánky na GitHubu”; inbox wording/links in the current student UI and public roster were updated. Email remains an acceptance option. This is navigation/copy only, with no change to OAuth, invitation type/permissions, team links, variables, schema or infrastructure. Targeted Chromium OAuth UI check and production build pass. Live phone UI confirmed the exact URL and no remaining inbox link, using browser-only mocked callback/claim responses; no real invitation or content change was made.
