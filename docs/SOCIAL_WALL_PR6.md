@@ -107,3 +107,5 @@ Authenticated POST `/api/wall/:event/posts` action `pauseX` ignores a stale call
 The scheduler already filters stored enabled walls, and syncEvent rechecks that setting before sending a request. Token presence and the public 12-second feed refresh do not enable collection. Stopping prevents new requests; a request already sent to X may finish and be billed. There is no claim of an account-wide monetary cap. Tests never call the real X API to verify stopping.
 
 Deployed final source `ac54f89` / Railway `6d547563-c710-4c2b-b317-dcf6b512e357` (SUCCESS). Production OFF was verified repeatedly across restarts with last X attempt unchanged at 13:35 CET. Live stopping tests never enable collection and make no real X requests. Validation and backup details are in RAILWAY.md.
+
+Approval semantics: the X approval mode applies at insertion of newly collected posts. It does not retrospectively change already-pending, rejected or hidden posts. On 2026-11-09 production was corrected from Manual to Auto through the real dropdown and 100 eligible existing X imports were explicitly approved; public uploads remain manual and polling remains OFF. See RAILWAY.md.
