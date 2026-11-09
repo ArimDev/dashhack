@@ -3,14 +3,17 @@
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
       <h1 class="text-xl sm:text-2xl font-bold">X social collector</h1>
       <label class="inline-flex items-center gap-2 cursor-pointer">
-        <input :disabled="!loaded || saving || (!configured && !enabled)" v-model="enabled" type="checkbox" @change="savePolling" class="h-4 w-4" />
+        <input :disabled="!loaded || saving || pausing || (!configured && !enabled)" v-model="enabled" type="checkbox" @change="savePolling" class="h-4 w-4" />
         <span class="font-semibold">Automatic X polling</span>
       </label>
     </div>
 
+    <button type="button" :disabled="pausing" @click="pausePolling" class="mb-4 min-h-11 rounded-xl border border-red-400 px-4 font-semibold text-red-700 dark:text-red-300 disabled:opacity-50">{{ pausing ? 'Stopping X polling…' : 'Stop X polling' }}</button>
+    <p v-if="pauseError" role="alert" class="mb-3 text-sm text-red-600">{{ pauseError }}</p>
+    <p v-if="pauseConfirmed" role="status" class="mb-3 text-sm font-semibold">X polling is OFF — confirmed by the server. No new automatic X API requests.</p>
     <fieldset :disabled="!loaded" class="relative flex-1 min-w-0">
       <p class="mb-3 text-sm">{{ configured ? 'X API token configured.' : 'X API token is not configured. Ask the event host to set it.' }}</p>
-      <p class="mb-3 text-sm" role="status">{{ savedEnabled ? `Automatic X polling is on: every ${savedInterval} minutes while the wall is enabled.` : 'Automatic X polling is paused. Existing posts remain on the wall.' }}</p>
+      <p class="mb-3 text-sm" role="status">{{ !loaded ? 'Checking polling status…' : savedEnabled ? `Automatic X polling is on: every ${savedInterval} minutes while the wall is enabled.` : 'Automatic X polling is paused. Existing posts remain on the wall.' }}</p>
       <p class="mb-3 text-xs">The scheduler checks once a minute. Turning polling off stops future requests; a request already running may finish. The wall refreshes saved posts every 12 seconds without contacting X.</p>
       <p class="mb-3 text-xs">Handle queries collect posts authored by those accounts. Auto-approval applies only to collected X posts; public submissions always require approval.</p>
       <p v-if="lastPoll" class="text-xs">Last attempt: {{ lastPoll }}</p>
@@ -54,8 +57,11 @@ const enabled = ref(false), intervalMinutes = ref(5), hashtags = ref(''), handle
 const revision = ref(0), configured = ref(false), lastPoll = ref(null), pollError = ref('');
 const savedEnabled = ref(false), savedInterval = ref(5);
 const error = ref(''), success = ref(false), saving = ref(false), loaded = ref(false);
+const pausing = ref(false), pauseConfirmed = ref(false), pauseError = ref('');
+let operationVersion = 0;
 function markEdited() { success.value = false; }
 function apply(wall) {
+  pauseConfirmed.value = false;
   savedEnabled.value = wall.xEnabled; savedInterval.value = wall.xPollIntervalMinutes;
   enabled.value = wall.xEnabled; intervalMinutes.value = wall.xPollIntervalMinutes;
   hashtags.value = wall.xQueryHashtags.join(', '); handles.value = wall.xQueryHandles.join(', ');
@@ -63,23 +69,28 @@ function apply(wall) {
 }
 async function load() {
   if (saving.value) return;
+  const version = operationVersion;
   saving.value = true; error.value = ''; success.value = false;
   try {
-    const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}/posts`);
+    const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}/posts`, { timeout: 10000 });
+    if (version !== operationVersion) return;
     if (response.status !== 200) throw new Error(response.message);
     configured.value = response.data.xConfigured; apply(response.data.wall); loaded.value = true;
-  } catch (failure) { error.value = failure.message || 'Could not load X settings.'; }
+  } catch (failure) { if (version === operationVersion) error.value = failure.message || 'Could not load X settings.'; }
   finally { saving.value = false; }
 }
 function terms(value,prefix) { return [...new Set(value.split(/[,\s]+/u).map(term => term.trim()).filter(Boolean).map(term => term.startsWith(prefix) ? term : prefix+term))]; }
 function queryPatch() { return { xPollIntervalMinutes: intervalMinutes.value, xQueryHashtags: terms(hashtags.value,'#'), xQueryHandles: terms(handles.value,'@') }; }
 async function save(patch) {
-  if (saving.value || !loaded.value) return;
+  if (saving.value || pausing.value || !loaded.value) return;
+  const version = operationVersion;
+  pauseConfirmed.value = false;
   saving.value = true; error.value = ''; success.value = false;
   try {
     const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}/posts`, { method: 'POST', body: {
       action: 'updateSettings', revision: revision.value, settings: patch,
-    } });
+    }, timeout: 10000 });
+    if (version !== operationVersion) return;
     if (response.status !== 200) throw new Error(response.status === 409
       ? 'Settings changed elsewhere. Your draft is kept. Reload saved settings to review the latest values.' : response.message);
     // Only update saved metadata; never replace text while someone is editing it.
@@ -87,10 +98,28 @@ async function save(patch) {
     revision.value = wall.revision; savedEnabled.value = wall.xEnabled; savedInterval.value = wall.xPollIntervalMinutes;
     lastPoll.value = wall.xLastPollAt; pollError.value = wall.xLastPollError;
     success.value = Object.hasOwn(patch,'xEnabled') || JSON.stringify(patch) === JSON.stringify(queryPatch());
-  } catch (failure) { error.value = failure.message || 'Could not save X collector settings. Your draft is kept.'; }
+  } catch (failure) { if (version === operationVersion) error.value = failure.message || 'Could not save X collector settings. Your draft is kept.'; }
   finally { enabled.value = savedEnabled.value; saving.value = false; }
 }
+async function pausePolling() {
+  if (pausing.value) return;
+  ++operationVersion;
+  pausing.value = true; pauseError.value = ''; pauseConfirmed.value = false;
+  try {
+    const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}/posts`, {
+      method: 'POST', body: { action: 'pauseX' }, timeout: 10000,
+    });
+    if (response.status !== 200 || response.data?.wall?.xEnabled !== false) throw new Error(response.message || 'Server did not confirm the pause.');
+    const wall = response.data.wall;
+    if (!loaded.value) { apply(wall); configured.value = response.data.xConfigured; loaded.value = true; }
+    revision.value = wall.revision; savedEnabled.value = enabled.value = false;
+    savedInterval.value = wall.xPollIntervalMinutes;
+    lastPoll.value = wall.xLastPollAt; pollError.value = wall.xLastPollError;
+    pauseConfirmed.value = true;
+  } catch (failure) { pauseError.value = `Could not confirm that X polling stopped. ${failure.message || 'Retry or log in again.'}`; }
+  finally { enabled.value = savedEnabled.value; pausing.value = false; }
+}
 function saveQuery() { return save(queryPatch()); }
-function savePolling() { return save({ xEnabled: enabled.value }); }
+function savePolling() { return enabled.value ? save({ xEnabled: true }) : pausePolling(); }
 onMounted(load);
 </script>

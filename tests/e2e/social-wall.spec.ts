@@ -258,3 +258,46 @@ test('full-post reader works from both the original card and visible looping cop
   await expect.poll(() => page.getByTestId('wall-feed-track').getAttribute('style'), {timeout:3500}).not.toBe(closedTransform);
   await original.press('Enter'); await expect(page.getByRole('dialog')).toBeVisible();
 });
+
+
+test('Stop X polling works during loading/saving and stale writes cannot switch it back on', async ({ page, browser }) => {
+  const name=await setup(page), encoded=encodeURIComponent(name), path=`/api/wall/${encoded}/posts`;
+  expect((await(await page.request.post(path,{data:{action:'updateSettings',revision:0,settings:{xEnabled:true,xQueryHashtags:['#existing']}}})).json()).status).toBe(200);
+  let releaseLoad;const loadGate=new Promise(resolve=>{releaseLoad=resolve});let failFirstStop=true;
+  await page.route(`**${path}`,async route=>{
+    if(route.request().method()==='GET'){await loadGate;}
+    else if(failFirstStop&&route.request().postDataJSON().action==='pauseX'){
+      failFirstStop=false;return route.fulfill({json:{status:503,message:'Unavailable'}});
+    }
+    await route.continue();
+  });
+  await page.goto(`/app/${encoded}/settings`);
+  const stop=page.getByRole('button',{name:'Stop X polling',exact:true});await expect(stop).toBeEnabled();
+  await stop.click();await expect(page.getByRole('alert')).toContainText('Could not confirm');
+  await expect(page.getByText('X polling is OFF — confirmed by the server.',{exact:false})).toHaveCount(0);
+  expect((await(await page.request.get(path)).json()).data.wall.xEnabled).toBe(true);
+  await changed(page,()=>stop.click());
+  await expect(page.getByText('X polling is OFF — confirmed by the server.',{exact:false})).toBeVisible();
+  const loadFinished=page.waitForResponse(r=>r.url().includes(path)&&r.request().method()==='GET');
+  releaseLoad();await loadFinished;await page.unroute(`**${path}`);
+  const tags=page.getByLabel('Hashtags to query');await expect(tags).toHaveValue('#existing');
+  const stopped=(await(await page.request.get(path)).json()).data.wall;
+  expect((await(await page.request.post(path,{data:{action:'updateSettings',revision:stopped.revision,settings:{xEnabled:true}}})).json()).status).toBe(200);
+  await page.reload();await expect(page.getByRole('checkbox',{name:'Automatic X polling'})).toBeChecked();
+  // Hold an already-completed query save response containing ON until after STOP confirms OFF.
+  let releaseSave,serverSaved;
+  const responseGate=new Promise(resolve=>{releaseSave=resolve}),serverGate=new Promise(resolve=>{serverSaved=resolve});
+  await page.route(`**${path}`,async route=>{
+    if(route.request().method()!=='POST'||route.request().postDataJSON().action!=='updateSettings')return route.continue();
+    const response=await route.fetch();serverSaved();await responseGate;await route.fulfill({response});
+  });
+  await tags.fill('#draft');await page.getByRole('button',{name:'Save queries',exact:true}).click();await serverGate;
+  await expect(page.getByRole('button',{name:'Saving…',exact:true})).toBeDisabled();await expect(stop).toBeEnabled();
+  await changed(page,()=>stop.click());releaseSave();
+  await expect(page.getByRole('button',{name:'Save queries',exact:true})).toBeEnabled();
+  await expect(page.getByRole('checkbox',{name:'Automatic X polling'})).not.toBeChecked();
+  await expect(tags).toHaveValue('#draft');
+  const result=(await(await page.request.get(path)).json()).data.wall;expect(result.xEnabled).toBe(false);
+  const guest=await browser.newContext();try{expect((await(await guest.request.post(path,{data:{action:'pauseX'}})).json()).status).toBe(401);}finally{await guest.close();}
+  await page.reload();await expect(page.getByRole('checkbox',{name:'Automatic X polling'})).not.toBeChecked();
+});

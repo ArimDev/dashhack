@@ -182,6 +182,13 @@ export class WallStore {
     }
     action(session, name, input) {
         const id = this.store.authorize(session,name);
+        // Stopping is idempotent and independent of the caller's stale settings revision.
+        // This path can only turn collection off; enabling still requires a matching revision.
+        if (input.action === 'pauseX') {
+            const current = this.config(id);
+            // Even when already OFF, advance the revision to fence out an older in-flight enable.
+            return this.updateSettings(session, name, { xEnabled: false }, current.revision);
+        }
         if (input.action === 'updateSettings') return this.updateSettings(session,name,input.settings,input.revision);
         if (input.action === 'setMode') return this.updateSettings(session,name,{ moderationMode: input.mode },input.revision);
         return this.db.transaction(() => {

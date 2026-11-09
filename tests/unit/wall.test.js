@@ -143,6 +143,27 @@ describe('Optional in-process X collector',() => {
         now+=300001;await collector.tick();expect(calls).toBe(2);
         expect(c.wall.publicFeed(c.name).posts).toHaveLength(1);
     });
+    test('pause ignores stale caller revisions, preserves query fields, enforces ownership and survives a new collector',async () => {
+        let now=Date.now(); const c=await enabled({ now:()=>now });
+        const old=c.wall.config(c.id);
+        c.wall.updateSettings(c.session,c.name,{ windowMinutes:1800 },old.revision);
+        const other=await c.store.createEvent('Unrelated','password123'), otherSession=c.store.createSession(other);
+        expect(() => c.wall.action(null,c.name,{action:'pauseX'})).toThrow('expired');
+        expect(() => c.wall.action(otherSession,c.name,{action:'pauseX'})).toThrow('permission');
+        c.wall.action(c.session,c.name,{action:'pauseX',revision:old.revision});
+        const stopped=c.wall.config(c.id);
+        expect(stopped.xEnabled).toBe(false); expect(stopped.windowMinutes).toBe(1800);
+        expect(stopped.xQueryHashtags).toEqual(old.xQueryHashtags); expect(stopped.xQueryHandles).toEqual(old.xQueryHandles);
+        expect(c.wall.action(c.session,c.name,{action:'pauseX'}).revision).toBe(stopped.revision+1);
+        expect(() => c.wall.updateSettings(c.session,c.name,{xEnabled:true},stopped.revision)).toThrow('changed');
+        expect(() => c.wall.updateSettings(c.session,c.name,{xEnabled:true},old.revision)).toThrow('changed');
+        let calls=0; const request=async()=>{calls++;return Response.json(payload)};
+        const collector=new XCollector(c.store,'token',{request});
+        await collector.tick(); now+=3600000; await collector.tick();
+        const reopened=new SqliteStore(c.filename,{now:()=>now});stores.push(reopened);
+        await new XCollector(reopened,'token',{request}).tick();
+        expect(calls).toBe(0);
+    });
     test('no token means no requests; failures are redacted and rate limits delay retries',async () => {
         let now=Date.now();const c=await enabled({ now:()=>now });let calls=0;
         const request=async () => { calls++;return new Response('SECRET response',{ status:429 }); };
