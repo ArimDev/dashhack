@@ -134,3 +134,9 @@ Query examples are placeholders, never defaults: Example only prefix, muted ital
 ## Unified hover/reader idle delay — 2026-11-09
 
 Hover, pointer exit, keyboard focus and reader close now use the same event `idleWaitSeconds` setting. The default and the production Demo value are five seconds (the event had retained 30 seconds). A stationary pointer over a card does not keep the wall paused forever: it resumes after the last interaction's delay without opening a reader. Leaving the feed restarts that same delay. The reader stays paused while open; closing uses the same setting and guards focus restoration. Manual-scroll mode remains manual. The organizer control is Social Wall → Resume scrolling after interaction (seconds).
+
+## PR #7 integration verification — 2026-11-09
+
+Pulled remote merge `43c6604` and rebased `feat_alby_design` onto `origin/master` (`3fa3669`). The six PR commits were replayed above the existing app work; the resulting tree matched the remote merged tree exactly. Original merge history remains at local backup `backup/feat-alby-pr7-remote-merge-20261109`, with the pre-sync branch at `backup/feat-alby-before-pr7-sync-20261109`.
+
+The new form duplicated X field/button labels, making existing global browser selectors ambiguous. Follow-up scopes X hashtag/reload selectors to the X form and gives Instagram the same muted, explicit example-only placeholder treatment. All 54 unit tests (354 assertions), ten targeted Chromium scenarios and four WebKit scenarios pass. Production build and isolated production runtime checks pass: health, login, fake-key configuration, both collectors OFF by default, and authenticated Instagram stop. No provider requests or production settings/data changes were needed. Logs are in `/tmp/dashhack-pr7-{unit,e2e-fixed,webkit,build}.log`. This integration has not been deployed to Railway; its storage-safe release branch remains separate.
