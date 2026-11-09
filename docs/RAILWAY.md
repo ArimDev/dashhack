@@ -355,3 +355,13 @@ Source `c402f19`, deployment **`7d8eb0c1-bcb6-4b96-9662-ef9c04a19622` — SUCCES
 Full consistent private backup: `/data/backups/before-event-uri-1794265680800.sqlite`, 0600. A parameterized BEGIN IMMEDIATE transaction verified the exact old name and unoccupied new name, then changed only `events.name` and `updated_at`. Password/hash, other event fields and all eleven checked tables matched within the transaction: teams, notes, mentors, GitHub connection, wall settings/posts/media, team links/flows/audit, and sessions. Existing sessions were intentionally preserved for this URI-only operation. Schema remains 8, integrity/foreign keys ok; 16 teams retained and both collectors OFF. No new schema/service/variable or provider request.
 
 Validation: **77 unit tests / 513 assertions**, production build and isolated production HTTP smoke (guard inactive before rename, old wall/upload/dashboard/API compatibility, query preservation, real redirected text submission, unchanged session and new-name password login). Live checks verify canonical wall, old wall/upload/dashboard redirects, QR upload target, new login with existing password, stable ID/16 teams and all 16 existing GitHub team capabilities. Private JSON export metadata was updated to the new name; tokens were not regenerated. Use the new name in future event API payloads and logins; do not recreate the former demo event.
+
+
+## Responsive sharing and monitor layout — 2026-11-10
+
+Sources `a02f126` and tablet sizing refinement `ace870f`. “Share a moment” is centered in the full-screen QR dialog and upload-page header. The QR grows with available viewport width/height instead of stopping at 640px. The feed no longer has an 1800px width cap; displays wider than 1920px gain columns while retaining readable card widths. Existing phone/tablet breakpoints, vertical title, floating corner QR and authenticated cogwheel remain.
+
+Validation: two Chromium and three Safari/WebKit/iPhone checks cover phone portrait/landscape, tall portrait tablets, 720p/1080p, 3440px ultrawide and 3840px 4K, centered dialog title, full-width feed, additional columns, growing square QR and keyboard dismissal. Production build passes. No dependencies, schema, settings or infrastructure changes.
+
+
+Final deployment **`215966a0-51c1-411c-9330-db20a439f3e8` — SUCCESS**, source `ace870f`. Live checks passed at 1920×1080 (4 columns, 856px QR), 3440×1440 (7 columns, 1216px QR), 3840×2160 (8 columns, 1936px QR), phone portrait/landscape and 768×1366 portrait tablet. Every QR remains square and inside the viewport; dialog and upload headings are centered. Live screenshot inspected locally. Existing production data and collector settings were not modified.
