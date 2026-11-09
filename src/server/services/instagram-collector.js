@@ -7,11 +7,15 @@ function instagramPost(result) {
     if (source.protocol !== 'https:' || !['instagram.com', 'www.instagram.com'].includes(source.hostname) || source.username || source.password || source.port) return null;
     const match = source.pathname.match(/^\/(p|reel|reels|tv)\/([a-z\d_-]{1,64})\/?$/i);
     if (!match) return null;
-    const handle = typeof result.author === 'string' ? result.author.replace(/^@/, '') : '';
+    const username = typeof result.author === 'string' ? result.author : result.author?.username;
+    const handle = typeof username === 'string' ? username.replace(/^@/, '') : '';
     const validHandle = /^[a-z\d._]{1,30}$/i.test(handle);
+    const displayName = result.author?.displayName;
+    const text = typeof result.caption === 'string' && result.caption.trim() ? result.caption : result.title;
     return { id: `instagram-${match[2]}`, platform: 'instagram',
-        authorName: validHandle ? handle : 'Instagram', handle: validHandle ? `@${handle}` : '',
-        text: typeof result.title === 'string' && result.title.trim() ? result.title.slice(0, 5000) : 'Instagram post',
+        authorName: typeof displayName === 'string' && displayName.trim() ? displayName.trim().slice(0, 80) : validHandle ? handle : 'Instagram',
+        handle: validHandle ? `@${handle}` : '',
+        text: typeof text === 'string' && text.trim() ? text.slice(0, 5000) : 'Instagram post',
         sourceUrl: `https://www.instagram.com/${match[1] === 'reels' ? 'reel' : match[1]}/${match[2]}/` };
 }
 
