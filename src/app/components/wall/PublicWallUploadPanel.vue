@@ -4,7 +4,7 @@
   >
     <header class="border-b border-slate-200 bg-linear-to-br from-cyan-500/10 to-indigo-500/10 p-6 sm:p-8 dark:border-white/10">
       <p class="text-xs font-bold uppercase tracking-[0.3em] text-cyan-700 dark:text-cyan-300">
-        {{ props.eventName }} community wall
+        {{ props.displayTitle || props.eventName }}
       </p>
       <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Share a moment</h1>
       <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
@@ -145,6 +145,7 @@
 import { prepareWallPhoto } from '../../utils/prepareWallPhoto.js';
 const props = defineProps({
   eventName: { type: String, required: true },
+  displayTitle: { type: String, default: '' },
   availability: { type: String, required: true },
 });
 

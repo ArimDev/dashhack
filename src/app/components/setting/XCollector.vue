@@ -26,7 +26,7 @@
         <div>
           <label for="x-handles" class="mb-1 block">Handles to follow</label>
           <textarea id="x-handles" aria-describedby="x-handles-hint" v-model="handles" rows="3" @input="markEdited" class="mb-4 p-3 border-2 rounded-xl text-sm font-semibold w-full trans-all-linear border-gray-300 dark:border-gray-600 placeholder:text-slate-400 placeholder:font-normal placeholder:italic placeholder:opacity-75 dark:placeholder:text-slate-500 transition-colors duration-500 resize-none" placeholder="Example only: @your_event"></textarea>
-          <p id="x-handles-hint" class="-mt-2 mb-3 text-xs text-slate-500 dark:text-slate-400"><span v-if="loaded && !handles.trim()">No handles entered. </span>Optional: leave empty to collect by hashtags only.</p>
+          <p id="x-handles-hint" class="-mt-2 mb-3 text-xs text-slate-500 dark:text-slate-400"><span v-if="loaded && !handles.trim()">No handles entered. </span>Posts by these accounts. Use @handles, separated by spaces, commas or new lines. Optional.</p>
         </div>
       </div>
 

@@ -76,3 +76,7 @@ button, a, input, select, textarea, [contenteditable] { touch-action: manipulati
 }
 .public-wall { padding-top: env(safe-area-inset-top); padding-bottom: env(safe-area-inset-bottom); }
 .public-upload { padding-top: max(1.5rem,env(safe-area-inset-top)); padding-bottom: max(1.5rem,env(safe-area-inset-bottom)); }
+
+.dialog-backdrop-fullscreen { padding: 0; }
+.dialog-panel.dialog-panel-fullscreen { width: 100vw; height: 100dvh; max-width: none; max-height: none; border-radius: 0; }
+.dialog-panel-fullscreen .dialog-content { display: flex; flex: 1; align-items: center; justify-content: center; }

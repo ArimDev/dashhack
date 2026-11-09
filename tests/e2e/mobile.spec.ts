@@ -179,6 +179,20 @@ test('mobile editing state and login follow the displayed event rather than anot
     await expect(page.getByTestId('add-team-fab')).toBeVisible();
 });
 
+test('expanded sharing QR fits phone portrait and landscape',async({page})=>{
+    const d=await demo(page);await wall(page,d.encoded);
+    await page.route('https://api.qrserver.com/**',route=>route.fulfill({contentType:'image/png',body:Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j0ioAAAAASUVORK5CYII=','base64')}));
+    for(const viewport of [{width:390,height:844},{width:812,height:375}]){
+        await page.setViewportSize(viewport);await page.goto('/'+d.encoded+'/wall');
+        await page.getByRole('button',{name:'Wall display settings',exact:true}).click();
+        await page.getByRole('button',{name:'Expand QR code',exact:true}).click();
+        const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();
+        const image=dialog.getByRole('img',{name:'Scan to upload a post'});await expect(image).toBeVisible();
+        const box=await image.boundingBox();expect(box.y).toBeGreaterThanOrEqual(0);expect(box.y+box.height).toBeLessThanOrEqual(viewport.height);expect(Math.abs(box.width-box.height)).toBeLessThan(2);
+        await fits(page);await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);
+    }
+});
+
 test('student team link signs in with GitHub and only confirms the verified account', async ({ page }) => {
     const token='private-team-link-token',state='student_'+'A'.repeat(43);let invitations=0;
     await page.route('**/api/github/join',async route=>{
@@ -196,13 +210,13 @@ test('student team link signs in with GitHub and only confirms the verified acco
     await page.goto('/join#'+token);
     await expect(page.getByRole('heading',{name:'Indy a Vích'})).toBeVisible();
     await expect(page.getByRole('textbox')).toHaveCount(0);await expect(page).toHaveURL(/\/join$/);
-    await page.getByRole('button',{name:'Vybrat svůj GitHub účet'}).click();
+    await page.getByRole('button',{name:'Pokračovat přes GitHub'}).click();
     await expect(page.getByRole('button',{name:'Získat přístup jako RealStudent'})).toBeVisible();
     await expect(page).toHaveURL(/\/github\/callback$/);await fits(page);
     await page.getByRole('button',{name:'Získat přístup jako RealStudent'}).click();
     await expect(page.getByRole('link',{name:'Otevřít GitHub oznámení'})).toHaveAttribute('href','https://github.com/notifications');
     await expect(page.locator('a[href$="/invitations"]')).toHaveCount(0);
-    await expect(page.getByRole('status')).toContainText('Otevři e-mailovou schránku');expect(invitations).toBe(1);await fits(page);
+    await expect(page.getByRole('status')).toContainText('Otevři e-mail od GitHubu');expect(invitations).toBe(1);await fits(page);
 });
 
 test('team invitation audit and revocation controls fit phones',async({page})=>{

@@ -4,6 +4,9 @@
   >
     <h2 class="mb-5 text-xl font-black">Wall settings</h2>
     <div class="space-y-4">
+      <label class="block text-sm text-slate-600 dark:text-slate-300">Wall title
+        <input :value="settings.title" maxlength="120" placeholder="Event name" class="mt-2 min-h-11 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 dark:border-slate-600 dark:bg-slate-800" @change="updateSetting('title',$event.target.value); emit('save')" />
+      </label>
       <label
         class="flex items-center justify-between gap-4 text-sm text-slate-600 dark:text-slate-300"
       >
@@ -67,9 +70,10 @@
         <input :value="settings.idleWaitSeconds" type="number" min="5" max="600" class="mt-2 w-full rounded-xl border px-3 py-2 dark:bg-slate-800" @change="updateNumberSetting('idleWaitSeconds', $event); emit('save')" />
       </label>
       <label class="block text-sm text-slate-600 dark:text-slate-300">
-        Filtered keywords
+        Blocked words
         <textarea
           :value="keywordsText"
+          aria-describedby="blocked-words-hint" placeholder="Example: spam, advertisement"
           rows="3"
           class="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
           @input="emit('update:keywordsText', $event.target.value)"
@@ -77,10 +81,12 @@
         />
       </label>
 
+      <p id="blocked-words-hint" class="text-xs text-slate-500">Block new posts containing these terms in text or author names. Commas or new lines; ignores case.</p>
       <label class="block text-sm text-slate-600 dark:text-slate-300">
-        Blacklisted authors
+        Blocked authors
         <textarea
           :value="blacklistAuthorsText"
+          aria-describedby="blocked-authors-hint" placeholder="Example: @account, Author Name"
           rows="2"
           class="mt-2 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 py-2 dark:border-slate-600 dark:bg-slate-800"
           @input="emit('update:blacklistAuthorsText', $event.target.value)"
@@ -88,6 +94,7 @@
         />
       </label>
 
+      <p id="blocked-authors-hint" class="text-xs text-slate-500">Block new posts by name or @handle. Commas or new lines; partial matches, ignores case.</p>
       <div
         class="rounded-2xl border border-cyan-200 bg-cyan-50 p-3 text-sm text-cyan-800 dark:border-cyan-800 dark:bg-cyan-950/30 dark:text-cyan-200"
       >

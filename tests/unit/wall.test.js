@@ -28,10 +28,33 @@ describe('Social wall adapted from PR #6',() => {
         const before=publicEvent(c.store.getEvent(c.name)); c.store.close();
         const reopened=new SqliteStore(c.filename); stores.push(reopened);
         expect(publicEvent(reopened.getEvent(c.name))).toEqual(before);
-        expect(new WallStore(reopened).publicFeed(c.name)).toEqual({ wall:{ enabled:false,publicUploadEnabled:true,windowMinutes:1440,idleCycleSeconds:25,idleWaitSeconds:5,scrollSpeed:40,revision:0 },posts:[],total:0,hasMore:false });
+        expect(new WallStore(reopened).publicFeed(c.name)).toEqual({ wall:{ title:'',enabled:false,publicUploadEnabled:true,windowMinutes:1440,idleCycleSeconds:25,idleWaitSeconds:5,scrollSpeed:40,revision:0 },posts:[],total:0,hasMore:false });
         expect(() => new WallStore(reopened).submit(c.name,{ text:'Hello' })).toThrow('disabled');
         expect((await reopened.checkPassword(c.name,'password123'))._id).toBe(c.id);
         expect(reopened.db.query('PRAGMA integrity_check').get().integrity_check).toBe('ok');
+    });
+    test('moderation paging searches all posts with literal terms, stable pages and event ownership',async()=>{
+        const c=await setup();
+        for(let i=0;i<27;i++) {
+            const p=c.wall.submit(c.name,{text:i===3?'100% ready':i===4?'under_score':`Project ${i}`,authorName:i===7?'FindMe':'Student'});
+            c.store.db.query('UPDATE wall_posts SET created_at=?,status=? WHERE event_id=? AND id=?').run(new Date(c.store.now()-i*1000).toISOString(),i%2?'approved':'pending',c.id,p.id);
+        }
+        const a=c.wall.moderationFeed(c.session,c.name,{page:1,perPage:10}),b=c.wall.moderationFeed(c.session,c.name,{page:2,perPage:10}),d=c.wall.moderationFeed(c.session,c.name,{page:3,perPage:10});
+        expect(a.pagination).toEqual({page:1,perPage:10,pageCount:3,totalMatched:27});expect(new Set([...a.posts,...b.posts,...d.posts].map(p=>p.id)).size).toBe(27);expect(d.posts).toHaveLength(7);
+        expect(c.wall.moderationFeed(c.session,c.name,{search:'findme'}).posts[0].authorName).toBe('FindMe');
+        for(const search of ['%','_'])expect(c.wall.moderationFeed(c.session,c.name,{search}).pagination.totalMatched).toBe(1);
+        expect(c.wall.moderationFeed(c.session,c.name,{status:'approved'}).pagination.totalMatched).toBe(13);
+        expect(c.wall.moderationFeed(c.session,c.name,{page:99,perPage:10}).pagination.page).toBe(3);
+        expect(c.wall.moderationFeed(c.session,c.name,{sort:'oldest'}).posts[0].text).toBe('Project 26');
+        for(const view of [{page:0},{perPage:101},{sort:'unsafe'},{status:'unknown'},{search:'x'.repeat(201)}])expect(()=>c.wall.moderationFeed(c.session,c.name,view)).toThrow();
+        expect(()=>c.wall.moderationFeed(null,c.name,{page:1})).toThrow('expired');
+    });
+    test('wall display title is validated, public and does not change collector settings',async()=>{
+        const c=await setup();const before=c.wall.config(c.id);
+        c.wall.updateSettings(c.session,c.name,{title:'AT&T Hackathon Junior 2026'},before.revision);
+        expect(c.wall.publicFeed(c.name).wall.title).toBe('AT&T Hackathon Junior 2026');
+        expect(c.wall.config(c.id).xEnabled).toBe(before.xEnabled);expect(c.wall.config(c.id).instagramEnabled).toBe(before.instagramEnabled);
+        expect(()=>c.wall.updateSettings(c.session,c.name,{title:'x'.repeat(121)},before.revision+1)).toThrow('Invalid');
     });
     test('pending attachments stay private; approval, hide, expiry, pin, rename and delete enforce access',async () => {
         let now=Date.now(); const c=await setup({ now:()=>now });

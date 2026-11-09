@@ -44,16 +44,31 @@
           @sort="sortOrder = $event"
         />
 
+        <div class="flex flex-wrap items-end gap-3">
+          <label class="min-w-0 flex-1 text-sm">Search posts
+            <input v-model="search" type="search" maxlength="200" placeholder="Text, author or @handle" class="mt-1 min-h-11 w-full rounded-xl border border-slate-300 bg-white px-3 dark:border-slate-600 dark:bg-slate-900" />
+          </label>
+          <label class="text-sm">Per page
+            <select aria-label="Per page" v-model.number="perPage" class="mt-1 block min-h-11 rounded-xl border bg-white px-3 dark:border-slate-600 dark:bg-slate-900"><option :value="10">10</option><option :value="20">20</option><option :value="50">50</option></select>
+          </label>
+        </div>
+        <nav aria-label="Post pages" class="flex flex-wrap items-center justify-between gap-3 text-sm">
+          <span>{{ pagination.totalMatched }} posts · {{ page }} / {{ pagination.pageCount }}</span>
+          <div class="flex gap-2">
+            <button type="button" :disabled="page <= 1 || fetching" @click="page--" class="min-h-11 rounded-xl border px-3 disabled:opacity-40">Previous page</button>
+            <button type="button" :disabled="page >= pagination.pageCount || fetching" @click="page++" class="min-h-11 rounded-xl border px-3 disabled:opacity-40">Next page</button>
+          </div>
+        </nav>
         <div
-          v-if="!filteredPosts.length"
+          v-if="!posts.length && !fetching"
           class="rounded-3xl border border-dashed border-slate-300 bg-white p-8 text-center text-slate-500 dark:border-slate-700 dark:bg-slate-900 dark:text-slate-300"
         >
-          No {{ tabLabel[activeTab].toLowerCase() }} posts.
+          No matching posts.
         </div>
 
         <div v-else class="grid gap-4">
           <WallModerationPostCard
-            v-for="post in filteredPosts"
+            v-for="post in posts"
             :key="post.id"
             :post="post"
             :menu-open="openMenuId === post.id"
@@ -80,37 +95,41 @@ function mib(bytes) { return (bytes / 1024 / 1024).toFixed(1); }
 const posts = ref([]), stats = ref({}), settings = ref({});
 const keywordsText = ref(''), blacklistAuthorsText = ref('');
 const openMenuId = ref(null), activeTab = ref('all'), sortOrder = ref('newest');
+const search=ref(''),perPage=ref(20),page=ref(1),pagination=ref({pageCount:1,totalMatched:0}),fetching=ref(false);
+let searchTimer,readController,syncingPage=false;
 const busy = ref(false), error = ref('');
 const uploadQrUrl = computed(() => import.meta.client ? `${window.location.origin}/${encodeURIComponent(currentEvent.value)}/wall/upload` : '');
 const tabLabel = { all: 'All', pending: 'Pending', approved: 'Approved', rejected: 'Rejected', pinned: 'Pinned' };
-const filteredPosts = computed(() => posts.value.filter(post => activeTab.value === 'all' ||
-  (activeTab.value === 'pinned' ? post.pinned : post.status === activeTab.value)).sort((a,b) =>
-  (sortOrder.value === 'oldest' ? 1 : -1) * (Date.parse(a.createdAt)-Date.parse(b.createdAt))));
+const view=()=>({page:page.value,perPage:perPage.value,search:search.value,status:activeTab.value,sort:sortOrder.value});
 function isOutsideWindow(post) { return Date.now()-Date.parse(post.createdAt) > (settings.value.windowMinutes || 1440)*60000; }
 function applyData(data) {
+  if(data.pagination){pagination.value=data.pagination;syncingPage=true;page.value=data.pagination.page;syncingPage=false;}
   storage.value = data.storage;
   posts.value = data.posts; stats.value = data.stats; settings.value = data.wall;
   keywordsText.value = data.wall.blacklistedKeywords.join(', ');
   blacklistAuthorsText.value = data.wall.blacklistedAuthors.join(', ');
 }
 async function loadSocialWall() {
-  if (!canEdit.value || busy.value) return;
-  busy.value = true;
+  if(!canEdit.value || busy.value) return;
+  readController?.abort();const controller=readController=new AbortController();fetching.value=true;error.value='';
   try {
-    const response = await $fetch(`/api/wall/${encodeURIComponent(currentEvent.value)}/posts`);
-    if (response.status !== 200) throw new Error(response.message);
-    applyData(response.data);
-  } catch (failure) { error.value = failure.message || 'Could not load social wall.'; }
-  finally { busy.value = false; }
+    const response=await $fetch(`/api/wall/${encodeURIComponent(currentEvent.value)}/posts`,{query:view(),signal:controller.signal});
+    if(controller!==readController || controller.signal.aborted) return;
+    if(response.status!==200) throw new Error(response.message);applyData(response.data);
+  }catch(failure){if(!controller.signal.aborted)error.value=failure.message || 'Could not load posts.';}
+  finally{if(controller===readController)fetching.value=false;}
 }
+function queueLoad(){clearTimeout(searchTimer);searchTimer=setTimeout(loadSocialWall,250);}
+watch([search,activeTab,sortOrder,perPage],()=>{syncingPage=true;page.value=1;syncingPage=false;openMenuId.value=null;queueLoad();},{flush:'sync'});
+watch(page,()=>{if(!syncingPage){openMenuId.value=null;queueLoad();}},{flush:'sync'});
 async function change(payload) {
   if (!canEdit.value || busy.value) return;
-  busy.value = true; error.value = ''; openMenuId.value = null;
+  readController?.abort();clearTimeout(searchTimer);busy.value = true; error.value = ''; openMenuId.value = null;
   try {
-    const response = await $fetch(`/api/wall/${encodeURIComponent(currentEvent.value)}/posts`, { method: 'POST', body: payload });
+    const response = await $fetch(`/api/wall/${encodeURIComponent(currentEvent.value)}/posts`, { method: 'POST', body: { ...payload, view: view() } });
     if (response.status !== 200) {
       if (response.status === 409) {
-        const fresh = await $fetch(`/api/wall/${encodeURIComponent(currentEvent.value)}/posts`);
+        const fresh = await $fetch(`/api/wall/${encodeURIComponent(currentEvent.value)}/posts`, { query: view() });
         if (fresh.status === 200) applyData(fresh.data);
       }
       throw new Error(response.message);
@@ -120,7 +139,7 @@ async function change(payload) {
   finally { busy.value = false; }
 }
 function saveSettings() {
-  const keys = ['enabled','publicUploadEnabled','moderationMode','windowMinutes','idleCycleSeconds','idleWaitSeconds'];
+  const keys = ['title','scrollSpeed','enabled','publicUploadEnabled','moderationMode','windowMinutes','idleCycleSeconds','idleWaitSeconds'];
   const patch = Object.fromEntries(keys.map(key => [key,settings.value[key]]));
   patch.blacklistedKeywords = keywordsText.value.split(/[,\n]+/).map(term => term.trim()).filter(Boolean);
   patch.blacklistedAuthors = blacklistAuthorsText.value.split(/[,\n]+/).map(term => term.trim()).filter(Boolean);
@@ -134,6 +153,6 @@ function toggleMenu(postId) { openMenuId.value = openMenuId.value === postId ? n
 function closeMenu(event) { if (event.key === 'Escape') openMenuId.value = null; }
 watch(canEdit,loadSocialWall);
 onMounted(() => { loadSocialWall(); document.addEventListener('keydown',closeMenu); });
-onBeforeUnmount(() => document.removeEventListener('keydown',closeMenu));
+onBeforeUnmount(() => {clearTimeout(searchTimer);readController?.abort();document.removeEventListener('keydown',closeMenu);});
 useHead({ title: `${currentEvent.value} | Social Wall` });
 </script>

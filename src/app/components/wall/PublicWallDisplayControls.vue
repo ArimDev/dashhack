@@ -31,6 +31,7 @@
         Show sharing QR code
         <input type="checkbox" :checked="showQr" aria-label="Show sharing QR code" @change="$emit('toggle-qr', $event.target.checked)" />
       </label>
+      <button type="button" :disabled="!qrAvailable" @click="$emit('open-qr'); open = false" class="min-h-11 rounded-xl border border-slate-300 px-3 text-sm disabled:opacity-40 dark:border-white/15">Expand QR code</button>
       <p class="text-xs text-slate-500 dark:text-slate-400">{{ postCount }} shared moments · Updates automatically</p>
     </section>
     <button ref="toggle" type="button" aria-label="Wall display settings" aria-controls="wall-display-settings" :aria-expanded="open"
@@ -51,9 +52,10 @@ defineProps({
   fullscreen: { type: Boolean, required: true },
   darkTheme: { type: Boolean, required: true },
   showQr: { type: Boolean, required: true },
+  qrAvailable: Boolean,
   postCount: { type: Number, required: true },
 });
-defineEmits(['set-speed', 'toggle-scroll', 'toggle-fullscreen', 'toggle-theme', 'toggle-qr']);
+defineEmits(['set-speed', 'toggle-scroll', 'toggle-fullscreen', 'toggle-theme', 'toggle-qr', 'open-qr']);
 const open = ref(false), controls = ref(null), toggle = ref(null);
 function dismiss(event) {
   if (!open.value) return;

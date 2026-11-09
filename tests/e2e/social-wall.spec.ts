@@ -133,9 +133,30 @@ test('moderation rejects stale changes and X settings persist without exposing s
 });
 
 
+test('moderation search and pagination request bounded pages and explain filters',async({page})=>{
+  const name=await setup(page),encoded=encodeURIComponent(name);
+  const base=(await(await page.request.get(`/api/wall/${encoded}/posts`)).json()).data;
+  const rows=Array.from({length:27},(_,i)=>({id:'page-'+i,platform:'manual',authorName:i<3?'FindAuthor':'Student',handle:'',text:'Post '+i,status:'pending',approved:false,hidden:false,pinned:false,revision:0,createdAt:new Date(Date.now()-i*1000).toISOString(),imageUrl:'',videoUrl:'',sourceUrl:''}));
+  let query;
+  await page.route('**/api/wall/'+encoded+'/posts?*',async route=>{
+    query=new URL(route.request().url()).searchParams;const search=query.get('search') || '',perPage=Number(query.get('perPage')),pageNumber=Number(query.get('page'));
+    const matches=rows.filter(p=>(p.text+' '+p.authorName).toLowerCase().includes(search.toLowerCase()));
+    return route.fulfill({json:{status:200,data:{...base,posts:matches.slice((pageNumber-1)*perPage,pageNumber*perPage),stats:{total:27,pending:27,approved:0,rejected:0,pinned:0},pagination:{page:pageNumber,perPage,pageCount:Math.max(1,Math.ceil(matches.length/perPage)),totalMatched:matches.length}}}});
+  });
+  await page.reload();await expect(page.getByTestId(/^wall-post-/)).toHaveCount(20);
+  await page.getByLabel('Per page',{exact:true}).selectOption('10');await expect(page.getByTestId(/^wall-post-/)).toHaveCount(10);
+  await page.getByRole('button',{name:'Next page',exact:true}).click();await expect(page.getByRole('navigation',{name:'Post pages'})).toContainText('2 / 3');await expect.poll(()=>query?.get('page')).toBe('2');
+  await page.getByLabel('Search posts',{exact:true}).fill('FindAuthor');await expect(page.getByTestId(/^wall-post-/)).toHaveCount(3);expect(query.get('page')).toBe('1');
+  await expect(page.getByRole('button',{name:'Next page',exact:true})).toBeDisabled();
+  await expect(page.getByLabel('Blocked words',{exact:true})).toHaveAttribute('aria-describedby','blocked-words-hint');
+  await expect(page.locator('#blocked-authors-hint')).toContainText('Commas or new lines');
+});
+
 test('projector wall keeps QR in the top corner and display controls collapsed', async ({ page }) => {
   const name = await setup(page), encoded = encodeURIComponent(name);
   await changed(page, () => page.getByLabel('Wall enabled', { exact: true }).check());
+  const config=(await(await page.request.get(`/api/wall/${encoded}/posts`)).json()).data.wall;
+  expect((await(await page.request.post(`/api/wall/${encoded}/posts`,{data:{action:'updateSettings',revision:config.revision,settings:{title:'AT&T Hackathon Junior 2026'}}})).json()).status).toBe(200);
   const post = (await (await page.request.post(`/api/wall/${encoded}`, { data: { text: 'Projector display' } })).json()).data;
   expect((await (await page.request.post(`/api/wall/${encoded}/posts`, { data: { action: 'approve', postId: post.id, revision: 0 } })).json()).status).toBe(200);
   // Avoid an external QR service dependency while verifying the displayed URL and geometry.
@@ -149,14 +170,23 @@ test('projector wall keeps QR in the top corner and display controls collapsed',
     const qr = page.getByRole('img', { name: 'Scan to upload a post' });
     await expect(qr).toBeVisible();
     expect(new URL(await qr.getAttribute('src')).searchParams.get('data')).toBe(new URL(`/${encoded}/wall/upload`, page.url()).href);
-    const qrBox = await qr.boundingBox(), feed = await page.locator('section').boundingBox(), cogBox = await cog.boundingBox();
+    const qrBox = await qr.boundingBox(), feed = await page.locator('[data-wall-viewport]').boundingBox(), cogBox = await cog.boundingBox();
     expect(qrBox.x).toBeGreaterThan(viewport.width * 0.8);
     expect(qrBox.y).toBeLessThan(40);
-    expect(qrBox.y + qrBox.height).toBeLessThanOrEqual(feed.y);
-    expect(feed.height).toBeGreaterThan(viewport.height * 0.75);
+    expect(qrBox.width).toBeGreaterThanOrEqual(160);
+    expect(viewport.width-qrBox.x-qrBox.width).toBeGreaterThanOrEqual(16);
+    expect(qrBox.y+qrBox.height).toBeGreaterThan(feed.y);
+    const rail=await page.getByTestId('wall-title-rail').boundingBox();expect(rail.x).toBe(0);
+    await expect(page.getByRole('heading',{name:'AT&T Hackathon Junior 2026',exact:true})).toHaveCSS('writing-mode','vertical-rl');
+    expect(feed.height).toBeGreaterThan(viewport.height * 0.9);
     expect(cogBox.y).toBeGreaterThan(viewport.height - 80);
     await cog.click();
     await expect(page.getByRole('switch', { name: 'Enable auto-scroll layout' })).toBeChecked();
+    await page.getByRole('button',{name:'Expand QR code',exact:true}).click();
+    const dialog=page.getByRole('dialog');await expect(dialog).toBeVisible();
+    const full=await dialog.boundingBox();expect(full.width).toBe(viewport.width);expect(full.height).toBe(viewport.height);
+    await expect(dialog.getByRole('img',{name:'Scan to upload a post'})).toBeVisible();
+    await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(cog).toBeFocused();await cog.click();
     await page.getByLabel('Show sharing QR code', { exact: true }).uncheck();
     await expect(qr).toHaveCount(0);
     await page.getByRole('switch', { name: 'Enable auto-scroll layout' }).uncheck();
@@ -167,7 +197,7 @@ test('projector wall keeps QR in the top corner and display controls collapsed',
     await expect(cog).toBeFocused();
     await expect(cog).toHaveAttribute('aria-expanded', 'false');
     await cog.click();
-    await page.getByRole('heading', { name }).click();
+    await page.getByRole('heading', { name:'AT&T Hackathon Junior 2026',exact:true }).click();
     await expect(cog).toHaveAttribute('aria-expanded', 'false');
   }
 });

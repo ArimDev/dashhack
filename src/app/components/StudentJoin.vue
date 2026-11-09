@@ -10,37 +10,36 @@
             </div>
             <div v-if="!result" class="space-y-4">
                 <template v-if="!verified">
-                    <p>Přihlas se svým GitHub účtem. Přístup můžeš získat pouze pro účet, který ověří GitHub; žádné uživatelské jméno sem nezadáváš.</p>
-                    <button @click="start" :disabled="busy" class="min-h-12 w-full rounded-xl bg-bluey-500 px-4 font-semibold text-white hover:bg-bluey-600 disabled:opacity-50">{{ busy ? 'Přesměrovávám…' : 'Vybrat svůj GitHub účet' }}</button>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Stejný odkaz mohou použít všichni členové tvého týmu. Nesdílej ho mimo tým.</p>
+                    <p>Přihlas se svým GitHub účtem:</p>
+                    <button @click="start" :disabled="busy" class="min-h-12 w-full rounded-xl bg-bluey-500 px-4 font-semibold text-white hover:bg-bluey-600 disabled:opacity-50">{{ busy ? 'Přesměrovávám…' : 'Pokračovat přes GitHub' }}</button>
                 </template>
                 <template v-else>
-                    <p>GitHub ověřil tvůj účet: <strong>{{ verified.username }}</strong>.</p>
+                    <p>Přihlášený účet: <strong>{{ verified.username }}</strong>.</p>
                     <button @click="join" :disabled="busy" class="min-h-12 w-full rounded-xl bg-bluey-500 px-4 font-semibold text-white hover:bg-bluey-600 disabled:opacity-50">{{ busy ? 'Posílám pozvánku…' : `Získat přístup jako ${verified.username}` }}</button>
-                    <p class="text-sm text-gray-500 dark:text-gray-400">Není to tvůj účet? Změň přihlášený účet na GitHubu a znovu otevři původní odkaz od organizátora.</p>
+                    <p class="text-sm text-gray-500 dark:text-gray-400">Jiný účet? Přepni ho na GitHubu a otevři týmový odkaz znovu.</p>
                 </template>
             </div>
             <div v-else class="space-y-4" role="status">
                 <p v-if="result.alreadyHasAccess"><strong>{{ result.username }}</strong> už má přístup k repozitáři.</p>
                 <template v-else>
                     <p>Pozvánka pro <strong>{{ result.username }}</strong> je připravená.</p>
-                    <ol class="list-decimal space-y-3 pl-6">
-                        <li>Otevři e-mailovou schránku spojenou s GitHub účtem <strong>{{ result.username }}</strong>. Najdi pozvánku od GitHubu k tomuto repozitáři (zkontroluj i spam).</li>
-                        <li>Na GitHubu ověř, že jsi přihlášen/a jako <strong>{{ result.username }}</strong>. Pokud používáš jiný účet, nejdřív ho odhlas a přihlas se správným.</li>
-                        <li>V e-mailu klikni na <strong>View invitation</strong> a na GitHubu pozvánku přijmi. Teprve potom můžeš otevřít soukromý repozitář a nahrávat kód.</li>
+                    <ol class="list-decimal space-y-2 pl-6">
+                        <li>Otevři e-mail od GitHubu (zkontroluj i spam).</li>
+                        <li>Klikni na <strong>View invitation</strong> a přijmi pozvánku účtem <strong>{{ result.username }}</strong>.</li>
                     </ol>
-                    <p class="text-sm text-gray-600 dark:text-gray-300">E-mail zatím nepřišel? Otevři GitHub oznámení tlačítkem níže a vyhledej pozvánku k repozitáři svého týmu.</p>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">E-mail chybí? Zkus GitHub oznámení.</p>
                     <a href="https://github.com/notifications" target="_blank" rel="noopener noreferrer" class="flex min-h-12 items-center justify-center rounded-xl bg-bluey-500 px-4 font-semibold text-white">Otevřít GitHub oznámení</a>
-                    <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
-                        <strong>Zobrazuje GitHub chybu 404?</strong> Ověř účet <strong>{{ result.username }}</strong> v profilové nabídce GitHubu a otevři odkaz z e-mailu znovu v prohlížeči s tímto účtem. Soukromý repozitář je přístupný až po přijetí pozvánky. Pokud 404 přetrvává i pod správným účtem, obrať se na organizátora; není potřeba znovu posílat žádost.
-                    </div>
+                    <details class="text-sm text-gray-600 dark:text-gray-300">
+                        <summary class="cursor-pointer py-2">GitHub hlásí 404?</summary>
+                        <p>Ověř, že jsi na GitHubu přihlášen/a jako <strong>{{ result.username }}</strong>. Pak otevři pozvánku z e-mailu znovu.</p>
+                    </details>
                 </template>
                 <a :href="result.repositoryUrl" rel="noreferrer" class="inline-flex min-h-11 items-center underline">{{ result.alreadyHasAccess ? 'Otevřít repozitář' : 'Po přijetí pozvánky: otevřít repozitář' }}</a>
 
             </div>
         </template>
         <p v-if="error" role="alert" class="break-words text-red-700 dark:text-red-300">{{ error }}</p>
-        <p v-if="!team && !loading" class="text-sm">Ověř, že jsi otevřel/a celý odkaz od organizátora, včetně části za znakem #.</p>
+        <p v-if="!team && !loading" class="text-sm">Otevři celý týmový odkaz včetně části za #.</p>
     </main>
 </template>
 <script setup>

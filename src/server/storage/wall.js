@@ -5,12 +5,12 @@ import { dirname } from 'node:path';
 import { MAX_UPLOAD_BYTES, WALL_MEDIA_BUDGET, EVENT_MEDIA_BUDGET, VOLUME_RESERVE, MAX_DATABASE_BYTES } from '../../shared/wallUploads.js';
 
 export { MAX_UPLOAD_BYTES } from '../../shared/wallUploads.js';
-export const WALL_DEFAULTS = Object.freeze({ enabled: false, publicUploadEnabled: true, moderationMode: 'manual',
+export const WALL_DEFAULTS = Object.freeze({ title: '', enabled: false, publicUploadEnabled: true, moderationMode: 'manual',
     windowMinutes: 1440, idleCycleSeconds: 25, idleWaitSeconds: 5, scrollSpeed: 40, queryHashtags: [],
     xEnabled: false, xPollIntervalMinutes: 5, xQueryHashtags: [], xQueryHandles: [],
     instagramEnabled: false, instagramPollIntervalMinutes: 5, instagramQueryHashtags: [],
     blacklistedKeywords: [], blacklistedAuthors: [] });
-const PUBLIC_KEYS = ['enabled', 'publicUploadEnabled', 'windowMinutes', 'idleCycleSeconds', 'idleWaitSeconds', 'scrollSpeed', 'revision'];
+const PUBLIC_KEYS = ['title', 'enabled', 'publicUploadEnabled', 'windowMinutes', 'idleCycleSeconds', 'idleWaitSeconds', 'scrollSpeed', 'revision'];
 function fail(message, status = 400) { throw new StorageError(status, message); }
 function string(value = '', max = 1000) {
     if (typeof value !== 'string' || value.length > max) fail('Invalid wall text');
@@ -44,7 +44,8 @@ function validateSettings(patch) {
     const next = {};
     for (const [key, value] of Object.entries(patch)) {
         if (!Object.hasOwn(WALL_DEFAULTS,key)) fail('Unknown wall setting');
-        if (['enabled', 'publicUploadEnabled', 'xEnabled', 'instagramEnabled'].includes(key)) {
+        if (key === 'title') next[key] = string(value, 120);
+        else if (['enabled', 'publicUploadEnabled', 'xEnabled', 'instagramEnabled'].includes(key)) {
             if (typeof value !== 'boolean') fail('Invalid wall switch');
             next[key] = value;
         } else if (key === 'moderationMode') {
@@ -154,13 +155,23 @@ export class WallStore {
             AND status='approved' AND (pinned=1 OR created_at>=?) ORDER BY pinned DESC,created_at DESC,id LIMIT ? OFFSET ?`).all(id, cutoff, Math.min(limit, 200 - offset), offset).map(normalize) : [];
         return { wall: Object.fromEntries(PUBLIC_KEYS.map(key => [key, wall[key]])), posts, total, hasMore: offset + posts.length < total };
     }
-    moderationFeed(session, name) {
-        const id = this.store.authorize(session, name);
-        const posts = this.db.query('SELECT * FROM wall_posts WHERE event_id=? AND deleted=0 ORDER BY pinned DESC,created_at DESC,id LIMIT 1000').all(id).map(normalize);
-        return { wall: this.config(id), posts, storage: this.storageUsage(id), stats: { total: posts.length,
-            approved: posts.filter(p => p.approved && !p.hidden).length, pending: posts.filter(p => p.status === 'pending').length,
-            rejected: posts.filter(p => p.status === 'rejected').length, hidden: posts.filter(p => p.hidden).length,
-            pinned: posts.filter(p => p.pinned).length } };
+    moderationFeed(session, name, view = null) {
+        const id=this.store.authorize(session,name);
+        if (!view) {
+            const posts=this.db.query('SELECT * FROM wall_posts WHERE event_id=? AND deleted=0 ORDER BY pinned DESC,created_at DESC,id LIMIT 1000').all(id).map(normalize);
+            return {wall:this.config(id),posts,storage:this.storageUsage(id),stats:{total:posts.length,approved:posts.filter(p=>p.approved&&!p.hidden).length,pending:posts.filter(p=>p.status==='pending').length,rejected:posts.filter(p=>p.status==='rejected').length,hidden:posts.filter(p=>p.hidden).length,pinned:posts.filter(p=>p.pinned).length}};
+        }
+        const page=Number(view.page ?? 1),perPage=Number(view.perPage ?? 20),search=string(view.search ?? '',200),status=view.status ?? 'all',sort=view.sort ?? 'newest';
+        if(!Number.isInteger(page)||page<1||page>1000000||!Number.isInteger(perPage)||perPage<1||perPage>100||!['all','pending','approved','rejected','pinned'].includes(status)||!['newest','oldest'].includes(sort)) fail('Invalid post page or filter');
+        const clauses=['event_id=?','deleted=0'],params=[id];
+        if(status==='pinned') clauses.push('pinned=1');
+        else if(status!=='all'){clauses.push('status=?');params.push(status);}
+        if(search){clauses.push("(text || ' ' || author_name || ' ' || handle) LIKE ? ESCAPE '\\'");params.push('%'+search.replace(/[\\%_]/g,'\\$&')+'%');}
+        const where=clauses.join(' AND '),totalMatched=this.db.query('SELECT COUNT(*) total FROM wall_posts WHERE '+where).get(...params).total;
+        const pageCount=Math.max(1,Math.ceil(totalMatched/perPage)),currentPage=Math.min(page,pageCount);
+        const posts=this.db.query('SELECT * FROM wall_posts WHERE '+where+' ORDER BY created_at '+(sort==='oldest'?'ASC':'DESC')+',id LIMIT ? OFFSET ?').all(...params,perPage,(currentPage-1)*perPage).map(normalize);
+        const stats=this.db.query(`SELECT COUNT(*) total,COALESCE(SUM(status='approved' AND hidden=0),0) approved,COALESCE(SUM(status='pending'),0) pending,COALESCE(SUM(status='rejected'),0) rejected,COALESCE(SUM(hidden=1),0) hidden,COALESCE(SUM(pinned=1),0) pinned FROM wall_posts WHERE event_id=? AND deleted=0`).get(id);
+        return {wall:this.config(id),posts,stats,storage:this.storageUsage(id),pagination:{page:currentPage,perPage,pageCount,totalMatched}};
     }
     /**
      * @param {string} name

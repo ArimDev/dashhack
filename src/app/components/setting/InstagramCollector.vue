@@ -26,6 +26,7 @@
         Hashtags to query
         <textarea v-model="hashtags" rows="3" @input="success = false" placeholder="Example only: #yourhackathon" class="mt-1 w-full rounded-lg border border-gray-300 p-3 dark:border-gray-600 placeholder:text-slate-400 placeholder:font-normal placeholder:italic placeholder:opacity-75 dark:placeholder:text-slate-500"></textarea>
       </label>
+      <p class="mb-3 text-xs text-slate-500">Separate hashtags with spaces, commas or new lines.</p>
       <div class="flex flex-wrap gap-2">
         <button type="submit" :disabled="saving || pausing" class="min-h-11 rounded-lg bg-bluey-500 px-4 font-semibold text-white disabled:opacity-50">{{ saving ? 'Saving...' : 'Save Instagram queries' }}</button>
         <button type="button" :disabled="saving || pausing" @click="load" class="min-h-11 rounded-lg border px-4">Reload saved settings</button>

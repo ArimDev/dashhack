@@ -15,7 +15,7 @@
       class="relative mx-auto flex h-full w-full max-w-[1800px] flex-col"
     >
       <PublicWallHeader
-        :event-name="eventName"
+        :event-name="displayTitle"
         :wall-status="wallStatus"
         :uploads-enabled="uploadsEnabled"
         :show-sharing-qr="showQr && uploadsEnabled && wallStatus === 'available'"
@@ -25,7 +25,7 @@
       <PublicWallState
         v-if="wallStatus !== 'available' || !posts.length"
         :status="wallStatus"
-        :event-name="eventName"
+        :event-name="displayTitle"
       />
 
       <section
@@ -37,7 +37,7 @@
         @pointerleave="pauseForInteraction"
         @focusin="pauseForInteraction"
         @wheel.passive="pauseForInteraction"
-        class="relative min-h-0 flex-1 px-4"
+        class="relative min-h-0 flex-1 pb-4 pl-12 pr-4 pt-4 sm:pl-16"
         :class="isScrollingEnabled ? 'overflow-hidden' : 'overflow-y-auto mt-2'"
       >
         <div
@@ -73,6 +73,7 @@
         :fullscreen="isFullscreen"
         :dark-theme="isDarkTheme"
         :show-qr="showQr"
+        :qr-available="uploadsEnabled && wallStatus === 'available'"
         :post-count="totalPosts"
         :scroll-speed="scrollSpeed"
         :speed-saving="speedSaving"
@@ -82,8 +83,16 @@
         @toggle-fullscreen="toggleFullscreen"
         @toggle-theme="toggleTheme"
         @toggle-qr="showQr = $event"
+        @open-qr="qrExpanded = true"
       />
     </div>
+    <DialogShell v-if="qrExpanded" title="Share a moment" fullscreen @close="closeQr">
+      <div class="flex max-w-full flex-col items-center gap-4 text-center">
+        <p class="text-xl font-bold">{{ displayTitle }}</p>
+        <img v-if="qrUrl" :src="qrUrl" alt="Scan to upload a post" width="640" height="640" class="aspect-square h-[min(70vmin,calc(100dvh-14rem),640px)] w-auto max-w-full rounded-2xl bg-white p-4" />
+        <a :href="uploadUrl" target="_blank" rel="noopener noreferrer" class="min-h-11 text-bluey-600 underline dark:text-bluey-300">Share a moment</a>
+      </div>
+    </DialogShell>
     <DialogShell v-if="readingPost" title="Full post" @close="closePost">
       <WallPostCard :post="readingPost" full-text />
     </DialogShell>
@@ -107,7 +116,9 @@ const postColumns = computed(() => {
   return columns;
 });
 function updateColumnCount() { columnCount.value = innerWidth >= 1536 ? 4 : innerWidth >= 1280 ? 3 : innerWidth >= 640 ? 2 : 1; }
-const readingPost = ref(null);
+const readingPost = ref(null), qrExpanded=ref(false), wallTitle=ref('');
+const displayTitle=computed(()=>wallTitle.value || eventName.value);
+function closeQr(){readerResumeUntil=performance.now()+idleWaitSeconds.value*1000;pauseUntil=readerResumeUntil;qrExpanded.value=false;nextTick(()=>document.querySelector('[aria-label="Wall display settings"]')?.focus());}
 function openPost(post) {
   pauseForInteraction();
   // Loop copies support pointer input, but focus returns to the one accessible card.
@@ -142,10 +153,10 @@ function pauseForInteraction(event) {
 }
 let feedResizeObserver, qrMedia;
 function updateQr() {
-  qrUrl.value = qrMedia?.matches && showQr.value && uploadsEnabled.value && wallStatus.value === 'available' ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(uploadUrl.value)}` : '';
+  qrUrl.value = ((qrMedia?.matches && showQr.value) || qrExpanded.value) && uploadsEnabled.value && wallStatus.value === 'available' ? `https://api.qrserver.com/v1/create-qr-code/?size=640x640&data=${encodeURIComponent(uploadUrl.value)}` : '';
 }
 
-watch([showQr, uploadsEnabled, wallStatus, eventName], updateQr);
+watch([showQr, qrExpanded, uploadsEnabled, wallStatus, eventName], updateQr);
 
 const feedCopyCount = computed(() => {
   if (!isScrollingEnabled.value) return 1;
@@ -227,6 +238,7 @@ function applySettings(wall) {
   if (!speedSaving.value) scrollSpeed.value = wall.scrollSpeed || 40;
   idleWaitSeconds.value = wall.idleWaitSeconds;
   uploadsEnabled.value = wall.publicUploadEnabled;
+  wallTitle.value=wall.title || '';
 }
 function applyPosts(incoming) {
   const previous = new Map(posts.value.map(post => [post.id, post]));
@@ -300,13 +312,13 @@ function scrollFeed(timestamp) {
 function syncAnimation() {
   cancelAnimationFrame(animationFrame);
   previousFrame = 0;
-  animationFrame = isScrollingEnabled.value && !readingPost.value && !document.hidden && posts.value.length ? requestAnimationFrame(scrollFeed) : 0;
+  animationFrame = isScrollingEnabled.value && !readingPost.value && !qrExpanded.value && !document.hidden && posts.value.length ? requestAnimationFrame(scrollFeed) : 0;
 }
 function visibilityChanged() {
   syncAnimation();
   if (!document.hidden) { revealMore(); loadWall(); }
 }
-watch([isScrollingEnabled, () => posts.value.length, readingPost], () => { if (import.meta.client) syncAnimation(); });
+watch([isScrollingEnabled, () => posts.value.length, readingPost, qrExpanded], () => { if (import.meta.client) syncAnimation(); });
 onMounted(() => {
   updateColumnCount();
   window.addEventListener('resize', updateColumnCount, { passive: true });
@@ -348,13 +360,13 @@ watch(
   { flush: "post" }
 );
 
-useHead({
-  title: `${eventName.value} | Wall`,
+useHead(() => ({
+  title: `${displayTitle.value} | Wall`,
   meta: [
     {
       name: "viewport",
       content: "width=device-width, initial-scale=1, viewport-fit=cover, interactive-widget=resizes-content",
     },
   ],
-});
+}));
 </script>
