@@ -150,7 +150,7 @@ watch([showQr, uploadsEnabled, wallStatus, eventName], updateQr);
 const feedCopyCount = computed(() => {
   if (!isScrollingEnabled.value) return 1;
   if (!feedCopyHeight.value) return 2;
-  return Math.min(4, Math.max(2, Math.ceil(feedViewportHeight.value / feedCopyHeight.value) + 2));
+  return Math.min(4, Math.max(2, Math.ceil(feedViewportHeight.value / feedCopyHeight.value) + 1));
 });
 
 const feedTrackStyle = computed(() => ({
