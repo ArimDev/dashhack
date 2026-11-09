@@ -5,5 +5,6 @@ export default apiHandler(async event => {
     setHeader(event,'Cache-Control','no-store');
     if (event.method === 'POST') wall.action(session,name,await readBody(event));
     else if (event.method !== 'GET') return { status: 405, message: 'Method Not Allowed' };
-    return { status: 200, data: { ...wall.moderationFeed(session,name), xConfigured: !!useRuntimeConfig().xBearerToken } };
+    return { status: 200, data: { ...wall.moderationFeed(session,name), xConfigured: !!useRuntimeConfig().xBearerToken,
+        instagramConfigured: !!process.env.NUXT_CAPTAPI_API_KEY } };
 });

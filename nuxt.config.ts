@@ -77,6 +77,14 @@ export default defineNuxtConfig({
 	},
 
 	fonts: {
+		providers: {
+			adobe: false,
+			bunny: false,
+			fontshare: false,
+			fontsource: false,
+			googleicons: false,
+			google: false,
+		},
 		families: [
 			{ name: 'Public Sans', provider: 'google' },
 		],

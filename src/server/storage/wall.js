@@ -8,6 +8,7 @@ export { MAX_UPLOAD_BYTES } from '../../shared/wallUploads.js';
 export const WALL_DEFAULTS = Object.freeze({ enabled: false, publicUploadEnabled: true, moderationMode: 'manual',
     windowMinutes: 1440, idleCycleSeconds: 25, idleWaitSeconds: 5, queryHashtags: [],
     xEnabled: false, xPollIntervalMinutes: 5, xQueryHashtags: [], xQueryHandles: [],
+    instagramEnabled: false, instagramPollIntervalMinutes: 5, instagramQueryHashtags: [],
     blacklistedKeywords: [], blacklistedAuthors: [] });
 const PUBLIC_KEYS = ['enabled', 'publicUploadEnabled', 'windowMinutes', 'idleCycleSeconds', 'idleWaitSeconds'];
 function fail(message, status = 400) { throw new StorageError(status, message); }
@@ -43,7 +44,7 @@ function validateSettings(patch) {
     const next = {};
     for (const [key, value] of Object.entries(patch)) {
         if (!Object.hasOwn(WALL_DEFAULTS,key)) fail('Unknown wall setting');
-        if (['enabled', 'publicUploadEnabled', 'xEnabled'].includes(key)) {
+        if (['enabled', 'publicUploadEnabled', 'xEnabled', 'instagramEnabled'].includes(key)) {
             if (typeof value !== 'boolean') fail('Invalid wall switch');
             next[key] = value;
         } else if (key === 'moderationMode') {
@@ -51,8 +52,9 @@ function validateSettings(patch) {
             next[key] = value;
         } else if (Array.isArray(WALL_DEFAULTS[key])) {
             next[key] = list(value, key.toLowerCase().includes('hashtag') ? 'hashtag' : key === 'xQueryHandles' ? 'handle' : 'filter');
+            if (key === 'instagramQueryHashtags' && next[key].some(term => [...term.slice(1)].length < 2)) fail('Instagram hashtags need at least 2 characters');
         } else {
-            const [min, max] = key === 'windowMinutes' ? [15, 10080] : key === 'xPollIntervalMinutes' ? [1, 180] : [5, 600];
+            const [min, max] = key === 'windowMinutes' ? [15, 10080] : ['xPollIntervalMinutes', 'instagramPollIntervalMinutes'].includes(key) ? [1, 180] : [5, 600];
             if (!Number.isInteger(value) || value < min || value > max) fail(`Invalid ${key} (${min}–${max})`);
             next[key] = value;
         }
@@ -117,9 +119,13 @@ export class WallStore {
     }
     config(id) {
         const row = this.db.query('SELECT * FROM wall_settings WHERE event_id=?').get(id);
-        return { ...WALL_DEFAULTS, ...JSON.parse(row?.settings || '{}'), revision: row?.revision || 0,
+        const settings = JSON.parse(row?.settings || '{}');
+        delete settings.instagramModerationMode;
+        return { ...WALL_DEFAULTS, ...settings, revision: row?.revision || 0,
             xLastPollAt: row?.last_poll_at ? new Date(row.last_poll_at).toISOString() : null,
-            xLastPollError: row?.last_poll_error || '' };
+            xLastPollError: row?.last_poll_error || '',
+            instagramLastPollAt: settings.instagramLastPollAt || null,
+            instagramLastPollError: settings.instagramLastPollError || '' };
     }
     updateSettings(session, name, patch, revision) {
         const id = this.store.authorize(session, name), validated = validateSettings(patch);
@@ -127,6 +133,8 @@ export class WallStore {
             const old = this.config(id);
             if (revision !== old.revision) fail('Wall settings changed. Reload before saving.', 409);
             const settings = Object.fromEntries(Object.keys(WALL_DEFAULTS).map(key => [key, old[key]]));
+            settings.instagramLastPollAt = old.instagramLastPollAt || null;
+            settings.instagramLastPollError = old.instagramLastPollError || '';
             Object.assign(settings, validated);
             this.db.query(`INSERT INTO wall_settings(event_id,settings,revision) VALUES(?,?,?)
                 ON CONFLICT(event_id) DO UPDATE SET settings=excluded.settings,revision=excluded.revision`)
@@ -154,13 +162,15 @@ export class WallStore {
         const { id: eventId } = this.event(name);
         return this.db.transaction(() => {
             const wall = this.config(eventId);
-            if (!wall.enabled || (collected ? !wall.xEnabled : !wall.publicUploadEnabled)) fail('Public uploads are disabled for this wall.', 403);
+            const platform = collected ? input.platform ?? 'x' : input.platform ?? 'manual';
+            if (collected && !['x', 'instagram'].includes(platform)) fail('Invalid collected platform');
+            if (!wall.enabled || (collected ? !(platform === 'instagram' ? wall.instagramEnabled : wall.xEnabled) : !wall.publicUploadEnabled)) fail('Public uploads are disabled for this wall.', 403);
             const id = collected ? string(input.id, 100) : randomUUID();
-            if (collected && !/^x-\d+$/.test(id)) fail('Invalid X post identifier');
+            if (collected && !(platform === 'instagram' ? /^instagram-[a-z\d_-]+$/i : /^x-\d+$/).test(id)) fail('Invalid collected post identifier');
             if (collected && this.db.query('SELECT 1 FROM wall_posts WHERE event_id=? AND id=?').get(eventId,id)) return null;
             this.assertUploadCapacity(eventId, media?.data?.length || 0);
             if (this.db.query('SELECT COUNT(*) AS n FROM wall_posts').get().n >= 5000) fail('Wall post storage is full. Ask an organizer to archive the event.', 413);
-            const post = { id, platform: collected ? 'x' : input.platform ?? 'manual',
+            const post = { id, platform,
                 authorName: string(input.authorName,80), handle: string(input.handle,80), text: string(input.text,5000),
                 imageUrl: url(input.imageUrl), videoUrl: url(input.videoUrl), sourceUrl: url(input.sourceUrl) };
             if (!['manual','x','instagram'].includes(post.platform)) fail('Invalid post platform');
@@ -184,10 +194,10 @@ export class WallStore {
         const id = this.store.authorize(session,name);
         // Stopping is idempotent and independent of the caller's stale settings revision.
         // This path can only turn collection off; enabling still requires a matching revision.
-        if (input.action === 'pauseX') {
+        if (input.action === 'pauseX' || input.action === 'pauseInstagram') {
             const current = this.config(id);
             // Even when already OFF, advance the revision to fence out an older in-flight enable.
-            return this.updateSettings(session, name, { xEnabled: false }, current.revision);
+            return this.updateSettings(session, name, { [input.action === 'pauseInstagram' ? 'instagramEnabled' : 'xEnabled']: false }, current.revision);
         }
         if (input.action === 'updateSettings') return this.updateSettings(session,name,input.settings,input.revision);
         if (input.action === 'setMode') return this.updateSettings(session,name,{ moderationMode: input.mode },input.revision);

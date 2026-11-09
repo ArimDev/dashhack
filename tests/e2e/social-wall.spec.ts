@@ -14,6 +14,37 @@ async function changed(page,action) {
   await action(); expect((await (await response).json()).status).toBe(200);
 }
 
+test('Instagram collector saves hashtag drafts, preserves conflicts and stops without API credits', async ({ page }) => {
+  const name = await setup(page), encoded = encodeURIComponent(name);
+  await page.goto(`/app/${encoded}/settings`);
+  const form = page.locator('form').filter({ has: page.getByRole('heading', { name: 'Instagram social collector' }) });
+  await expect(form.getByRole('status').filter({ hasText: 'Instagram polling is paused.' })).toBeVisible();
+  await form.getByLabel('Hashtags to query').fill('#hackathon, junior2026\n#hackathon');
+  await form.getByLabel('Polling interval (minutes)').fill('12');
+  await changed(page, () => form.getByRole('button', { name: 'Save Instagram queries' }).click());
+  let data = (await (await page.request.get(`/api/wall/${encoded}/posts`)).json()).data;
+  expect(data.wall.instagramEnabled).toBe(false);
+  expect(data.wall.instagramQueryHashtags).toEqual(['#hackathon', '#junior2026']);
+  expect(data.wall.instagramModerationMode).toBeUndefined();
+  expect(data.wall.xEnabled).toBe(false); expect(data.wall.moderationMode).toBe('manual');
+  await page.reload(); await expect(form.getByLabel('Hashtags to query')).toHaveValue('#hackathon, #junior2026');
+  await page.request.post(`/api/wall/${encoded}/posts`, { data: { action: 'updateSettings', revision: data.wall.revision, settings: { windowMinutes: 1800 } } });
+  await form.getByLabel('Hashtags to query').fill('#unsaved');
+  const conflict = page.waitForResponse(response => response.url().includes('/posts') && response.request().method() === 'POST');
+  await form.getByRole('button', { name: 'Save Instagram queries' }).click();
+  expect((await (await conflict).json()).status).toBe(409);
+  await expect(form.getByRole('alert')).toContainText('Your draft is kept');
+  await changed(page, () => form.getByRole('button', { name: 'Stop Instagram polling', exact: true }).click());
+  await expect(form.getByRole('status').filter({ hasText: 'OFF, confirmed by the server' })).toBeVisible();
+  await expect(form.getByLabel('Hashtags to query')).toHaveValue('#unsaved');
+  data = (await (await page.request.get(`/api/wall/${encoded}/posts`)).json()).data;
+  expect(data.wall.instagramQueryHashtags).toEqual(['#hackathon', '#junior2026']);
+  expect(data.wall.instagramEnabled).toBe(false);
+  expect(JSON.stringify((await (await page.request.get(`/api/wall/${encoded}`)).json()))).not.toContain('instagramQuery');
+  await page.setViewportSize({ width: 390, height: 844 });
+  expect(await form.evaluate(element => element.scrollWidth <= element.clientWidth + 1)).toBe(true);
+});
+
 test('public photo submission stays private until approved and remains subject to moderation',async ({ page,browser }) => {
   const name=await setup(page);
   await changed(page,() => page.getByLabel('Wall enabled',{ exact:true }).check());
