@@ -108,7 +108,7 @@ export class GitHubAppService {
         try { user = await this.api(`/users/${encodeURIComponent(username)}`, readToken); }
         catch (error) { if (error.status === 404) throw new StorageError(400, 'GitHub username not found. Check the spelling.'); throw error; }
         if (user.type !== 'User' || !/^[a-z\d-]{1,39}$/i.test(user.login)) throw new StorageError(400, 'Use a personal GitHub account.');
-        const invitationUrl = `https://github.com/${repository}/invitations`;
+        let invitationUrl = `https://github.com/${repository}/invitations`;
         try {
             const access = await this.api(`/repos/${repository}/collaborators/${user.login}/permission`, readToken);
             if (['admin', 'write', 'maintain', 'push'].includes(access.permission)) return { username: user.login, alreadyHasAccess: true, invitationUrl, repositoryUrl: `https://github.com/${repository}` };
@@ -123,7 +123,16 @@ export class GitHubAppService {
         if (!grant.token) throw new StorageError(502, 'GitHub could not authorize this invitation.');
         let alreadyHasAccess = false;
         try {
-            alreadyHasAccess = (await this.api(`/repos/${repository}/collaborators/${user.login}`, grant.token, { method: 'PUT', body: { permission: 'push' } })) === null;
+            const invitation = await this.api(`/repos/${repository}/collaborators/${user.login}`, grant.token, { method: 'PUT', body: { permission: 'push' } });
+            alreadyHasAccess = invitation === null;
+            // Prefer GitHub's actual invitation URL, including any invitation-specific query.
+            // Never expose an API URL or an unexpected external destination to students.
+            if (typeof invitation?.html_url === 'string') {
+                try {
+                    const target = new URL(invitation.html_url);
+                    if (target.origin === 'https://github.com' && !target.username && !target.password && target.pathname.toLowerCase() === `/${repository}/invitations`.toLowerCase()) invitationUrl = target.href;
+                } catch { /* Keep the repository invitation fallback. */ }
+            }
         } finally {
             // Revoke the short-lived privileged token immediately after use. It is never cached or persisted.
             try { await this.api('/installation/token', grant.token, { method: 'DELETE' }); } catch { /* It still expires at GitHub's normal one-hour limit. */ }

@@ -49,7 +49,7 @@ describe('Reusable team invitation links',()=>{
 });
 const response=(value,status=200)=>new Response(status===204?null:JSON.stringify(value),{status});
 describe('GitHub collaborator grants',()=>{
- function service({permission='none',admin='write',failInvite=false,updatedExisting=false}={}){
+ function service({permission='none',admin='write',failInvite=false,updatedExisting=false,invitationUrl=undefined}={}){
   const calls=[];const app=new GitHubAppService(config,{request:async(url,options)=>{
    const path=new URL(url).pathname,body=options.body?JSON.parse(options.body):undefined;calls.push({path,method:options.method,body,authorization:options.headers.Authorization});
    if(path==='/repos/school/505')return response({id:999});
@@ -57,7 +57,7 @@ describe('GitHub collaborator grants',()=>{
    if(path.endsWith('/permission'))return response({permission});
    if(path==='/app/installations/123')return response({permissions:{administration:admin}});
    if(path.endsWith('/access_tokens'))return response({token:'privileged-one-repo'});
-   if(path==='/repos/school/505/collaborators/Student')return failInvite?response({},403):updatedExisting?response(null,204):response({id:100});
+   if(path==='/repos/school/505/collaborators/Student')return failInvite?response({},403):updatedExisting?response(null,204):response({id:100,html_url:invitationUrl});
    if(path==='/installation/token')return response(null,204);
    throw Error('Unexpected '+path);
   }});app.installationToken=async()=> 'read-only-token';app.jwt=()=> 'app-jwt';return {app,calls};
@@ -68,6 +68,13 @@ describe('GitHub collaborator grants',()=>{
   expect(calls.find(call=>call.path.endsWith('/access_tokens')).body).toEqual({repository_ids:[999],permissions:{administration:'write',metadata:'read'}});
   expect(calls.find(call=>call.method==='PUT')).toMatchObject({path:'/repos/school/505/collaborators/Student',body:{permission:'push'},authorization:'Bearer privileged-one-repo'});
   expect(calls.at(-1)).toMatchObject({path:'/installation/token',method:'DELETE'});expect(app.tokens.size).toBe(0);
+ });
+ test('uses the provider invitation URL while rejecting unexpected destinations',async()=>{
+  const url='https://github.com/school/505/invitations?invitation_id=100';
+  expect((await service({invitationUrl:url}).app.inviteCollaborator(123,'school/505','student')).invitationUrl).toBe(url);
+  for(const bad of ['https://example.com/invitations','https://github.com/other/repo/invitations','https://api.github.com/user/repository_invitations/100','not a URL']) {
+   expect((await service({invitationUrl:bad}).app.inviteCollaborator(123,'school/505','student')).invitationUrl).toBe('https://github.com/school/505/invitations');
+  }
  });
  test('upgrading an existing reader requires no invitation acceptance',async()=>{
   const {app}=service({permission:'read',updatedExisting:true});expect((await app.inviteCollaborator(123,'school/505','student')).alreadyHasAccess).toBe(true);

@@ -9,7 +9,7 @@
                 <p class="mt-1 break-all text-sm text-gray-500 dark:text-gray-400">{{ team.repository }}</p>
             </div>
             <form v-if="!result" @submit.prevent="join" class="space-y-4">
-                <p>Zadej své uživatelské jméno na GitHubu. Pozvánku obdržíš automaticky; pak ji přijmi na GitHubu a můžeš nahrávat kód do repozitáře svého týmu.</p>
+                <p>Zadej své uživatelské jméno na GitHubu. Pozvánku obdržíš automaticky. Potom zkontroluj e-mail spojený s tímto GitHub účtem a pozvánku přijmi; tím získáš přístup ke kódu svého týmu.</p>
                 <label class="block font-semibold">Tvoje GitHub uživatelské jméno
                     <input v-model="username" autocomplete="off" autocapitalize="none" spellcheck="false" maxlength="40" required placeholder="Např. student-dev" class="mt-2 min-h-12 w-full rounded-xl border border-gray-300 bg-transparent px-3 text-base font-normal dark:border-gray-600" />
                 </label>
@@ -20,10 +20,18 @@
                 <p v-if="result.alreadyHasAccess"><strong>{{ result.username }}</strong> už má přístup k repozitáři.</p>
                 <template v-else>
                     <p>Pozvánka pro <strong>{{ result.username }}</strong> je připravená.</p>
-                    <p>Přihlas se na GitHubu jako <strong>{{ result.username }}</strong> a přijmi pozvánku. Tím získáš oprávnění nahrávat kód.</p>
+                    <ol class="list-decimal space-y-3 pl-6">
+                        <li>Otevři e-mailovou schránku spojenou s GitHub účtem <strong>{{ result.username }}</strong>. Najdi pozvánku od GitHubu k tomuto repozitáři (zkontroluj i spam).</li>
+                        <li>Na GitHubu ověř, že jsi přihlášen/a jako <strong>{{ result.username }}</strong>. Pokud používáš jiný účet, nejdřív ho odhlas a přihlas se správným.</li>
+                        <li>V e-mailu klikni na <strong>View invitation</strong> a na GitHubu pozvánku přijmi. Teprve potom můžeš otevřít soukromý repozitář a nahrávat kód.</li>
+                    </ol>
+                    <p class="text-sm text-gray-600 dark:text-gray-300">E-mail zatím nepřišel? Pozvánku můžeš najít také v <a href="https://github.com/notifications" target="_blank" rel="noopener noreferrer" class="underline">GitHub oznámeních</a> nebo otevřít tlačítkem níže.</p>
                     <a :href="result.invitationUrl" rel="noreferrer" class="flex min-h-12 items-center justify-center rounded-xl bg-bluey-500 px-4 font-semibold text-white">Přijmout pozvánku na GitHubu</a>
+                    <div class="rounded-xl border border-amber-300 bg-amber-50 p-4 text-sm text-amber-950 dark:border-amber-800 dark:bg-amber-950 dark:text-amber-100">
+                        <strong>Zobrazuje GitHub chybu 404?</strong> Ověř účet <strong>{{ result.username }}</strong> v profilové nabídce GitHubu a otevři odkaz z e-mailu znovu v prohlížeči s tímto účtem. Soukromý repozitář je přístupný až po přijetí pozvánky. Pokud 404 přetrvává i pod správným účtem, obrať se na organizátora; není potřeba znovu posílat žádost.
+                    </div>
                 </template>
-                <a :href="result.repositoryUrl" rel="noreferrer" class="inline-flex min-h-11 items-center underline">Otevřít repozitář</a>
+                <a :href="result.repositoryUrl" rel="noreferrer" class="inline-flex min-h-11 items-center underline">{{ result.alreadyHasAccess ? 'Otevřít repozitář' : 'Po přijetí pozvánky: otevřít repozitář' }}</a>
                 <button @click="result = null; error = ''" class="block min-h-11 text-sm underline">Zadat jiné GitHub jméno</button>
             </div>
         </template>
