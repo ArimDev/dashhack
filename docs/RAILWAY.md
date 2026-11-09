@@ -144,3 +144,11 @@ Keep one app instance. SQLite serializes writes; this setup is for a private eve
 From another repository, `railway init --name APP_NAME --workspace WORKSPACE_ID --json` creates/links a separate project, and `railway add --service WEB_NAME --json` adds an empty web service. Add persistent storage only if needed, set runtime variables, deploy and verify. To create-and-deploy immediately, `railway up --new --name APP_NAME` makes a fresh project. DashHack already exists, so use its explicit IDs instead.
 
 For source-controlled infrastructure, use `.railway/railway.ts` and inspect a plan. Do not add deprecated `railway.json`/`railway.toml` for a new service; [Railway's current documentation](https://docs.railway.com/config-as-code) disallows new opt-ins and gives a 2026-12-01 cutoff for existing files.
+
+
+## Projector wall controls — 2026-11-09
+
+- Source commit `dbc1745`, Railway deployment `ad0ec598-8cf6-4609-9c90-862177cfcad8`: **SUCCESS** on the existing production service/volume.
+- Desktop QR restored to the top-right header corner, without a separate sharing banner. Display controls now live behind a bottom-right cogwheel, closed initially; the persistent status footer was moved into the panel. Phone upload links/manual scrolling remain available.
+- Validation: 35 browser scenarios and production build pass (2.06 MB / 527 kB gzip). Live 1920×1080, 1280×720 and 390×844 checks passed for initial collapsed controls, QR positioning/visibility, theme switching, Escape/focus restoration and no horizontal overflow.
+- Consistent on-volume snapshot: `/data/backups/before-wall-display-1794222333809.sqlite`. Post-deployment integrity is `ok`, schema remains 7, and all eight content-table fingerprints match the snapshot baseline: 3 events, 15 teams, 45 notes, 1 mentor, 0 GitHub connections, 1 wall configuration, 10 posts and 3 media attachments. No demo reseed, settings mutation or data restore was performed.

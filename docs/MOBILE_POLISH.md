@@ -46,3 +46,6 @@ The mobile feature is committed as `b037c64`, with event-scoped login follow-up 
 The public wall now puts the desktop sharing QR in the upper-right header corner, outside the feed, instead of a separate full-width banner. A small bottom-right cogwheel opens display settings (auto-scroll, fullscreen, theme and QR visibility); the panel starts closed and dismisses with the cogwheel, Escape or an outside click. Escape restores focus to the toggle. Post counts/update information are inside the panel rather than occupying a permanent footer. Phone sharing remains a direct link, without fetching a hidden QR image, and touch/reduced-motion devices retain manual scrolling by default. Display choices are local to the current page and do not change moderation settings.
 
 No dependencies, schema or persistence changes. Browser coverage includes 1920×1080 and 1280×720 projector layouts, QR destination/position/clearance, collapsed settings, QR visibility, scrolling and keyboard/outside dismissal, plus existing mobile and moderation coverage. All 35 browser scenarios pass.
+
+
+Deployed source `dbc1745` successfully as Railway `ad0ec598-8cf6-4609-9c90-862177cfcad8`. Live projector/phone display checks and unchanged production content fingerprints were verified; see [Railway record](RAILWAY.md#projector-wall-controls--2026-11-09).
