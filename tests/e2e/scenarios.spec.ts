@@ -496,7 +496,7 @@ test('plain team notes can opt into and out of Kanban while preserving content a
   await openBoard(page);
   await expect(page.getByTestId('note-content')).toHaveValue('Team prefers a mentor visit after lunch');
   await boardSaved(page, () => page.getByTestId('note-status').selectOption('In Progress'));
-  await boardSaved(page, () => page.getByRole('checkbox', { name: 'Track in Kanban' }).uncheck());
+  await boardSaved(page, () => page.getByRole('checkbox', { name: 'Track in Kanban' }).click());
   await expect(page.getByTestId('note-content')).toHaveCount(0);
   await page.reload();
   await expect(page.getByText('No Kanban notes yet.', { exact: true })).toBeVisible();
