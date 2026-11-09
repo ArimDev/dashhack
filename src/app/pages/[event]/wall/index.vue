@@ -17,37 +17,11 @@
       <PublicWallHeader
         :event-name="eventName"
         :wall-status="wallStatus"
-        :scrolling-enabled="isScrollingEnabled"
-        :fullscreen="isFullscreen"
-        :dark-theme="isDarkTheme"
-        @toggle-scroll="setScrollingEnabled"
-        @toggle-fullscreen="toggleFullscreen"
-        @toggle-theme="toggleTheme"
+        :uploads-enabled="uploadsEnabled"
+        :show-sharing-qr="showQr && uploadsEnabled && wallStatus === 'available'"
+        :upload-url="uploadUrl"
+        :qr-url="qrUrl"
       />
-
-      <a
-        v-if="uploadsEnabled && wallStatus === 'available'"
-        :href="uploadUrl"
-        target="_blank"
-        rel="noopener noreferrer"
-        class="group mx-4 my-3 flex shrink-0 items-center gap-3 rounded-xl border border-cyan-300/40 bg-bluey-500/10 p-2.5 text-left shadow-sm shadow-slate-900/5 backdrop-blur-xl transition hover:border-cyan-300/70 hover:bg-bluey-500/15 dark:border-white/10 dark:bg-white/4 dark:shadow-black/20"
-      >
-        <img v-if="qrUrl"
-          :src="qrUrl"
-          alt="Scan to upload a post"
-          class="hidden lg:block h-14 w-14 shrink-0 rounded-lg bg-white p-1"
-        />
-        <span class="min-w-0">
-          <span
-            class="block text-sm font-bold leading-tight text-slate-900 dark:text-white"
-            >Share a moment</span
-          >
-          <span
-            class="mt-0.5 block text-xs leading-relaxed text-slate-600 dark:text-slate-300"
-            ><span class="lg:hidden">Tap to add a photo, video or message</span><span class="hidden lg:inline">Scan or tap to share</span></span
-          >
-        </span>
-      </a>
       <PublicWallState
         v-if="wallStatus !== 'available' || !posts.length"
         :status="wallStatus"
@@ -85,19 +59,17 @@
         </div>
       </section>
 
-      <footer
-        v-if="wallStatus === 'available'"
-        class="mt-3 pb-3 px-4 flex shrink-0 items-center justify-between gap-3 px-1 text-xs text-slate-600 dark:text-slate-500"
-      >
-        <div
-          class=""
-        >
-          <p >{{ posts.length }} shared moments</p>
-        </div>
-        <span class="inline-flex items-center gap-1.5"
-          ><Icon name="heroicons:arrow-path" size="13px" /> Updates automatically</span
-        >
-      </footer>
+      <PublicWallDisplayControls
+        :scrolling-enabled="isScrollingEnabled"
+        :fullscreen="isFullscreen"
+        :dark-theme="isDarkTheme"
+        :show-qr="showQr"
+        :post-count="posts.length"
+        @toggle-scroll="setScrollingEnabled"
+        @toggle-fullscreen="toggleFullscreen"
+        @toggle-theme="toggleTheme"
+        @toggle-qr="showQr = $event"
+      />
     </div>
   </main>
 </template>
@@ -113,6 +85,7 @@ const eventName = computed(() => route.params.event || "event");
 const posts = ref([]);
 const wallStatus = ref("loading");
 const qrUrl = ref("");
+const showQr = ref(true);
 const isFullscreen = ref(false);
 const isScrollingEnabled = ref(true);
 const feedViewport = ref(null);
@@ -126,8 +99,10 @@ let pauseUntil = 0, loading = false;
 function pauseForInteraction() { pauseUntil = performance.now() + idleWaitSeconds.value * 1000; }
 let feedResizeObserver, qrMedia;
 function updateQr() {
-  qrUrl.value = qrMedia?.matches ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(uploadUrl.value)}` : '';
+  qrUrl.value = qrMedia?.matches && showQr.value && uploadsEnabled.value && wallStatus.value === 'available' ? `https://api.qrserver.com/v1/create-qr-code/?size=240x240&data=${encodeURIComponent(uploadUrl.value)}` : '';
 }
+
+watch([showQr, uploadsEnabled, wallStatus, eventName], updateQr);
 
 const feedCopyCount = computed(() => {
   if (!isScrollingEnabled.value) return 1;

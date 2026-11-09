@@ -37,6 +37,7 @@ test('public photo submission stays private until approved and remains subject t
     const approved=await guest.request.get(url);expect(approved.headers()['content-type']).toContain('image/png');expect(await approved.body()).toEqual(png);
     const range=await guest.request.get(url,{ headers:{ Range:'bytes=0-7' } });expect(range.status()).toBe(206);expect(await range.body()).toEqual(png.subarray(0,8));
     await upload.goto(`/${encodeURIComponent(name)}/wall`);
+    await upload.getByRole('button',{ name:'Wall display settings', exact:true }).click();
     await upload.getByRole('switch',{ name:'Enable auto-scroll layout' }).uncheck();
     await expect(upload.getByText('Náš první prototyp!',{ exact:true })).toBeVisible();
     await expect(upload.getByRole('button',{ name:/Switch to .* mode/ })).toBeVisible();
@@ -97,4 +98,44 @@ test('moderation rejects stale changes and X settings persist without exposing s
   const publicBody=await (await page.request.get(`/api/wall/${encoded}`)).json();
   expect(JSON.stringify(publicBody)).not.toContain('xQuery');
   expect(JSON.stringify(publicBody)).not.toContain('Bearer');
+});
+
+
+test('projector wall keeps QR in the top corner and display controls collapsed', async ({ page }) => {
+  const name = await setup(page), encoded = encodeURIComponent(name);
+  await changed(page, () => page.getByLabel('Wall enabled', { exact: true }).check());
+  const post = (await (await page.request.post(`/api/wall/${encoded}`, { data: { text: 'Projector display' } })).json()).data;
+  expect((await (await page.request.post(`/api/wall/${encoded}/posts`, { data: { action: 'approve', postId: post.id, revision: 0 } })).json()).status).toBe(200);
+  // Avoid an external QR service dependency while verifying the displayed URL and geometry.
+  await page.route('https://api.qrserver.com/**', route => route.fulfill({ contentType: 'image/png', body: png }));
+  for (const viewport of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }]) {
+    await page.setViewportSize(viewport);
+    await page.goto(`/${encoded}/wall`);
+    const cog = page.getByRole('button', { name: 'Wall display settings', exact: true });
+    await expect(cog).toHaveAttribute('aria-expanded', 'false');
+    await expect(page.getByRole('switch')).toHaveCount(0);
+    const qr = page.getByRole('img', { name: 'Scan to upload a post' });
+    await expect(qr).toBeVisible();
+    expect(new URL(await qr.getAttribute('src')).searchParams.get('data')).toBe(new URL(`/${encoded}/wall/upload`, page.url()).href);
+    const qrBox = await qr.boundingBox(), feed = await page.locator('section').boundingBox(), cogBox = await cog.boundingBox();
+    expect(qrBox.x).toBeGreaterThan(viewport.width * 0.8);
+    expect(qrBox.y).toBeLessThan(40);
+    expect(qrBox.y + qrBox.height).toBeLessThanOrEqual(feed.y);
+    expect(feed.height).toBeGreaterThan(viewport.height * 0.75);
+    expect(cogBox.y).toBeGreaterThan(viewport.height - 80);
+    await cog.click();
+    await expect(page.getByRole('switch', { name: 'Enable auto-scroll layout' })).toBeChecked();
+    await page.getByLabel('Show sharing QR code', { exact: true }).uncheck();
+    await expect(qr).toHaveCount(0);
+    await page.getByRole('switch', { name: 'Enable auto-scroll layout' }).uncheck();
+    await expect(page.locator('article')).toHaveCount(1);
+    await page.getByLabel('Show sharing QR code', { exact: true }).check();
+    await expect(qr).toBeVisible();
+    await page.keyboard.press('Escape');
+    await expect(cog).toBeFocused();
+    await expect(cog).toHaveAttribute('aria-expanded', 'false');
+    await cog.click();
+    await page.getByRole('heading', { name }).click();
+    await expect(cog).toHaveAttribute('aria-expanded', 'false');
+  }
 });

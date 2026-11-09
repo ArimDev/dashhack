@@ -1,0 +1,53 @@
+<template>
+  <div ref="controls" class="fixed bottom-[max(0.75rem,env(safe-area-inset-bottom))] right-[max(0.75rem,env(safe-area-inset-right))] z-40">
+    <section v-if="open" id="wall-display-settings" aria-label="Wall display settings"
+      class="mb-2 flex max-h-[calc(100dvh-5rem)] w-72 max-w-[calc(100vw-1.5rem)] flex-col gap-3 overflow-y-auto rounded-2xl border border-slate-300 bg-white p-4 shadow-xl dark:border-white/15 dark:bg-slate-900">
+      <h2 class="text-sm font-bold">Wall display settings</h2>
+      <label class="relative flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-300 px-3 text-sm dark:border-white/15">
+        <span>Auto-scroll</span>
+        <input :checked="scrollingEnabled" type="checkbox" role="switch" aria-label="Enable auto-scroll layout"
+          @change="$emit('toggle-scroll', $event.target.checked)" />
+      </label>
+      <button type="button" class="flex min-h-11 items-center gap-3 rounded-xl border border-slate-300 px-3 text-sm dark:border-white/15"
+        :aria-label="fullscreen ? 'Exit full screen' : 'Enter full screen'" @click="$emit('toggle-fullscreen')">
+        <Icon :name="fullscreen ? 'heroicons:arrows-pointing-in' : 'heroicons:arrows-pointing-out'" size="18px" />
+        {{ fullscreen ? 'Exit full screen' : 'Enter full screen' }}
+      </button>
+      <button type="button" class="flex min-h-11 items-center gap-3 rounded-xl border border-slate-300 px-3 text-sm dark:border-white/15"
+        :aria-label="darkTheme ? 'Switch to light mode' : 'Switch to dark mode'" @click="$emit('toggle-theme')">
+        <Icon :name="darkTheme ? 'heroicons:sun' : 'heroicons:moon'" size="18px" />
+        {{ darkTheme ? 'Switch to light mode' : 'Switch to dark mode' }}
+      </button>
+      <label class="flex min-h-11 cursor-pointer items-center justify-between gap-3 text-sm">
+        Show sharing QR code
+        <input type="checkbox" :checked="showQr" aria-label="Show sharing QR code" @change="$emit('toggle-qr', $event.target.checked)" />
+      </label>
+      <p class="text-xs text-slate-500 dark:text-slate-400">{{ postCount }} shared moments · Updates automatically</p>
+    </section>
+    <button ref="toggle" type="button" aria-label="Wall display settings" aria-controls="wall-display-settings" :aria-expanded="open"
+      class="ml-auto flex h-11 w-11 items-center justify-center rounded-full border border-slate-300/60 bg-white/80 text-slate-600 shadow-sm backdrop-blur transition hover:bg-white focus-visible:outline-2 focus-visible:outline-cyan-500 dark:border-white/15 dark:bg-slate-900/80 dark:text-slate-300"
+      @click="open = !open">
+      <Icon :name="open ? 'heroicons:x-mark' : 'heroicons:cog-6-tooth'" size="20px" />
+    </button>
+  </div>
+</template>
+
+<script setup>
+defineProps({
+  scrollingEnabled: { type: Boolean, required: true },
+  fullscreen: { type: Boolean, required: true },
+  darkTheme: { type: Boolean, required: true },
+  showQr: { type: Boolean, required: true },
+  postCount: { type: Number, required: true },
+});
+defineEmits(['toggle-scroll', 'toggle-fullscreen', 'toggle-theme', 'toggle-qr']);
+const open = ref(false), controls = ref(null), toggle = ref(null);
+function dismiss(event) {
+  if (!open.value) return;
+  if (event.type === 'keydown') {
+    if (event.key === 'Escape') { open.value = false; toggle.value?.focus(); }
+  } else if (!controls.value?.contains(event.target)) open.value = false;
+}
+onMounted(() => { document.addEventListener('pointerdown', dismiss); document.addEventListener('keydown', dismiss); });
+onBeforeUnmount(() => { document.removeEventListener('pointerdown', dismiss); document.removeEventListener('keydown', dismiss); });
+</script>

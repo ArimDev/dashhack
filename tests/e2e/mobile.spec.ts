@@ -109,7 +109,10 @@ test('mobile public wall is manually readable and uploads/moderation fit without
     const guest=await browser.newContext({viewport:{width:390,height:844},isMobile:true,hasTouch:true});
     try{
         const visitor=await guest.newPage();await visitor.goto(`/${d.encoded}/wall`);
+        await expect(visitor.getByRole('switch',{name:'Enable auto-scroll layout'})).toHaveCount(0);
+        await visitor.getByRole('button',{name:'Wall display settings',exact:true}).tap();
         await expect(visitor.getByRole('switch',{name:'Enable auto-scroll layout'})).not.toBeChecked();
+        await visitor.getByRole('button',{name:'Wall display settings',exact:true}).tap();
         await expect(visitor.locator('article')).toHaveCount(1);
         await visitor.getByRole('button',{name:'Read full post'}).tap();await expect(visitor.locator('article')).toContainText(post.text);
         await fits(visitor);
