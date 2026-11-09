@@ -13,7 +13,7 @@ Updated 2026-11-09 for the SQLite branch and mobile UI. This project is separate
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `a2080dab-049d-4751-ad11-76ac1bdc0a95` — SUCCESS, lazy wall / saved speeds / schema 7 |
+| Latest verified deployment | `062f6046-4993-414c-b10c-d41bc345f3bb` — SUCCESS, invitation inbox / email steps / schema 7 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -303,3 +303,11 @@ Live Chromium check: first cards at 1,350 ms, motion at 1,368 ms with all image 
 Consistent pre-deployment backup: `/data/backups/before-wall-lazy-1794259486471.sqlite`, 0600. Post-deployment SQLite integrity remains ok, schema 7; all eight content-table fingerprints match exactly (3 events, 15 real teams, 0 notes, 1 mentor, 1 GitHub connection, 1 wall settings row, 110 posts and 3 media). X and Instagram collectors remain OFF. No provider collection request, content replacement or production settings write was needed.
 
 Validation: 66 unit tests / 427 assertions, targeted Chromium and WebKit/Safari/iPhone checks covering progressive startup, deferred media, speed persistence/authorization, reader/hover five-second resume and responsive routes; final production build and isolated production API smoke pass. Final loop-copy reduction was rechecked in both browser engines.
+
+## Recipient invitation inbox and email acceptance — 2026-11-09
+
+Source **`b74f9e8`** (with `293f732`), deployment **`062f6046-4993-414c-b10c-d41bc345f3bb` — SUCCESS**. The student success screen now directs recipients to their own **https://github.com/notifications**, not the private repository `/invitations` page. Czech steps explicitly explain checking email/spam, confirming the invited account and accepting the email invitation. The repository link is labelled for use after acceptance. GitHub itself returned the reported `/invitations` URL for the non-expired pending test invitation; delivery was confirmed, recipient browser acceptance was not. The service preserves a valid provider invitation URL for API compatibility, but the UI does not expose it as the acceptance destination.
+
+Validation: 67 unit tests / 432 assertions; two targeted Chromium plus four Safari/iPhone WebKit checks; final production build. Live 390px browser verification used a real anonymous team preview and a browser-intercepted submission: email steps, notifications button, zero `/invitations` links and no horizontal overflow pass. No additional real invitation was sent. Real recipient acceptance still requires their GitHub account.
+
+Backup `/data/backups/before-invite-guidance-1794261366267.sqlite`, 0600. All eight content-table fingerprints match before/after deployment; integrity ok, schema 7, X/Instagram polling OFF. Current counts include the user-requested temporary test team and intervening user notes: 3 events, 16 teams, 3 notes, 1 mentor, 1 GitHub connection, 1 wall-settings row, 110 posts, 3 media. The 15 real teams and existing pending invitations are preserved. Temporary team/repository cleanup record is private and ignored at `.data/test-team-invitation.json`; wait until the user finishes testing. No schema, dependency or infrastructure change.
