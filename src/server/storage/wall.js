@@ -1,7 +1,10 @@
 import { randomUUID } from 'node:crypto';
 import { StorageError } from './sqlite.js';
+import { statfsSync } from 'node:fs';
+import { dirname } from 'node:path';
+import { MAX_UPLOAD_BYTES, WALL_MEDIA_BUDGET, EVENT_MEDIA_BUDGET, VOLUME_RESERVE, MiB } from '../../shared/wallUploads.js';
 
-export const MAX_UPLOAD_BYTES = 4 * 1024 * 1024;
+export { MAX_UPLOAD_BYTES } from '../../shared/wallUploads.js';
 export const WALL_DEFAULTS = Object.freeze({ enabled: false, publicUploadEnabled: true, moderationMode: 'manual',
     windowMinutes: 1440, idleCycleSeconds: 25, idleWaitSeconds: 30, queryHashtags: [],
     xEnabled: false, xPollIntervalMinutes: 5, xQueryHashtags: [], xQueryHandles: [],
@@ -63,7 +66,7 @@ export function filtersAllow(post, wall) {
         !wall.blacklistedKeywords.some(term => combined.includes(term.toLowerCase()));
 }
 export function validateMedia(data, mime) {
-    if (!data?.length || data.length > MAX_UPLOAD_BYTES) fail('Uploads must be at most 4 MiB', 413);
+    if (!data?.length || data.length > MAX_UPLOAD_BYTES) fail('Prepared photos must be at most 2 MiB. Use the upload page to resize your photo.', 413);
     const head = Buffer.from(data.subarray(0, 32));
     const valid = {
         'image/jpeg': head[0] === 0xff && head[1] === 0xd8 && head[2] === 0xff,
@@ -71,10 +74,6 @@ export function validateMedia(data, mime) {
         'image/gif': /^GIF8[79]a/.test(head.toString()),
         'image/webp': head.toString('ascii',0,4) === 'RIFF' && head.toString('ascii',8,12) === 'WEBP',
         'image/avif': head.toString('ascii',4,8) === 'ftyp' && /avif|avis/.test(head.toString('ascii',8)),
-        'video/mp4': head.toString('ascii',4,8) === 'ftyp' && !/avif|avis/.test(head.toString('ascii',8)),
-        'video/quicktime': head.toString('ascii',4,8) === 'ftyp',
-        'video/webm': head.subarray(0,4).equals(Buffer.from([26,69,223,163])),
-        'video/ogg': head.toString('ascii',0,4) === 'OggS',
     };
     if (!valid[mime]) fail('Unsupported file type or file does not match its media type', 415);
 }
@@ -85,7 +84,31 @@ function normalize(row) {
         revision: row.revision, createdAt: row.created_at };
 }
 export class WallStore {
-    constructor(store) { this.store = store; this.db = store.db; }
+    constructor(store, { freeBytes } = {}) {
+        this.store = store; this.db = store.db;
+        this.freeBytes = freeBytes || (() => {
+            if (!store.filename) return Number.MAX_SAFE_INTEGER;
+            try { const fs = statfsSync(dirname(store.filename)); return fs.bavail * fs.bsize; }
+            catch { fail('Upload storage is temporarily unavailable.', 503); }
+        });
+    }
+    storageUsage(id) {
+        const total = this.db.query('SELECT COALESCE(SUM(length(data)),0) AS bytes FROM wall_media').get().bytes;
+        const event = this.db.query('SELECT COALESCE(SUM(length(data)),0) AS bytes FROM wall_media WHERE event_id=?').get(id).bytes;
+        return { totalBytes: total, totalLimit: WALL_MEDIA_BUDGET, eventBytes: event, eventLimit: EVENT_MEDIA_BUDGET,
+            availableBytes: this.freeBytes(), reserveBytes: VOLUME_RESERVE };
+    }
+    assertUploadCapacity(id, incoming = 0) {
+        const usage = this.storageUsage(id);
+        if (usage.totalBytes + incoming > usage.totalLimit || usage.eventBytes + incoming > usage.eventLimit) {
+            fail('Wall media storage is full. Remove old uploads first.', 413);
+        }
+        // Allow for database pages, WAL writes and checkpointing, not only the BLOB bytes.
+        const dbBytes = this.db.query('PRAGMA page_count').get().page_count * this.db.query('PRAGMA page_size').get().page_size;
+        if (usage.availableBytes < VOLUME_RESERVE + incoming * 3 || dbBytes + incoming > 64 * MiB) {
+            fail('Uploads are paused to protect application storage. Ask an organizer to free space.', 507);
+        }
+    }
     event(name) {
         const row = typeof name === 'string' && this.db.query('SELECT id,name FROM events WHERE name=? OR id=?').get(name,name);
         if (!row) fail('Event not found', 404);
@@ -121,7 +144,7 @@ export class WallStore {
     moderationFeed(session, name) {
         const id = this.store.authorize(session, name);
         const posts = this.db.query('SELECT * FROM wall_posts WHERE event_id=? AND deleted=0 ORDER BY pinned DESC,created_at DESC,id LIMIT 1000').all(id).map(normalize);
-        return { wall: this.config(id), posts, stats: { total: posts.length,
+        return { wall: this.config(id), posts, storage: this.storageUsage(id), stats: { total: posts.length,
             approved: posts.filter(p => p.approved && !p.hidden).length, pending: posts.filter(p => p.status === 'pending').length,
             rejected: posts.filter(p => p.status === 'rejected').length, hidden: posts.filter(p => p.hidden).length,
             pinned: posts.filter(p => p.pinned).length } };
@@ -134,19 +157,18 @@ export class WallStore {
             const id = collected ? string(input.id, 100) : randomUUID();
             if (collected && !/^x-\d+$/.test(id)) fail('Invalid X post identifier');
             if (collected && this.db.query('SELECT 1 FROM wall_posts WHERE event_id=? AND id=?').get(eventId,id)) return null;
+            this.assertUploadCapacity(eventId, media?.data?.length || 0);
+            if (this.db.query('SELECT COUNT(*) AS n FROM wall_posts').get().n >= 5000) fail('Wall post storage is full. Ask an organizer to archive the event.', 413);
             const post = { id, platform: collected ? 'x' : input.platform ?? 'manual',
                 authorName: string(input.authorName,80), handle: string(input.handle,80), text: string(input.text,5000),
                 imageUrl: url(input.imageUrl), videoUrl: url(input.videoUrl), sourceUrl: url(input.sourceUrl) };
             if (!['manual','x','instagram'].includes(post.platform)) fail('Invalid post platform');
             if (media) {
                 validateMedia(media.data, media.mime);
-                const total = this.db.query('SELECT COALESCE(SUM(length(data)),0) AS bytes FROM wall_media').get().bytes;
-                const eventTotal = this.db.query('SELECT COALESCE(SUM(length(data)),0) AS bytes FROM wall_media WHERE event_id=?').get(eventId).bytes;
-                if (total + media.data.length > 64*1024*1024 || eventTotal + media.data.length > 32*1024*1024) fail('Wall media storage is full. Remove old uploads first.', 413);
                 post.imageUrl = ''; post.videoUrl = '';
-                post[media.mime.startsWith('image/') ? 'imageUrl' : 'videoUrl'] = `/api/wall/${eventId}/media/${id}`;
+                post.imageUrl = `/api/wall/${eventId}/media/${id}`;
             }
-            if (!post.text && !post.imageUrl && !post.videoUrl) fail('Post description, image or video is required.');
+            if (!post.text && !post.imageUrl && !post.videoUrl) fail('Post description or image is required.');
             if (!filtersAllow(post, wall)) fail('This post is blocked by the wall filters.',422);
             if (this.db.query('SELECT COUNT(*) AS n FROM wall_posts WHERE event_id=? AND deleted=0').get(eventId).n >= 1000) fail('Wall is full. Remove old posts first.',413);
             const createdAt = collected && Number.isFinite(Date.parse(input.createdAt)) ? new Date(input.createdAt).toISOString() : this.store.timestamp();

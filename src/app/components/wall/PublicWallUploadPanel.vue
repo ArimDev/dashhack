@@ -8,7 +8,7 @@
       </p>
       <h1 class="mt-3 text-3xl font-black tracking-tight sm:text-4xl">Share a moment</h1>
       <p class="mt-2 text-sm text-slate-600 dark:text-slate-400">
-        Add a photo, video, or a few words from the event.
+        Add a photo or a few words from the event.
       </p>
     </header>
 
@@ -63,8 +63,8 @@
       </div>
     </div>
 
-    <form v-else class="space-y-5 p-6 sm:p-8" @submit.prevent="submitPost">
-      <div v-if="status === 'error'" class="flex items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
+    <form v-else class="space-y-5 p-6 sm:p-8" @submit.prevent="submitPost" @paste="handlePaste" @dragover.prevent @drop.prevent="handleDrop">
+      <div v-if="status === 'error'" role="alert" class="flex items-start gap-3 rounded-2xl border border-red-500/30 bg-red-500/10 p-4">
         <Icon name="heroicons:exclamation-triangle" size="20px" class="mt-0.5 shrink-0 text-red-600 dark:text-red-300" />
         <div class="min-w-0">
           <p class="text-sm font-bold text-red-800 dark:text-red-200">Submission failed</p>
@@ -95,23 +95,31 @@
       </label>
 
       <label class="block text-sm font-semibold text-slate-800 dark:text-slate-200">
-        Add a photo or video (maximum 4 MiB)
+        Add a photo
         <input
+          ref="fileInput"
           type="file"
-          accept="image/jpeg,image/png,image/gif,image/webp,image/avif,video/mp4,video/webm,video/ogg,video/quicktime"
+          :disabled="preparing || submitting"
+          accept="image/*,.heic,.heif"
           class="mt-2 block min-w-0 w-full rounded-2xl border border-slate-300 bg-white px-3 py-3 text-sm text-slate-700 file:mr-3 file:rounded-full file:border-0 file:bg-cyan-400 file:px-4 file:py-2 file:text-sm file:font-bold file:text-slate-950 dark:border-slate-700 dark:bg-slate-950 dark:text-slate-300"
           @change="handleFileChange"
         />
       </label>
 
+      <p class="text-xs text-slate-600 dark:text-slate-400">Photos up to 25 MiB are resized for the wall. One photo per post.</p>
+      <div class="flex flex-wrap gap-3">
+        <button type="button" :disabled="preparing || submitting" class="min-h-11 rounded-xl border border-slate-300 px-4 text-sm font-semibold dark:border-slate-600 disabled:opacity-50" @click="pastePhoto">Paste photo</button>
+        <button v-if="form.file" type="button" :disabled="preparing || submitting" class="min-h-11 rounded-xl border border-slate-300 px-4 text-sm dark:border-slate-600" @click="removeFile">Remove attachment</button>
+      </div>
+      <p v-if="preparing || fileSummary" role="status" class="text-sm text-slate-600 dark:text-slate-300">{{ preparing ? 'Preparing your photo…' : fileSummary }}</p>
+      <p class="text-xs text-slate-600 dark:text-slate-400">Choose from Photo Library or Camera. You can also paste a copied photo here or into your story. Your original stays on your phone.</p>
+
       <div v-if="previewUrl" class="rounded-2xl border border-slate-300 bg-slate-100 p-3 dark:border-slate-700 dark:bg-slate-950">
         <img
-          v-if="isImagePreview"
           :src="previewUrl"
           alt="Upload preview"
           class="max-h-80 w-full rounded-xl object-contain"
         />
-        <video v-else :src="previewUrl" controls class="max-h-80 w-full rounded-xl bg-black" />
       </div>
 
       <div class="flex flex-col gap-3 pt-1 sm:flex-row sm:items-center sm:justify-between">
@@ -120,7 +128,7 @@
         </p>
         <button
           type="submit"
-          :disabled="submitting || (!form.text.trim() && !form.file)"
+          :disabled="submitting || preparing || (!form.text.trim() && !form.file)"
           class="inline-flex min-h-12 w-full sm:w-auto items-center justify-center rounded-full bg-cyan-400 px-6 py-3 text-sm font-bold text-slate-950 transition hover:bg-cyan-300 disabled:cursor-not-allowed disabled:opacity-50 sm:ml-auto"
         >
           {{ submitting ? "Submitting..." : "Submit for approval" }}
@@ -134,35 +142,65 @@
 </template>
 
 <script setup>
+import { prepareWallPhoto } from '../../utils/prepareWallPhoto.js';
 const props = defineProps({
   eventName: { type: String, required: true },
   availability: { type: String, required: true },
 });
 
+let disposed = false;
 const submitting = ref(false);
+const preparing = ref(false), fileInput = ref(null), fileSummary = ref("");
 const message = ref("");
 const status = ref("idle");
 const previewUrl = ref("");
-const isImagePreview = ref(true);
 const form = ref({ authorName: "", text: "", file: null });
 
-function handleFileChange(event) {
-  const file = event.target.files?.[0];
-  if (!file) return;
-  if (file.size > 4 * 1024 * 1024) {
-    status.value = 'validation'; message.value = 'Uploads must be at most 4 MiB';
-    event.target.value = ''; return;
-  }
+function removeFile() {
   if (previewUrl.value) URL.revokeObjectURL(previewUrl.value);
-  form.value.file = file;
-  previewUrl.value = URL.createObjectURL(file);
-  isImagePreview.value = file.type.startsWith("image/");
+  previewUrl.value = ''; form.value.file = null; fileSummary.value = '';
+  if (fileInput.value) fileInput.value.value = '';
+}
+async function selectFile(file) {
+  if (!file || preparing.value || submitting.value) return;
+  preparing.value = true; message.value = ''; status.value = 'idle';
+  removeFile();
+  try {
+    const prepared = await prepareWallPhoto(file);
+    if (disposed) return;
+    form.value.file = prepared;
+    previewUrl.value = URL.createObjectURL(prepared);
+    fileSummary.value = `Photo ready · ${Math.max(1, Math.round(prepared.size / 1024))} KiB · resized for the wall`;
+  } catch (error) { status.value = 'validation'; message.value = error.message; }
+  finally { preparing.value = false; }
+}
+function handleFileChange(event) { void selectFile(event.target.files?.[0]); }
+function handleDrop(event) { void selectFile(event.dataTransfer?.files?.[0]); }
+function handlePaste(event) {
+  const image = [...(event.clipboardData?.items || [])].find(item => item.kind === 'file' && item.type.startsWith('image/'));
+  if (image) { event.preventDefault(); void selectFile(image.getAsFile()); }
+}
+async function pastePhoto() {
+  if (preparing.value || submitting.value) return;
+  try {
+    if (!navigator.clipboard?.read) throw new Error();
+    const items = await navigator.clipboard.read();
+    for (const item of items) {
+      const type = item.types.find(type => type.startsWith('image/'));
+      if (type) { await selectFile(new File([await item.getType(type)], 'pasted-photo', { type })); return; }
+    }
+    throw new Error();
+  } catch {
+    status.value = 'validation';
+    message.value = 'No photo could be pasted. Allow Paste if your phone asks, paste into Your story, or choose from Photo Library.';
+  }
 }
 
 async function submitPost() {
+  if (submitting.value || preparing.value) return;
   if (!form.value.text.trim() && !form.value.file) {
     status.value = "validation";
-    message.value = "Add a description or choose a photo or video.";
+    message.value = "Add a description or choose a photo.";
     return;
   }
 
@@ -179,6 +217,7 @@ async function submitPost() {
     });
 
     if (response?.status === 200) {
+      removeFile();
       status.value = "success";
       message.value = response.message || "Submitted for approval.";
     } else {
@@ -194,6 +233,7 @@ async function submitPost() {
 }
 
 function resetForUploadAnother() {
+  removeFile();
   form.value = { authorName: "", text: "", file: null };
   if (previewUrl.value) URL.revokeObjectURL(previewUrl.value);
   previewUrl.value = "";
@@ -202,6 +242,7 @@ function resetForUploadAnother() {
 }
 
 onBeforeUnmount(() => {
+  disposed = true;
   if (previewUrl.value) URL.revokeObjectURL(previewUrl.value);
 });
 </script>

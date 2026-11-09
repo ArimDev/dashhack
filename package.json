@@ -4,7 +4,7 @@
   "private": true,
   "type": "module",
   "scripts": {
-    "build": "bun --bun node_modules/nuxt/bin/nuxt.mjs build",
+    "build": "bun --bun node_modules/nuxt/bin/nuxt.mjs build && bun scripts/package-wall-images.js",
     "dev": "bun --bun node_modules/nuxt/bin/nuxt.mjs dev",
     "devn": "bun --bun node_modules/nuxt/bin/nuxt.mjs dev --host",
     "generate": "bun --bun node_modules/nuxt/bin/nuxt.mjs generate",
@@ -23,6 +23,7 @@
     "@tailwindcss/vite": "^4.1.17",
     "apexcharts": "^4.7.0",
     "nuxt": "^4.2.1",
+    "sharp": "0.35.5",
     "uuid": "^13.0.0",
     "vue": "^3.5.24",
     "vue3-apexcharts": "^1.8.0"

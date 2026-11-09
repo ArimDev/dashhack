@@ -1,6 +1,6 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
-const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAQAAAC1HAwCAAAAC0lEQVR42mP8/x8AAwMCAO+j0ioAAAAASUVORK5CYII=','base64');
+const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEklEQVQImWMwaHxg0PiAAUIBACkqBkV72qJcAAAAAElFTkSuQmCC','base64');
 const password='password123';
 async function setup(page,name=`Wall ${randomUUID()}`) {
   expect((await (await page.request.post('/api/auth/create',{ data:{ username:name,password } })).json()).status).toBe(200);
@@ -22,7 +22,7 @@ test('public photo submission stays private until approved and remains subject t
     await upload.goto(`/${encodeURIComponent(name)}/wall/upload`);
     await upload.getByRole('textbox',{ name:'Your name' }).fill('Žákyně');
     await upload.getByRole('textbox',{ name:'Your story' }).fill('Náš první prototyp!');
-    await upload.getByLabel('Add a photo or video',{ exact:false }).setInputFiles({ name:'moment.png',mimeType:'image/png',buffer:png });
+    await upload.getByLabel('Add a photo',{ exact:false }).setInputFiles({ name:'moment.png',mimeType:'image/png',buffer:png });
     const submitted=upload.waitForResponse(r => r.url().includes('/api/wall/') && r.request().method()==='POST');
     await upload.getByRole('button',{ name:'Submit for approval' }).click();
     const body=await (await submitted).json();expect(body.status).toBe(200);
@@ -34,8 +34,8 @@ test('public photo submission stays private until approved and remains subject t
     const card=page.getByTestId(`wall-post-${body.data.id}`);
     await expect(card.getByText('Náš první prototyp!')).toBeVisible();
     await changed(page,() => card.getByRole('button',{ name:'Approve',exact:false }).click());
-    const approved=await guest.request.get(url);expect(approved.headers()['content-type']).toContain('image/png');expect(await approved.body()).toEqual(png);
-    const range=await guest.request.get(url,{ headers:{ Range:'bytes=0-7' } });expect(range.status()).toBe(206);expect(await range.body()).toEqual(png.subarray(0,8));
+    const approved=await guest.request.get(url);expect(approved.headers()['content-type']).toContain('image/webp');const stored=await approved.body();expect(stored.toString('ascii',8,12)).toBe('WEBP');
+    const range=await guest.request.get(url,{ headers:{ Range:'bytes=0-7' } });expect(range.status()).toBe(206);expect(await range.body()).toEqual(stored.subarray(0,8));
     await upload.goto(`/${encodeURIComponent(name)}/wall`);
     await upload.getByRole('button',{ name:'Wall display settings', exact:true }).click();
     await upload.getByRole('switch',{ name:'Enable auto-scroll layout' }).uncheck();

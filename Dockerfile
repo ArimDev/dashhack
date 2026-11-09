@@ -10,7 +10,8 @@ RUN bun run build
 FROM oven/bun:${BUN_VERSION}-slim AS production
 WORKDIR /app
 COPY --from=build /app/src/.output/ ./
-COPY scripts/backup-sqlite.js ./scripts/backup-sqlite.js
+COPY scripts/backup-sqlite.js scripts/check-wall-storage.js ./scripts/
+COPY src/shared/wallUploads.js ./src/shared/wallUploads.js
 ENV PORT=1020 HOST=0.0.0.0 NUXT_SQLITE_PATH=/data/dashhack.sqlite
 EXPOSE 1020
 CMD ["bun", "run", "/app/server/index.mjs"]

@@ -4,6 +4,12 @@
     <p v-if="error" role="alert" class="text-red-600 dark:text-red-400">{{ error }}</p>
     <fieldset v-if="canEdit" :disabled="busy" class="space-y-6 min-w-0">
     <button class="rounded-lg border px-3 py-2" @click="loadSocialWall">Refresh posts</button>
+    <p v-if="storage" class="rounded-xl border border-slate-300 p-3 text-sm dark:border-slate-600" data-testid="wall-storage-usage">
+      Upload storage: {{ mib(storage.eventBytes) }} / {{ mib(storage.eventLimit) }} MiB for this event;
+      {{ mib(storage.totalBytes) }} / {{ mib(storage.totalLimit) }} MiB across all walls.
+      Volume free: {{ mib(storage.availableBytes) }} MiB ({{ mib(storage.reserveBytes) }} MiB reserved).
+      Pending and rejected attachments count too. Deleting their posts frees upload capacity.
+    </p>
     <WallModerationTabBar
       :active-tab="activeTab"
       :stats="stats"
@@ -69,6 +75,8 @@ definePageMeta({ layout: 'dashboard', middleware: ['routes'] });
 const currentEvent = useState('currentEvent');
 const wallSettingsOpen = ref(false);
 const canEdit = useState('eventCanEdit');
+const storage = ref(null);
+function mib(bytes) { return (bytes / 1024 / 1024).toFixed(1); }
 const posts = ref([]), stats = ref({}), settings = ref({});
 const keywordsText = ref(''), blacklistAuthorsText = ref('');
 const openMenuId = ref(null), activeTab = ref('all'), sortOrder = ref('newest');
@@ -80,6 +88,7 @@ const filteredPosts = computed(() => posts.value.filter(post => activeTab.value 
   (sortOrder.value === 'oldest' ? 1 : -1) * (Date.parse(a.createdAt)-Date.parse(b.createdAt))));
 function isOutsideWindow(post) { return Date.now()-Date.parse(post.createdAt) > (settings.value.windowMinutes || 1440)*60000; }
 function applyData(data) {
+  storage.value = data.storage;
   posts.value = data.posts; stats.value = data.stats; settings.value = data.wall;
   keywordsText.value = data.wall.blacklistedKeywords.join(', ');
   blacklistAuthorsText.value = data.wall.blacklistedAuthors.join(', ');

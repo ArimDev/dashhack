@@ -1,3 +1,5 @@
+import { normalizeWallMedia } from '../../services/wall-image.js';
+
 export default apiHandler(async event => {
     const name = getRouterParam(event,'event',{ decode: true });
     const wall = getWallStore();
@@ -6,8 +8,11 @@ export default apiHandler(async event => {
     if (event.method !== 'POST') return { status: 405, message: 'Method Not Allowed' };
     const config = wall.config(wall.event(name).id);
     if (!config.enabled || !config.publicUploadEnabled) return { status: 403, message: 'Public uploads are disabled for this wall.' };
-    checkWallUploadRate(event);
-    const { input, media } = await readWallSubmission(event);
-    const post = wall.submit(name,input,media);
-    return { status: 200, message: 'Post submitted for manual approval.', data: post };
+    const release = checkWallUploadRate(event);
+    try {
+        wall.assertUploadCapacity(wall.event(name).id);
+        const { input, media } = await readWallSubmission(event);
+        const post = wall.submit(name,input,await normalizeWallMedia(media));
+        return { status: 200, message: 'Post submitted for manual approval.', data: post };
+    } finally { release(); }
 });

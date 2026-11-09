@@ -78,12 +78,12 @@ describe('Social wall adapted from PR #6',() => {
         expect(() => c.wall.submit(c.name,{ text:'x'.repeat(5001) })).toThrow('Invalid wall text');
         expect(() => c.wall.submit(c.name,{}, { mime:'image/png',data:Buffer.from('<svg/>') })).toThrow('does not match');
         expect(() => c.wall.submit(c.name,{}, { mime:'image/svg+xml',data:png })).toThrow('Unsupported');
-        expect(() => c.wall.submit(c.name,{}, { mime:'image/png',data:Buffer.alloc(MAX_UPLOAD_BYTES+1) })).toThrow('4 MiB');
+        expect(() => c.wall.submit(c.name,{}, { mime:'image/png',data:Buffer.alloc(MAX_UPLOAD_BYTES+1) })).toThrow('2 MiB');
         expect(c.store.db.query('SELECT COUNT(*) AS n FROM wall_media').get().n).toBe(0);
         const large=Buffer.alloc(MAX_UPLOAD_BYTES); png.copy(large);
-        for (let i=0;i<8;i++) c.wall.submit(c.name,{ text:`Photo ${i}` },{ mime:'image/png',data:large });
+        for (let i=0;i<12;i++) c.wall.submit(c.name,{ text:`Photo ${i}` },{ mime:'image/png',data:large });
         expect(() => c.wall.submit(c.name,{},media)).toThrow('storage is full');
-        expect(c.wall.moderationFeed(c.session,c.name).posts).toHaveLength(8);
+        expect(c.wall.moderationFeed(c.session,c.name).posts).toHaveLength(12);
     });
     test('public responses hide moderation filters and pending posts; disabled uploads reject server-side',async () => {
         const c=await setup();

@@ -20,7 +20,7 @@ export default defineNuxtConfig({
 	nitro: {
 		preset: "bun",
 		// Bundle shared field definitions for both dev workers and production.
-		externals: { inline: [/\/shared\/(?:noteStatuses|startupMatrix)\.js$/] },
+		externals: { inline: [/\/shared\/(?:noteStatuses|startupMatrix|wallUploads)\.js$/] },
 	},
 
 	runtimeConfig: {

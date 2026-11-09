@@ -85,6 +85,7 @@ function noteFields(note) {
 // One connection per application process. Transactions contain no asynchronous work.
 export class SqliteStore {
     constructor(filename, { now = Date.now } = {}) {
+        this.filename = filename === ':memory:' ? null : resolve(filename);
         if (filename !== ':memory:') mkdirSync(dirname(resolve(filename)), { recursive: true, mode: 0o700 });
         this.db = new Database(filename, { create: true, strict: true });
         if (filename !== ':memory:') chmodSync(filename, 0o600);
