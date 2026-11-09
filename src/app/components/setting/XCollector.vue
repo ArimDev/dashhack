@@ -25,13 +25,14 @@
         </div>
         <div>
           <label for="x-handles" class="mb-1 block">Handles to follow</label>
-          <textarea id="x-handles" v-model="handles" rows="3" @input="markEdited" class="mb-4 p-3 border-2 rounded-xl text-sm font-semibold w-full trans-all-linear border-gray-300 dark:border-gray-600 dark:placeholder-slate-300 transition-colors duration-500 resize-none" placeholder="@openai @hackathon"></textarea>
+          <textarea id="x-handles" aria-describedby="x-handles-hint" v-model="handles" rows="3" @input="markEdited" class="mb-4 p-3 border-2 rounded-xl text-sm font-semibold w-full trans-all-linear border-gray-300 dark:border-gray-600 placeholder:text-slate-400 placeholder:font-normal placeholder:italic placeholder:opacity-75 dark:placeholder:text-slate-500 transition-colors duration-500 resize-none" placeholder="Example only: @your_event"></textarea>
+          <p id="x-handles-hint" class="-mt-2 mb-3 text-xs text-slate-500 dark:text-slate-400"><span v-if="loaded && !handles.trim()">No handles entered. </span>Optional: leave empty to collect by hashtags only.</p>
         </div>
       </div>
 
       <div>
         <label for="x-hashtags" class="mb-1 block">Hashtags to query</label>
-        <textarea id="x-hashtags" v-model="hashtags" rows="4" @input="markEdited" class="mb-4 p-3 border-2 rounded-xl text-sm font-semibold w-full trans-all-linear border-gray-300 dark:border-gray-600 dark:placeholder-slate-300 transition-colors duration-500 resize-none" placeholder="#hackathon #buildinpublic #dashhack"></textarea>
+        <textarea id="x-hashtags" v-model="hashtags" rows="4" @input="markEdited" class="mb-4 p-3 border-2 rounded-xl text-sm font-semibold w-full trans-all-linear border-gray-300 dark:border-gray-600 placeholder:text-slate-400 placeholder:font-normal placeholder:italic placeholder:opacity-75 dark:placeholder:text-slate-500 transition-colors duration-500 resize-none" placeholder="Example only: #yourhackathon"></textarea>
       </div>
 
       <p class="mt-2 text-xs">Separate hashtags and accounts with spaces, commas or new lines. Changes are saved only when you choose Save queries.</p>

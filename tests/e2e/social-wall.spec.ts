@@ -89,7 +89,7 @@ test('moderation rejects stale changes and X settings persist without exposing s
   await expect(card.getByText('Rejected',{ exact:true })).toBeVisible();
   await page.getByRole('link',{ name:'Settings',exact:true }).click();
   await expect(page.getByRole('heading',{ name:'X social collector' })).toBeVisible();
-  const input=page.getByPlaceholder('#hackathon #buildinpublic #dashhack');
+  const input=page.getByLabel('Hashtags to query');
   await input.fill('#junior2026');
   const save=page.waitForResponse(r => r.url().includes('/posts') && r.request().method()==='POST');
   await page.getByRole('button',{name:'Save queries',exact:true}).click();expect((await (await save).json()).status).toBe(200);
