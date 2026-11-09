@@ -72,7 +72,7 @@ describe('Social wall adapted from PR #6',() => {
         expect(() => c.wall.updateSettings(c.session,c.name,{ xQueryHandles:['@name OR evil'] },1)).toThrow('Invalid X handle');
     });
     test('filters, URL/type validation and media quotas reject atomically',async () => {
-        const c=await setup(); c.wall.updateSettings(c.session,c.name,{ blacklistedKeywords:['spam'],blacklistedAuthors:['troll'] },1);
+        const c=await setup(); c.wall=new WallStore(c.store,{ eventMediaLimit:24*1024*1024 }); c.wall.updateSettings(c.session,c.name,{ blacklistedKeywords:['spam'],blacklistedAuthors:['troll'] },1);
         for (const input of [{ text:'SPAM' },{ text:'Hi',authorName:'Troll' }]) expect(() => c.wall.submit(c.name,input,media)).toThrow('blocked');
         expect(() => c.wall.submit(c.name,{ text:'Hello',sourceUrl:'javascript:alert(1)' })).toThrow('HTTPS');
         expect(() => c.wall.submit(c.name,{ text:'x'.repeat(5001) })).toThrow('Invalid wall text');

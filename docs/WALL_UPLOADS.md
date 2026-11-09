@@ -20,11 +20,15 @@ These controls bound application work and storage; they are not an edge-level DD
 
 ## Storage and deployments
 
-- 24 MiB per event and 32 MiB across **all** wall attachments, including pending/rejected/hidden items. The check and insert share a SQLite transaction.
-- At least 16 MiB of actual filesystem free space is reserved, plus three times incoming stored bytes for page/WAL/checkpoint headroom. New wall posts also stop when the projected database reaches 64 MiB. Deletion/moderation remains available when uploads pause. A global 5,000-post cap includes archived identifiers; normal event active-post cap remains 1,000.
+- Prepared 2 GiB volume profile: 512 MiB per event and 640 MiB across **all** wall attachments, including pending/rejected/hidden items. The check and insert share a SQLite transaction.
+- At least 128 MiB of actual filesystem free space is reserved, plus three times incoming stored bytes for page/WAL/checkpoint headroom. New wall posts also stop when the projected database reaches 768 MiB. Deletion/moderation remains available when uploads pause. A global 5,000-post cap includes archived identifiers; normal event active-post cap remains 1,000.
 - Moderators see event/shared usage and actual volume free/reserved space. Rejecting or hiding alone does not free attachment storage; deleting releases BLOB quota and SQLite pages for reuse. File sizes may not shrink immediately. Do not VACUUM a busy production database just to make the file look smaller.
 - Before and after deployment, inspect the exact DashHack volume. `NUXT_SQLITE_PATH=/data/dashhack.sqlite bun scripts/check-wall-storage.js` is a read-only check included in the image. It reports database/WAL sizes, backup usage, physical free space and budgets. Leave the web app running if uploads are paused; free space deliberately and recheck. Backups on the same volume count against physical free space and need enough headroom before `VACUUM INTO`; never prune or restore them implicitly.
 - No schema migration, service or background queue. The existing Debian slim runtime remains. Sharp adds roughly 19 MiB of native runtime files; this is the cost of independently validating/re-encoding hostile images. `bun run build` runs `scripts/package-wall-images.js` after Nuxt because its tracer misses Sharp's ESM/native runtime. Only the current build architecture is copied, with no source tree or alternate-platform binary packages. Validate an isolated output, not an output accidentally resolving the workspace's node_modules.
+
+The larger profile must not be deployed before the existing Railway volume has been expanded to 2 GiB and verified: the 128 MiB reserve would intentionally pause submissions on the old 128 MB volume. A 512 MiB event budget fits 512 maximum-size 1 MiB photos or roughly 1,000 photos at 500 KiB each, subject to the 1,000 active-post event cap. Text-only posts share that post cap. These are event/global storage limits, not per-device allowances. Keep the unused volume space for a full SQLite snapshot, page/WAL overhead and free-space reserve.
+
+Railway bills used volume storage at $0.15/GB-month, prorated over time (filesystem metadata also counts), rather than charging the full provisioned ceiling. Fully using 2 GB costs about $0.30/month in storage alone. Volumes can grow but cannot shrink in place. After the event, export and verify the entire database before deciding whether to remove the app/volume: this volume contains all events, credentials and notes, not just wall photos. See [Railway pricing](https://docs.railway.com/pricing) and [volume reference](https://docs.railway.com/volumes/reference).
 
 ## Validation
 
@@ -36,3 +40,7 @@ WebKit runs through the supported, version-matched test container on this Ubuntu
 
 
 Final deployed source: `8a54f9e`, Railway `e67eccf7-4495-45f6-b7b0-117d441b329c` (**SUCCESS**). Live preview/video rejection/storage usage and unchanged production content fingerprints were verified; see [deployment record](RAILWAY.md#bounded-photo-only-wall-uploads--2026-11-09).
+
+## Capacity profile preparation — 2026-11-09
+
+Raised media budgets, database guard and physical reserve together; unit tests inject small internal limits to exercise quota boundaries without allocating hundreds of MiB. The deployment checker reports the database guard as well as filesystem/media usage. Validation: 48 unit tests (279 assertions), production build and six targeted desktop/iPhone WebKit upload cases pass; four production-only cases are intentionally skipped in the development-server run. Production expansion/deployment is pending the dashboard-only resize; the last verified live release remains the earlier release above.

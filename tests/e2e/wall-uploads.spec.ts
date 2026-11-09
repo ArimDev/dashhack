@@ -76,7 +76,7 @@ test('direct API uploads cannot bypass WebP conversion, byte limits, field restr
     const moderation = (await (await page.request.get(`${url}/posts`)).json()).data;
     expect(moderation.posts).toHaveLength(1);
     expect(moderation.storage.eventBytes).toBeLessThan(1024 * 1024);
-    expect(moderation.storage.totalLimit).toBe(32 * 1024 * 1024);
+    expect(moderation.storage.totalLimit).toBe(640 * 1024 * 1024);
     await page.goto(`/app/${encoded}/social-wall`);
     await expect(page.getByTestId('wall-storage-usage')).toContainText('Pending and rejected');
 });

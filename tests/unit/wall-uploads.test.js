@@ -5,7 +5,7 @@ import { EventEmitter } from 'node:events';
 import { readWallNodeBody } from '../../src/server/services/wall-body.js';
 import { normalizeWallMedia } from '../../src/server/services/wall-image.js';
 import { WallUploadGate } from '../../src/server/services/wall-upload-gate.js';
-import { MiB, VOLUME_RESERVE } from '../../src/shared/wallUploads.js';
+import { MiB, VOLUME_RESERVE, MAX_DATABASE_BYTES } from '../../src/shared/wallUploads.js';
 import { SqliteStore } from '../../src/server/storage/sqlite.js';
 import { WallStore } from '../../src/server/storage/wall.js';
 
@@ -48,7 +48,7 @@ describe('Untrusted wall uploads', () => {
         const store = new SqliteStore(':memory:');
         try {
             const id = await store.createEvent('Capacity', 'password123'), session = store.createSession(id);
-            let free = 100 * MiB;
+            let free = VOLUME_RESERVE + 100 * MiB;
             const wall = new WallStore(store, { freeBytes: () => free });
             wall.updateSettings(session, 'Capacity', { enabled: true }, 0);
             const post = wall.submit('Capacity', { text: 'Keep this' });
@@ -61,10 +61,26 @@ describe('Untrusted wall uploads', () => {
             expect(wall.moderationFeed(session, 'Capacity').posts).toHaveLength(0);
         } finally { store.close(); }
     });
+    test('event capacity defaults match the 2 GiB plan; database guard still protects non-media growth', async () => {
+        const store = new SqliteStore(':memory:');
+        try {
+            const id = await store.createEvent('Budget', 'password123'), session = store.createSession(id);
+            const wall = new WallStore(store);
+            wall.updateSettings(session, 'Budget', { enabled: true }, 0);
+            expect(wall.storageUsage(id)).toMatchObject({ totalLimit: 640 * MiB, eventLimit: 512 * MiB, reserveBytes: 128 * MiB });
+            expect(wall.databaseLimit).toBe(MAX_DATABASE_BYTES);
+            // Small injected threshold exercises the real page-count guard without allocating a huge database.
+            const dbBytes = store.db.query('PRAGMA page_count').get().page_count * store.db.query('PRAGMA page_size').get().page_size;
+            const constrained = new WallStore(store, { databaseLimit: dbBytes - 1 });
+            expect(() => constrained.submit('Budget', { text: 'No room' })).toThrow('paused');
+            expect(store.db.query('SELECT COUNT(*) AS n FROM wall_posts').get().n).toBe(0);
+            wall.submit('Budget', { text: 'Fits the expanded budget' });
+        } finally { store.close(); }
+    });
     test('shared quota includes pending/rejected attachments across events and deletion releases capacity', async () => {
         const store = new SqliteStore(':memory:');
         try {
-            const wall = new WallStore(store);
+            const wall = new WallStore(store, { totalMediaLimit: 32 * MiB, eventMediaLimit: 24 * MiB });
             const data = Buffer.alloc(2 * MiB); Buffer.from('RIFF0000WEBP').copy(data);
             const contexts = [];
             for (const name of ['First', 'Second']) {

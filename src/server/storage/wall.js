@@ -2,7 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { StorageError } from './sqlite.js';
 import { statfsSync } from 'node:fs';
 import { dirname } from 'node:path';
-import { MAX_UPLOAD_BYTES, WALL_MEDIA_BUDGET, EVENT_MEDIA_BUDGET, VOLUME_RESERVE, MiB } from '../../shared/wallUploads.js';
+import { MAX_UPLOAD_BYTES, WALL_MEDIA_BUDGET, EVENT_MEDIA_BUDGET, VOLUME_RESERVE, MAX_DATABASE_BYTES } from '../../shared/wallUploads.js';
 
 export { MAX_UPLOAD_BYTES } from '../../shared/wallUploads.js';
 export const WALL_DEFAULTS = Object.freeze({ enabled: false, publicUploadEnabled: true, moderationMode: 'manual',
@@ -84,8 +84,9 @@ function normalize(row) {
         revision: row.revision, createdAt: row.created_at };
 }
 export class WallStore {
-    constructor(store, { freeBytes } = {}) {
+    constructor(store, { freeBytes, totalMediaLimit = WALL_MEDIA_BUDGET, eventMediaLimit = EVENT_MEDIA_BUDGET, databaseLimit = MAX_DATABASE_BYTES } = {}) {
         this.store = store; this.db = store.db;
+        this.totalMediaLimit = totalMediaLimit; this.eventMediaLimit = eventMediaLimit; this.databaseLimit = databaseLimit;
         this.freeBytes = freeBytes || (() => {
             if (!store.filename) return Number.MAX_SAFE_INTEGER;
             try { const fs = statfsSync(dirname(store.filename)); return fs.bavail * fs.bsize; }
@@ -95,7 +96,7 @@ export class WallStore {
     storageUsage(id) {
         const total = this.db.query('SELECT COALESCE(SUM(length(data)),0) AS bytes FROM wall_media').get().bytes;
         const event = this.db.query('SELECT COALESCE(SUM(length(data)),0) AS bytes FROM wall_media WHERE event_id=?').get(id).bytes;
-        return { totalBytes: total, totalLimit: WALL_MEDIA_BUDGET, eventBytes: event, eventLimit: EVENT_MEDIA_BUDGET,
+        return { totalBytes: total, totalLimit: this.totalMediaLimit, eventBytes: event, eventLimit: this.eventMediaLimit,
             availableBytes: this.freeBytes(), reserveBytes: VOLUME_RESERVE };
     }
     assertUploadCapacity(id, incoming = 0) {
@@ -105,7 +106,7 @@ export class WallStore {
         }
         // Allow for database pages, WAL writes and checkpointing, not only the BLOB bytes.
         const dbBytes = this.db.query('PRAGMA page_count').get().page_count * this.db.query('PRAGMA page_size').get().page_size;
-        if (usage.availableBytes < VOLUME_RESERVE + incoming * 3 || dbBytes + incoming > 64 * MiB) {
+        if (usage.availableBytes < VOLUME_RESERVE + incoming * 3 || dbBytes + incoming > this.databaseLimit) {
             fail('Uploads are paused to protect application storage. Ask an organizer to free space.', 507);
         }
     }

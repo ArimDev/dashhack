@@ -164,3 +164,14 @@ For source-controlled infrastructure, use `.railway/railway.ts` and inspect a pl
 - Live read-only volume check: 117,624,832 bytes capacity, 113,225,728 bytes available (~108 MiB), 868,352 bytes of backups, 6,137 bytes of existing media. Caps are 24 MiB/event, 32 MiB/shared and 16 MiB free reserve; uploads are not paused. The image includes `bun scripts/check-wall-storage.js` for future deployment checks.
 - Pre-deployment consistent snapshot: `/data/backups/before-photo-uploads-1794223733821.sqlite`. Final schema remains 7, integrity is `ok`, and all eight content-table fingerprints match: 3 events, 15 teams, 45 notes, 1 mentor, 0 GitHub connections, 1 wall configuration, 10 posts and 3 media attachments. Existing credentials, media and moderation are preserved.
 - Mobile Chrome and real browser clipboard checks passed. Physical iPhone Safari/HEIC remains an on-device verification item; unsupported formats get a clear Photo Library/JPEG/PNG fallback.
+
+
+## Event capacity preparation — 2026-11-09
+
+Requested existing-volume increase: 128 MB → 2 GiB (2048 MB), preserving the same `/data` mount and volume ID. No resize has yet been performed or verified. The public GraphQL schema, CLI and direct MCP expose no existing-volume size mutation; `sizeMB` on volume creation is not a safe substitute. Automatic approval review rejected use of the open-ended Railway agent because it could modify other production resources. The user was asked to perform the dashboard resize on this exact project/volume. No replacement/detach/delete was attempted.
+
+Prepared app profile: 512 MiB/event media, 640 MiB/shared media, 768 MiB database guard, 128 MiB actual free reserve plus incoming-write headroom. Existing 25 MiB phone originals, 1 MiB stored WebP cap, one in-flight request and 5/browser, 60/network, 90/global attempts/minute remain. Do not deploy before the filesystem capacity is verified at the larger size; the new free-space reserve would pause uploads on the current 128 MB volume.
+
+Storage is billed by used bytes/time at $0.15/GB-month; 2 GB fully used is about $0.30/month excluding other services/compute/egress. In-place shrinking is unsupported. No deletion or future cleanup is scheduled. Export/verify the complete SQLite database before any post-event deletion because all event content and credentials share this volume.
+
+Preparation validation: 48 unit tests pass (279 assertions); production build passes. Desktop and iPhone WebKit upload coverage: six passed, four production-only cases intentionally skipped. Final read-only SSH check confirms production is still on the old caps, with 117,624,832 bytes filesystem capacity, 113,209,344 free and uploads active. No production data or infrastructure was changed for this preparation.
