@@ -178,3 +178,37 @@ test('mobile editing state and login follow the displayed event rather than anot
     await expect(page.getByRole('button',{name:'Editing',exact:true})).toBeVisible();
     await expect(page.getByTestId('add-team-fab')).toBeVisible();
 });
+
+test('student team link works without event login and hands off to GitHub invitation acceptance', async ({ page }) => {
+    const token = 'private-team-link-token';
+    let invitations = 0;
+    await page.route('**/api/github/join', async route => {
+        const body = route.request().postDataJSON();
+        expect(body.token).toBe(token);
+        if (body.action === 'preview') return route.fulfill({ json: { status: 200, team: { name: 'Indy a Vích', repository: 'school/indy-a-vich', expiresAt: Date.now() + 86400000 } } });
+        invitations++;
+        expect(body.username).toBe('student-dev');
+        return route.fulfill({ json: { status: 200, username: 'student-dev', alreadyHasAccess: false, invitationUrl: 'https://github.com/school/indy-a-vich/invitations', repositoryUrl: 'https://github.com/school/indy-a-vich' } });
+    });
+    await page.goto('/join#' + token);
+    await expect(page.getByRole('heading', { name: 'Indy a Vích' })).toBeVisible();
+    await expect(page.getByRole('button', { name: 'Získat přístup k repozitáři' })).toBeEnabled();
+    await page.getByLabel('Tvoje GitHub uživatelské jméno').fill('student-dev');
+    await page.getByRole('button', { name: 'Získat přístup k repozitáři' }).click();
+    const accept = page.getByRole('link', { name: 'Přijmout pozvánku na GitHubu' });
+    await expect(accept).toHaveAttribute('href', 'https://github.com/school/indy-a-vich/invitations');
+    await expect(page.getByRole('status')).toContainText('student-dev');
+    expect(invitations).toBe(1);
+    await fits(page);
+    await page.getByRole('button', { name: 'Zadat jiné GitHub jméno' }).click();
+    await expect(page.getByLabel('Tvoje GitHub uživatelské jméno')).toBeVisible();
+});
+
+test('invalid student invitation links fail clearly without exposing an invite form', async ({ page }) => {
+    await page.route('**/api/github/join', route => route.fulfill({ json: { status: 410, message: 'This team invitation link has expired.' } }));
+    await page.goto('/join#expired-token');
+    await expect(page.getByRole('alert')).toContainText('expired');
+    await expect(page.getByLabel('Tvoje GitHub uživatelské jméno')).toHaveCount(0);
+    await page.goto('/join');
+    await expect(page.getByRole('alert')).toHaveText('Chybí odkaz na tým.');
+});

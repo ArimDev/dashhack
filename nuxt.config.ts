@@ -27,6 +27,7 @@ export default defineNuxtConfig({
 	runtimeConfig: {
 		sqlitePath: './.data/dashhack.sqlite',
         xBearerToken: '',
+        githubTeamInviteSecret: '',
         githubAppId: '',
         githubAppClientId: '',
         githubAppClientSecret: '',
@@ -41,7 +42,7 @@ export default defineNuxtConfig({
 		},
 	},
 
-    routeRules: { '/github/callback': { headers: { 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' } } },
+    routeRules: { '/join': { headers: { 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store', 'X-Robots-Tag': 'noindex, nofollow' } }, '/github/callback': { headers: { 'Referrer-Policy': 'no-referrer', 'Cache-Control': 'no-store' } } },
 
 
 	icon: {

@@ -17,6 +17,7 @@
                     <button @click="connect" :disabled="busy" class="rounded-lg bg-bluey-500 hover:bg-bluey-600 text-white px-3 py-2 disabled:opacity-50">{{ busy ? 'Connecting…' : 'Connect GitHub' }}</button>
                     <button v-if="info.connection" @click="disconnect" :disabled="busy" class="underline">Disconnect from event</button>
                 </div>
+                <TeamInviteLinks v-if="info.configured && info.connection" />
                 <p class="text-xs text-gray-500 dark:text-gray-400">Install once on the organization, then connect as its owner. Only granted repositories are available. Team repository links and activity totals remain visible to event visitors.</p>
             </template>
             <p v-if="error" role="alert" class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>

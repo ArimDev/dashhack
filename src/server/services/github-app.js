@@ -49,7 +49,7 @@ export class GitHubAppService {
             ...(body ? { body: JSON.stringify(body) } : {}) });
         if (!response.ok) throw new StorageError(response.status === 404 ? 404 : response.status === 401 || response.status === 403 ? 403 : 502,
             response.status === 401 || response.status === 403 ? 'GitHub access was denied or its API limit was reached. Check the App installation.' : 'GitHub request failed. Check repository access and try again.');
-        return response.json();
+        return response.status === 204 ? null : response.json();
     }
     async exchange(code, verifier) {
         this.requireConfig();
@@ -97,6 +97,38 @@ export class GitHubAppService {
             }).catch(error => { if (this.tokens.get(id) === entry) this.tokens.delete(id); throw error; });
         this.tokens.set(id, entry);
         return entry.promise;
+    }
+    async inviteCollaborator(id, repository, username) {
+        this.requireConfig();
+        if (typeof username !== 'string' || !/^[a-z\d](?:[a-z\d-]{0,37}[a-z\d])?$/i.test(username)) throw new StorageError(400, 'Enter your GitHub username, without @ or a URL.');
+        repository = parseGitHubRepository('https://github.com/' + repository);
+        const readToken = await this.installationToken(id);
+        const repo = await this.api(`/repos/${repository}`, readToken);
+        let user;
+        try { user = await this.api(`/users/${encodeURIComponent(username)}`, readToken); }
+        catch (error) { if (error.status === 404) throw new StorageError(400, 'GitHub username not found. Check the spelling.'); throw error; }
+        if (user.type !== 'User' || !/^[a-z\d-]{1,39}$/i.test(user.login)) throw new StorageError(400, 'Use a personal GitHub account.');
+        const invitationUrl = `https://github.com/${repository}/invitations`;
+        try {
+            const access = await this.api(`/repos/${repository}/collaborators/${user.login}/permission`, readToken);
+            if (['admin', 'write', 'maintain', 'push'].includes(access.permission)) return { username: user.login, alreadyHasAccess: true, invitationUrl, repositoryUrl: `https://github.com/${repository}` };
+        } catch (error) { if (error.status !== 404) throw error; }
+        const installation = await this.api(`/app/installations/${id}`, this.jwt());
+        if (installation.suspended_at || installation.permissions?.administration !== 'write') throw new StorageError(503, 'The organizer must approve Administration: Read and write on the installed GitHub App before invitations can be sent.');
+        if (!Number.isSafeInteger(repo.id)) throw new StorageError(502, 'GitHub returned an invalid repository.');
+        // Mint an uncached administration token for ONLY this repository; chart/picker tokens stay read-only.
+        const grant = await this.api(`/app/installations/${id}/access_tokens`, this.jwt(), { method: 'POST', body: {
+            repository_ids: [repo.id], permissions: { administration: 'write', metadata: 'read' },
+        } });
+        if (!grant.token) throw new StorageError(502, 'GitHub could not authorize this invitation.');
+        let alreadyHasAccess = false;
+        try {
+            alreadyHasAccess = (await this.api(`/repos/${repository}/collaborators/${user.login}`, grant.token, { method: 'PUT', body: { permission: 'push' } })) === null;
+        } finally {
+            // Revoke the short-lived privileged token immediately after use. It is never cached or persisted.
+            try { await this.api('/installation/token', grant.token, { method: 'DELETE' }); } catch { /* It still expires at GitHub's normal one-hour limit. */ }
+        }
+        return { username: user.login, alreadyHasAccess, invitationUrl, repositoryUrl: `https://github.com/${repository}` };
     }
     async repositories(id, page = 1) {
         if (!Number.isInteger(page) || page < 1 || page > 100) throw new StorageError(400, 'Invalid repository page');

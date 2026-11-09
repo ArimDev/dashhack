@@ -255,7 +255,7 @@ describe('Optional in-process X collector',() => {
         expect(calls).toBe(3);
     });
     test('auto-approval is collector-only; filters, scheduling and overlap guards apply',async () => {
-        let now=Date.now(); const c=await enabled({ now:()=>now });
+        let now=Date.parse('2026-11-09T10:00:00Z'); const c=await enabled({ now:()=>now });
         c.wall.updateSettings(c.session,c.name,{ moderationMode:'auto' },2);
         let release; const response=new Promise(resolve => { release=resolve; });let calls=0;
         const collector=new XCollector(c.store,'token',{ request:async () => { calls++;return response; } });
