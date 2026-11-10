@@ -375,3 +375,13 @@ Validation: targeted Chromium checks pass; three Safari/WebKit/iPhone checks als
 
 
 Deployment **`7bb9a908-4165-4af8-a001-68969ff8fba0` — SUCCESS**, source `72106de`. Live verification confirms the 1800px feed cap, four columns on ultrawide/4K, 186px desktop sharing card with full-content square QR at the vertical center, phone/tablet fit, and preserved approved modal. Live wall screenshot inspected locally. No production data/settings were modified.
+
+
+## QR fills the actual right gutter — 2026-11-10
+
+Source `a15739e` removes the fixed desktop sharing-card width from the preceding correction. The user's screenshot showed that “column” means the empty right-hand gutter outside the 1800px feed. The vertically centered card now fills that gutter with 16px padding at both edges. Its width falls back to 186px where the gutter is narrow and is bounded by viewport height to keep the card visible on short monitors. The square QR fills the card's content width. At the supplied 2488×1298 viewport the card is 312px wide instead of 186px. Feed width/columns, vertical header and approved modal remain unchanged.
+
+Targeted Chromium and Safari/WebKit projector checks pass at 1280, 1920, the exact 2488×1298 screenshot size, 3440 and 3840px. Assertions measure both gutter edges rather than only the image inside a fixed card. Production build passes. No data, settings, dependencies, schema or infrastructure changes.
+
+
+Deployment **`2a2e2dcc-7396-445b-97eb-8ccbfd83520d` — SUCCESS**, source `a15739e`. Live measurements confirm 312px card at 2488×1298, 788px at 3440×1440 and 988px at 3840×2160, each filling the right gutter with 16px side padding, while the feed remains 1800px/four columns. Phone/tablet and unchanged modal checks pass. Screenshot at the user's exact dimensions inspected locally. No production content/settings changed.
