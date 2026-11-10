@@ -35,7 +35,7 @@ export class DiscordStore{
     }
     rate(ctx,kind){const now=this.now();this.db.query('DELETE FROM discord_actions WHERE created_at<?').run(now-7*86400000);this.db.query('DELETE FROM discord_matrix_flows WHERE expires_at<?').run(now);
         if(this.db.query('SELECT COUNT(*) n FROM discord_actions WHERE event_id=?').get(ctx.settings.event_id).n>=5000)fail('Limit požadavků události byl dosažen.',429);
-        const userLimit=kind==='help'?5:kind==='matrix'?10:30,teamLimit=kind==='help'?10:kind==='matrix'?20:100;
+        const userLimit=kind==='help'?5:['matrix','github'].includes(kind)?10:30,teamLimit=kind==='help'?10:['matrix','github'].includes(kind)?20:100;
         const user=this.db.query('SELECT COUNT(*) n FROM discord_actions WHERE event_id=? AND user_id=? AND kind=? AND created_at>?').get(ctx.settings.event_id,ctx.userId,kind,now-600000).n;
         const team=this.db.query('SELECT COUNT(*) n FROM discord_actions WHERE event_id=? AND team_id=? AND kind=? AND created_at>?').get(ctx.settings.event_id,ctx.team.id,kind,now-600000).n;
         if(user>=userLimit||team>=teamLimit)fail('Příliš mnoho požadavků. Zkuste to později.',429);
@@ -50,6 +50,15 @@ export class DiscordStore{
         this.db.query(`INSERT INTO notes(id,team_id,content,color,priority,status,position,type,creator_id,in_kanban) VALUES(?,?,?,?,?,'To Do',?,'help_request',NULL,1)`).run(noteId,ctx.team.id,text.trim()+`\n\nDiscord: ${ctx.userName}`,ctx.team.color,priority,position);
         this.db.query('UPDATE teams SET revision=revision+1 WHERE id=?').run(ctx.team.id);this.store.touch(ctx.settings.event_id);
         const result={noteId,teamName:ctx.team.name};this.record(ctx,'help',result);return result;
+    })();}
+    githubLink(payload,invites){return this.db.transaction(()=>{
+        const ctx=this.context(payload),previous=this.previous(ctx,'github');
+        if(!invites)fail('GitHub připojení není dostupné. Požádejte pořadatele.',503);
+        // Resolve the current organizer-issued link on every delivery. Revocation
+        // and repository/installation changes must also invalidate Discord retries.
+        const link=invites.linkForTeam(ctx.settings.event_id,ctx.team.id);
+        if(!previous){this.rate(ctx,'github');this.record(ctx,'github',{linkId:link.linkId});}
+        return {url:link.url,teamName:ctx.team.name};
     })();}
     token(flow,settings){return createHmac('sha256',settings.link_secret).update(flow.id+':'+flow.user_id).digest('hex');}
     matrixLink(payload){return this.db.transaction(()=>{

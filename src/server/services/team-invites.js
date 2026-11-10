@@ -48,6 +48,13 @@ export class TeamInvites {
             return {links};
         })();
     }
+    linkForTeam(eventId, teamId) {
+        this.ready();
+        const row=this.store.db.query("SELECT * FROM team_invite_links WHERE event_id=? AND team_id=? AND state='active' AND expires_at>? ORDER BY created_at DESC LIMIT 1").get(eventId,teamId,this.store.now());
+        if(!row) fail(404,'Pozvánka týmu není připravená nebo vypršela. Požádejte pořadatele o nový odkaz.');
+        const token=row.id+'.'+this.hash('team-link:'+row.id),team=this.resolve(token);
+        return {...team,url:new URL('/join',this.app.config.githubAppBaseUrl).href+'#'+token};
+    }
     teamForLink(row) {
         if (!row || row.state!=='active' || row.expires_at<=this.store.now()) fail(404,'This invitation is invalid, expired or revoked. Ask the organizer for a new one.');
         const team=this.store.db.query('SELECT teams.name,teams.github,events.name event FROM teams JOIN events ON events.id=teams.event_id WHERE teams.id=? AND teams.event_id=?').get(row.team_id,row.event_id);

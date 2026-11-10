@@ -4,6 +4,8 @@ import {mkdtempSync,rmSync} from 'node:fs';
 import {tmpdir} from 'node:os';
 import {join} from 'node:path';
 import {SqliteStore} from '../../src/server/storage/sqlite.js';
+import {TeamInvites} from '../../src/server/services/team-invites.js';
+import {GitHubAppService} from '../../src/server/services/github-app.js';
 import {DiscordStore} from '../../src/server/storage/discord.js';
 import {verifyDiscordSignature,discordInteraction,registerDiscordCommands} from '../../src/server/services/discord.js';
 const stores=[],dirs=[];afterEach(()=>{for(const s of stores.splice(0))try{s.close();}catch{}for(const d of dirs.splice(0))rmSync(d,{recursive:true,force:true});});
@@ -63,11 +65,51 @@ test('student matrix saves patch only scoped answers and preserve mentor/notes; 
 });
 test('Discord interactions return private modals/links, ignore mention pings, and create help only on submit',async()=>{
  const c=await setup();expect(discordInteraction({type:1},c.discord,'https://example.org')).toEqual({type:1});
- const modal=discordInteraction(c.payload({data:{name:'mentor',options:[{name:'urgent',value:true}]}}),c.discord,'https://example.org');expect(modal.type).toBe(9);expect(c.store.getEvent('Discord event').teams[0].stickyNotes).toHaveLength(0);
- const submitted=discordInteraction(c.payload({type:5,data:{custom_id:modal.data.custom_id,components:[{type:18,component:{type:4,custom_id:'request',value:'Help'}}]}}),c.discord,'https://example.org');expect(submitted.data.flags).toBe(64);expect(submitted.data.allowed_mentions.parse).toEqual([]);
+ const modal=discordInteraction(c.payload({data:{name:'mentor'}}),c.discord,'https://example.org');expect(modal.type).toBe(9);expect(c.store.getEvent('Discord event').teams[0].stickyNotes).toHaveLength(0);
+ const submitted=discordInteraction(c.payload({type:5,data:{custom_id:modal.data.custom_id,components:[{type:18,component:{type:4,custom_id:'request',value:'Help'}},{type:18,component:{type:3,custom_id:'urgency',values:['high']}}]}}),c.discord,'https://example.org');expect(submitted.data.flags).toBe(64);expect(submitted.data.allowed_mentions.parse).toEqual([]);
  const link=discordInteraction(c.payload(),c.discord,'https://example.org');expect(link.data.components[0].components[0].url).toContain('/discord/matrix#');expect(link.data.flags).toBe(64);
 });
-test('command registration upserts only our two commands without storing credentials or deleting other commands',async()=>{
- const calls=[];await registerDiscordCommands({applicationId:APP,guildId:GUILD},'secret-token',async(url,options)=>{calls.push({url,options});return {ok:true};});expect(calls).toHaveLength(2);expect(calls.every(c=>c.options.method==='POST'&&c.url.startsWith('https://discord.com/api/v10/'))).toBe(true);expect(calls.map(c=>JSON.parse(c.options.body).name)).toEqual(['mentor','matice']);
+test('command registration upserts only our three commands without storing credentials or deleting other commands',async()=>{
+ const calls=[];await registerDiscordCommands({applicationId:APP,guildId:GUILD},'secret-token',async(url,options)=>{calls.push({url,options});return {ok:true};});expect(calls).toHaveLength(3);expect(calls.every(c=>c.options.method==='POST'&&c.url.startsWith('https://discord.com/api/v10/'))).toBe(true);expect(calls.map(c=>JSON.parse(c.options.body).name)).toEqual(['mentor','matice','github']);expect(JSON.parse(calls[0].options.body).options).toEqual([]);
  await expect(registerDiscordCommands({applicationId:APP,guildId:GUILD},'secret-token',async()=>({ok:false,status:401}))).rejects.toThrow('Ověřte token');
+});
+
+function githubSetup(c){
+ c.store.db.query('UPDATE teams SET github=? WHERE id=?').run('https://github.com/school/team',c.teamId);
+ const flow=c.store.beginGitHubFlow(c.session,'Discord event',[{id:123,account:'school',type:'Organization'}]);c.store.connectGitHub(c.session,flow.id,123,'42');
+ const app=new GitHubAppService({githubAppId:'42',githubAppClientId:'client',githubAppClientSecret:'secret',githubAppPrivateKey:'pem',githubAppSlug:'test',githubAppBaseUrl:'https://dashhack.test'});
+ return new TeamInvites(c.store,app,'private-test-invite-secret-12345678901234567890');
+}
+test('Discord GitHub links reuse only the mapped team invitation, stay private and never persist bearer links',async()=>{
+ const c=await setup(),invites=githubSetup(c);
+ const payload=c.payload({data:{name:'github'}});
+ expect(discordInteraction(payload,c.discord,'https://dashhack.test',{githubInvites:invites}).data.content).toContain('není připravená');
+ const issued=invites.issue(c.session,'Discord event',{teamId:c.teamId}).links[0];
+ const reply=discordInteraction(payload,c.discord,'https://dashhack.test',{githubInvites:invites});
+ expect(reply.data.flags).toBe(64);expect(reply.data.components[0].components[0].url).toBe(issued.url);expect(reply.data.content).toContain('Team One');
+ expect(c.discord.githubLink(payload,invites).url).toBe(issued.url);expect(c.store.db.query("SELECT COUNT(*) n FROM discord_actions WHERE kind='github'").get().n).toBe(1);
+ expect(JSON.stringify(c.store.db.query('SELECT * FROM discord_actions').all())).not.toContain(issued.url.split('#')[1]);
+ expect(()=>c.discord.githubLink(c.payload({channel_id:'999999999999999999'}),invites)).toThrow();
+ expect(c.store.getEvent('Discord event').teams[0].stickyNotes).toHaveLength(0);
+ invites.manage(c.session,'Discord event',{action:'revoke',linkId:issued.linkId});
+ expect(()=>c.discord.githubLink(payload,invites)).toThrow('není připravená');expect(c.store.db.query("SELECT COUNT(*) n FROM team_invite_links WHERE state='active'").get().n).toBe(0);
+});
+test('Discord GitHub delivery respects expiry, repository changes and rate limits',async()=>{
+ const c=await setup(),invites=githubSetup(c);invites.issue(c.session,'Discord event',{teamId:c.teamId});
+ for(let i=0;i<10;i++)c.discord.githubLink(c.payload(),invites);
+ expect(()=>c.discord.githubLink(c.payload(),invites)).toThrow('Příliš mnoho');
+ c.advance(600001);c.store.db.query('UPDATE teams SET github=? WHERE id=?').run('https://github.com/school/changed',c.teamId);
+ expect(()=>c.discord.githubLink(c.payload(),invites)).toThrow('changed');
+ c.store.db.query('UPDATE teams SET github=? WHERE id=?').run('https://github.com/school/team',c.teamId);c.advance(7*86400000);
+ expect(()=>c.discord.githubLink(c.payload(),invites)).toThrow('vypršela');
+});
+test('mentor form requires one urgency choice, blocks forged priorities and keeps old open forms compatible',async()=>{
+ const c=await setup(),modal=discordInteraction(c.payload({data:{name:'mentor'}}),c.discord,'https://example.org');
+ expect(modal.data.components[1].component).toMatchObject({type:3,custom_id:'urgency',required:true,options:[{label:'Běžná',value:'medium',default:true},{label:'Naléhavá',value:'high',default:false}]});
+ const text={type:18,component:{type:4,custom_id:'request',value:'Help'}};
+ for(const values of [[],['critical'],['medium','high']]){const r=discordInteraction(c.payload({type:5,data:{custom_id:'dashhack-mentor',components:[text,{type:18,component:{type:3,custom_id:'urgency',values}}]}}),c.discord,'https://example.org');expect(r.data.content).toContain('naléhavost');}
+ expect(c.store.getEvent('Discord event').teams[0].stickyNotes).toHaveLength(0);
+ discordInteraction(c.payload({type:5,data:{custom_id:'dashhack-mentor',components:[text,{type:18,component:{type:3,custom_id:'urgency',values:['medium']}}]}}),c.discord,'https://example.org');
+ discordInteraction(c.payload({type:5,data:{custom_id:'dashhack-mentor-high',components:[text]}}),c.discord,'https://example.org');
+ expect(c.store.getEvent('Discord event').teams[0].stickyNotes.map(n=>n.priority)).toEqual(['medium','high']);
 });
