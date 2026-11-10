@@ -1,6 +1,6 @@
 # DashHack on Railway
 
-Updated 2026-11-09 for the SQLite branch and mobile UI. This project is separate from the school website in `../skola_boretice`.
+Updated 2026-11-10 for schema 9 and Discord setup. This project is separate from the school website in `../skola_boretice`.
 
 ## Prepared resources
 
@@ -9,11 +9,11 @@ Updated 2026-11-09 for the SQLite branch and mobile UI. This project is separate
 | Project | `DashHack` — `712b21fd-3995-473e-b0e5-c2b37feddc3d` |
 | Environment | `production` — `7646006f-d5f1-4c62-a8b6-e540f0f26f96` |
 | Web service | `dashhack` — `9960307b-3bd3-41a9-ade4-67a2ca421745` |
-| Persistent volume | `dashhack-data` — `14d791fc-cdfd-4e1d-a177-6be2a8beab48`, 128 MB, `/data`, `sfo` |
+| Persistent volume | `dashhack-data` — `14d791fc-cdfd-4e1d-a177-6be2a8beab48`, 5000 MB, `/data`, `sfo` |
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `7d8eb0c1-bcb6-4b96-9662-ef9c04a19622` — SUCCESS, proper event URI / schema 8 |
+| Latest verified deployment | `50aaa328-2dac-4bd8-b086-f0260f62c2d6` — SUCCESS, Discord setup / schema 9 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -445,3 +445,8 @@ Automatic approval review rejected the optional download of real production matr
 The user chose a separate Discord channel per team and has not created the Discord application yet. Schema 9 adds three empty Discord tables; existing content remains intact. Organizer Settings → Discord accepts the public application/server/channel IDs and a public verification key, exposes the signed HTTP endpoint/install link, and registers `/mentor` and `/matice` using a transient bot token. Student access is separate from event login. See [setup, scopes, limits and security](DISCORD.md). No Discord provider traffic is generated until configured/registered by the organizer; no poller or extra service was added.
 
 Before deployment, created consistent private on-volume snapshot `/data/backups/before-discord-1794317578873.sqlite` (0600). Integrity is `ok`, schema 8; table counts/hashes recorded locally without transferring any credentials or content. Snapshot includes 15 teams, three notes and two retained wall posts at that point. Existing collectors remain OFF. Migration is additive; rolling back to code that rejects schema 9 requires a schema-compatible release or an explicitly reviewed database recovery, not blindly reverting to the old binary.
+
+
+Deployment **`50aaa328-2dac-4bd8-b086-f0260f62c2d6` — SUCCESS**, source `ce54d0d`, pushed to `feat_alby_design`. Production schema is 9 and integrity `ok`. All thirteen existing tables match the pre-deploy snapshot byte-for-byte by deterministic row hashes, including teams, notes, matrices, credentials, sessions, invitations and wall settings. Three new Discord tables were empty immediately after migration. Public health, real invalid-signature HTTP 401, guest matrix/settings denials, and production phone rendering of the setup panel/ten-editor student form pass. Frontend preview used only synthetic intercepted API responses; screenshots were inspected. No real matrix answers were downloaded.
+
+The user then created Discord application `1569701943780057230`, supplied its public verification key, and server `1285378042478329867`. Saved these through the owner-authorized API using an existing on-volume event session (no credential transferred). Commands remain **disabled**, channel map empty. No Discord interaction/install/registration has been performed yet. Next: user validates `https://dashhack-production.up.railway.app/api/discord/interactions` in Discord Developer Portal; install the commands-only app, register using the transient UI token field, map team channel IDs and enable/test. Both social collectors remain OFF and existing wall/team data are unchanged.
