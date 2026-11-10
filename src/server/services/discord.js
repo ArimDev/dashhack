@@ -11,9 +11,13 @@ export function verifyDiscordSignature(raw,signature,timestamp,publicKey,now=Dat
 }
 const reply=(content,components)=>({type:4,data:{content,flags:64,allowed_mentions:{parse:[]},...(components?{components}: {})}});
 function inputs(nodes,type,id,result=[]){for(const node of nodes||[]){if(node.type===type&&node.custom_id===id)result.push(node);if(node.components)inputs(node.components,type,id,result);if(node.component)inputs([node.component],type,id,result);}return result;}
-export function discordInteraction(payload,store,baseUrl,{githubInvites}={}){
+export function discordInteraction(payload,store,baseUrl,{githubInvites,mentorControls}={}){
     if(payload.type===1)return {type:1};
     try{
+        if(payload.type===3&&payload.data?.custom_id?.startsWith('dh-status:')){
+            store.mentorStatus(payload,mentorControls);
+            return {type:6};
+        }
         const ctx=store.context(payload);
         if(payload.type===2&&payload.data?.name==='mentor'){
             const urgent=payload.data.options?.some(option=>option.name==='urgent'&&option.value===true);

@@ -75,6 +75,14 @@
                                 </button>
                             </template>
                         </StickyNote>
+                        <div v-if="canEdit" class="mt-1 flex flex-wrap gap-1" aria-label="Move note">
+                            <button v-for="target in NOTE_STATUSES.filter(value => value !== status)" :key="target" type="button"
+                                :disabled="busy" @click="saveNote(item, { status: target })"
+                                class="min-h-11 rounded-lg border border-gray-300 bg-white px-3 text-xs font-semibold hover:bg-gray-100 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
+                                :aria-label="`${target === 'Done' ? 'Complete' : 'Move to ' + target}: ${item.team.name}`">
+                                {{ target === 'Done' ? '✓ Complete' : target === 'To Do' ? '← To Do' : '↔ In Progress' }}
+                            </button>
+                        </div>
                     </article>
                     <p v-if="!columnNotes(status).length" class="text-sm text-gray-400 dark:text-gray-500 text-center py-8">
                         {{ selectedTeam ? 'No matching notes' : 'No notes' }}
@@ -130,6 +138,15 @@ async function focusLinkedNote() {
 }
 onMounted(focusLinkedNote);
 watch(() => route.query.note, focusLinkedNote);
+let refreshTimer;
+onMounted(() => {
+    refreshTimer = setInterval(() => {
+        if (document.visibilityState !== 'visible' || busy.value ||
+            document.activeElement?.closest('input,textarea,select,[contenteditable="true"]')) return;
+        refreshBoard();
+    }, 15000);
+});
+onBeforeUnmount(() => clearInterval(refreshTimer));
 
 async function refreshBoard() {
     refreshing.value = true;

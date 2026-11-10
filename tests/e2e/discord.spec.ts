@@ -69,3 +69,23 @@ test('mentor notification links focus the exact card and reveal its column on ph
  await page.setViewportSize({width:390,height:844});await page.goto(`/app/${c.event}/kanban?note=${note.id}`);
  const card=page.getByTestId('kanban-note-'+note.id);await expect(card).toBeVisible();await expect(card).toHaveClass(/ring-2/);await expect(page.getByTestId('kanban-column-In Progress')).toBeVisible();await expect(page.getByRole('button',{name:/In Progress/})).toHaveAttribute('aria-pressed','true');
 });
+
+test('Kanban action buttons complete and reopen on desktop and phone, and public viewers cannot write',async({page,browser})=>{
+ const c=await setup(page.request);
+ await c.send(c.payload({type:5,data:{custom_id:'dashhack-mentor',components:[{type:18,component:{type:4,custom_id:'request',value:'Status button request'}},{type:18,component:{type:3,custom_id:'urgency',values:['medium']}}]}}));
+ const event=(await(await page.request.get(`/api/event/${c.event}`)).json()).data,note=event.teams.find(t=>t._id===c.teamId).stickyNotes[0];
+ for(const width of [1280,390]){
+  await page.setViewportSize({width,height:844});await page.goto(`/app/${c.event}/kanban?note=${note.id}`);
+  let card=page.getByTestId('kanban-note-'+note.id);await card.getByRole('button',{name:'Complete: Discord Team',exact:true}).click();
+  if(width<768)await page.getByRole('button',{name:/^Done \d/}).click();
+  await expect(page.getByTestId('kanban-column-Done').getByTestId('kanban-note-'+note.id)).toBeVisible();
+  await card.getByRole('button',{name:'Move to In Progress: Discord Team',exact:true}).click();
+  if(width<768)await page.getByRole('button',{name:/^In Progress \d/}).click();
+  await expect(page.getByTestId('kanban-column-In Progress').getByTestId('kanban-note-'+note.id)).toBeVisible();
+  await card.getByRole('button',{name:'Move to To Do: Discord Team',exact:true}).click();
+  if(width<768)await page.getByRole('button',{name:/^To Do \d/}).click();
+  await expect(page.getByTestId('kanban-column-To Do').getByTestId('kanban-note-'+note.id)).toBeVisible();
+  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
+ }
+ const guest=await browser.newContext();try{const p=await guest.newPage();await p.goto(`/app/${c.event}/kanban`);await expect(p.getByTestId('kanban-note-'+note.id)).toBeVisible();await expect(p.getByRole('button',{name:'Complete: Discord Team',exact:true})).toHaveCount(0);}finally{await guest.close();}
+});

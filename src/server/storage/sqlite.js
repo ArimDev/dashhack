@@ -118,7 +118,7 @@ export class SqliteStore {
             PRAGMA mmap_size = 0;
         `);
         const version = this.db.query('PRAGMA user_version').get().user_version;
-        if (version > 10) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
+        if (version > 11) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
         if (version === 0) this.db.transaction(() => {
             this.db.exec(`
                 CREATE TABLE events (
@@ -286,6 +286,14 @@ export class SqliteStore {
             PRAGMA user_version = 10;`);
         })();
 
+        if (version < 11) this.db.transaction(() => {
+            this.db.exec(`ALTER TABLE discord_notifications ADD COLUMN channel_id TEXT NOT NULL DEFAULT '';
+            ALTER TABLE discord_notifications ADD COLUMN sync_hash TEXT NOT NULL DEFAULT '';
+            ALTER TABLE discord_notifications ADD COLUMN sync_target TEXT NOT NULL DEFAULT '';
+            ALTER TABLE discord_notifications ADD COLUMN sync_attempts INTEGER NOT NULL DEFAULT 0;
+            ALTER TABLE discord_notifications ADD COLUMN sync_after INTEGER NOT NULL DEFAULT 0;
+            PRAGMA user_version = 11;`);
+        })();
     }
 
     close() { this.db.close(); }

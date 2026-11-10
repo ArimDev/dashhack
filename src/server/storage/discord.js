@@ -1,4 +1,5 @@
 import {randomBytes,randomUUID,createHash,createHmac,timingSafeEqual} from 'node:crypto';
+import {MENTOR_STATUSES} from '../services/mentor-notifications.js';
 import {StorageError,matrixAnswers} from './sqlite.js';
 const fail=(message,status=400)=>{throw new StorageError(status,message);};
 const snowflake=value=>typeof value==='string'&&/^\d{17,20}$/.test(value);
@@ -51,6 +52,30 @@ export class DiscordStore{
         this.store.queueHelpNotification(ctx.settings.event_id,ctx.team.id,{id:noteId,type:'help_request',inKanban:true},ctx.userName);
         this.db.query('UPDATE teams SET revision=revision+1 WHERE id=?').run(ctx.team.id);this.store.touch(ctx.settings.event_id);
         const result={noteId,teamName:ctx.team.name};this.record(ctx,'help',result);return result;
+    })();}
+    mentorStatus(payload,{channelId,roleId}={}){return this.db.transaction(()=>{
+        const settings=this.settingsByApp(payload.application_id),match=/^dh-status:([a-zA-Z0-9-]{1,100}):(todo|progress|done):(todo|progress|done)$/.exec(payload.data?.custom_id||'');
+        if(!settings?.enabled||settings.guild_id!==payload.guild_id||!snowflake(channelId)||payload.channel_id!==channelId||
+            !snowflake(payload.id)||!snowflake(payload.member?.user?.id)||payload.member.user.bot||!match||payload.data?.component_type!==2)
+            fail('Toto tlačítko není dostupné.',403);
+        if(!snowflake(roleId)||!Array.isArray(payload.member.roles)||!payload.member.roles.includes(roleId))
+            fail('Stav mohou měnit pouze mentoři.',403);
+        const row=this.db.query("SELECT * FROM discord_notifications WHERE note_id=? AND event_id=? AND state='sent' AND message_id=? AND channel_id=?")
+            .get(match[1],settings.event_id,payload.message?.id||'',channelId);
+        const team=row&&this.db.query('SELECT * FROM teams WHERE id=? AND event_id=?').get(row.team_id,settings.event_id);
+        if(!team)fail('Karta nebyla nalezena.',404);
+        const ctx={settings,team,userId:payload.member.user.id,userName:String(payload.member.nick||payload.member.user.global_name||payload.member.user.username||'Mentor').slice(0,80),channelId,interactionId:payload.id};
+        const previous=this.previous(ctx,'status');if(previous)return previous;
+        const note=this.db.query('SELECT * FROM notes WHERE id=? AND team_id=?').get(row.note_id,team.id);
+        if(!note||note.type!=='help_request'||!note.in_kanban)fail('Požadavek už není aktivní.',409);
+        if(note.status!==MENTOR_STATUSES[match[2]])fail('Stav se mezitím změnil. Počkejte na aktualizaci karty.',409);
+        this.rate(ctx,'status');
+        const status=MENTOR_STATUSES[match[3]];
+        if(status!==note.status){
+            this.db.query('UPDATE notes SET status=? WHERE id=? AND team_id=?').run(status,note.id,team.id);
+            this.db.query('UPDATE teams SET revision=revision+1 WHERE id=?').run(team.id);this.store.touch(settings.event_id);
+        }
+        const result={noteId:note.id,from:note.status,status};this.record(ctx,'status',result);return result;
     })();}
     githubLink(payload,invites){return this.db.transaction(()=>{
         const ctx=this.context(payload),previous=this.previous(ctx,'github');
