@@ -161,7 +161,7 @@ test('projector wall centers the sharing QR without widening the feed', async ({
   expect((await (await page.request.post(`/api/wall/${encoded}/posts`, { data: { action: 'approve', postId: post.id, revision: 0 } })).json()).status).toBe(200);
   // Avoid an external QR service dependency while verifying the displayed URL and geometry.
   await page.route('https://api.qrserver.com/**', route => route.fulfill({ contentType: 'image/png', body: png }));
-  for (const viewport of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }, { width: 3440, height: 1440 }, { width: 3840, height: 2160 }]) {
+  for (const viewport of [{ width: 1920, height: 1080 }, { width: 1280, height: 720 }, { width: 2488, height: 1298 }, { width: 3440, height: 1440 }, { width: 3840, height: 2160 }]) {
     await page.setViewportSize(viewport);
     await page.goto(`/${encoded}/wall`);
     const cog = page.getByRole('button', { name: 'Wall display settings', exact: true });
@@ -171,10 +171,19 @@ test('projector wall centers the sharing QR without widening the feed', async ({
     await expect(qr).toBeVisible();
     expect(new URL(await qr.getAttribute('src')).searchParams.get('data')).toBe(new URL(`/${encoded}/wall/upload`, page.url()).href);
     const qrBox = await qr.boundingBox(), feed = await page.locator('[data-wall-viewport]').boundingBox(), cogBox = await cog.boundingBox();
-    expect(qrBox.x).toBeGreaterThan(viewport.width * 0.8);
+    expect(qrBox.x).toBeGreaterThan(viewport.width > 2200 ? feed.x + feed.width : viewport.width * 0.8);
     const sharingBox = await page.getByTestId('wall-sharing-qr').boundingBox();
     expect(Math.abs(sharingBox.y + sharingBox.height / 2 - viewport.height / 2)).toBeLessThan(2);
-    expect(sharingBox.width).toBe(186);
+    if (viewport.width > 2200) {
+      // The sharing card fills the actual empty gutter with 16px on each side.
+      expect(Math.abs(sharingBox.x - (feed.x + feed.width + 16))).toBeLessThan(2);
+      expect(Math.abs(viewport.width - sharingBox.x - sharingBox.width - 16)).toBeLessThan(2);
+      expect(sharingBox.width).toBeGreaterThan(300);
+    } else {
+      expect(sharingBox.width).toBe(186);
+    }
+    expect(sharingBox.y).toBeGreaterThanOrEqual(0);
+    expect(sharingBox.y + sharingBox.height).toBeLessThanOrEqual(viewport.height);
     expect(qrBox.width).toBe(sharingBox.width - 26);
     expect(feed.width).toBe(Math.min(1800, viewport.width));
     expect(qrBox.width).toBeGreaterThanOrEqual(160);
