@@ -104,3 +104,6 @@ Both parent and configured Done-thread button interactions require the same veri
 
 
 Validation before deployment: **118 unit tests / 864 assertions**, five Chromium Discord/desktop/phone integration scenarios, production build and isolated signed built-runtime smoke pass. Tests cover move/reopen order, mention suppression, wrong parent/guild/private/locked threads, stale/student buttons, uncertain-copy restart behavior, deterministic nonce/backoff, durable DELETE cleanup, concurrent status changes, initial Done delivery, disabled integration and schema 11 preservation. A live bot permission check confirmed both thread permissions and created Done tickets; provider transfer verification is recorded with the deployment result in RAILWAY.md.
+
+
+Live Done-thread verification completed with source c355ab3 / deployment 61687168-54b6-4918-a180-a9cc4387b22f at schema 12. The existing Team 16 request completed into the thread, reopened into mentor-chat and returned to its original In Progress status. Actual message read-back confirmed green/reopen presentation, no role pings and removal of old cards. Matrix/other notes/teams were preserved. The old test Discord message link is historical; read current IDs from ignored cleanup metadata.
