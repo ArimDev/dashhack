@@ -1,0 +1,14 @@
+import {mkdir} from 'node:fs/promises';
+import template from '../src/public/templates/startup-matrix.json';
+import {matrixExportXlsx} from '../src/app/utils/startupMatrixXlsx.js';
+import {STARTUP_MATRIX_FIELDS} from '../src/shared/startupMatrix.js';
+const paragraph='UKÁZKOVÝ TEXT: Studenti hledají spolehlivý způsob, jak sdílet nápady, ověřovat potřeby zákazníků a získávat zpětnou vazbu. Tato opakovaná odpověď slouží výhradně k testování exportu dlouhého textu. ';
+const text=length=>paragraph.repeat(Math.ceil(length/paragraph.length)).slice(0,length);
+const startupMatrix=Object.fromEntries(STARTUP_MATRIX_FIELDS.map(field=>[field.key,[{type:'paragraph',runs:[{text:`Ukázková odpověď pro oblast ${field.label}. Nejde o data skutečného týmu.`}]}]]));
+startupMatrix.problem=[{type:'paragraph',runs:[{text:text(50000),bold:true}]}];
+startupMatrix.solution=[{type:'paragraph',runs:[{text:text(2200),italic:true}]}];
+startupMatrix.advantages=[{type:'bullet',runs:[{text:'Bodový seznam zachovává českou diakritiku.',bold:true}]},{type:'bullet',runs:[{text:'Druhý bod se zvýrazněním.',italic:true}]}];
+const output=process.argv[2]||'.data/examples/startupova-matice-dlouhy-text.xlsx';
+await mkdir(output.substring(0,output.lastIndexOf('/'))||'.',{recursive:true});
+await Bun.write(output,matrixExportXlsx(template,'UKÁZKOVÝ EXPORT – dlouhé odpovědi',[{name:'UKÁZKA dlouhých odpovědí',startupMatrix,matrixMentorId:'example-mentor'}],[{id:'example-mentor',name:'Ukázkový mentor'}]));
+console.log(output);

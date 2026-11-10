@@ -135,3 +135,7 @@ Development is at <http://localhost:5002> using local `.data/dashhack.sqlite`. B
 ## GitHub student OAuth and audit follow-up
 
 Schema 8 adds revocable per-team invitation records, browser-bound ten-minute student OAuth flows, and an event-scoped audit trail (5,000 rows/event, latest 200 visible). Version 7 upgrades run transactionally and preserve every existing content table. Public event exports omit these security records; full private SQLite snapshots retain them. One reusable seven-day link per team requires GitHub account verification, with no typed username. No SDK, background service or additional replica. See [GitHub App setup](GITHUB_APP.md) for permissions, token handling, rate limits, revocation and shared-link limitations.
+
+## Discord channel integration (schema 9)
+
+Schema 9 adds event-scoped Discord configuration, bounded audit/idempotency records and expiring matrix sessions in one transaction. Existing tables, content, credentials and sessions are preserved. HTTP interactions use built-in Ed25519/HMAC and SQLite in the existing process; no Gateway daemon, SDK, background worker, package dependency or extra replica. Student forms patch only their channel-mapped team's matrix and preserve mentor attribution; they never acquire an organizer session. See [Discord setup/security/limits](DISCORD.md).

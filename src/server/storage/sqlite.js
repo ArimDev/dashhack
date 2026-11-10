@@ -82,6 +82,21 @@ function noteFields(note) {
     };
 }
 
+export function matrixAnswers(answers) {
+    const allowed = STARTUP_MATRIX_FIELDS.map(field => field.key);
+    if (!answers || typeof answers !== 'object' || Array.isArray(answers) ||
+        Object.keys(answers).some(key => !allowed.includes(key))) throw new StorageError(400, 'Neplatná pole startupové matice');
+    const patch = {};
+    for (const [key, value] of Object.entries(answers)) {
+        try { patch[key] = abstractFields(value); }
+        catch (failure) {
+            if (failure instanceof StorageError) throw new StorageError(400, `Neplatná odpověď: ${STARTUP_MATRIX_FIELDS.find(field => field.key === key).label}`);
+            throw failure;
+        }
+    }
+    return patch;
+}
+
 // One connection per application process. Transactions contain no asynchronous work.
 export class SqliteStore {
     constructor(filename, { now = Date.now } = {}) {
@@ -99,7 +114,7 @@ export class SqliteStore {
             PRAGMA mmap_size = 0;
         `);
         const version = this.db.query('PRAGMA user_version').get().user_version;
-        if (version > 8) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
+        if (version > 9) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
         if (version === 0) this.db.transaction(() => {
             this.db.exec(`
                 CREATE TABLE events (
@@ -224,6 +239,33 @@ export class SqliteStore {
             );
             CREATE INDEX team_invite_audit_event ON team_invite_audit(event_id,created_at);
             PRAGMA user_version = 8;`);
+        })();
+
+        if (version < 9) this.db.transaction(() => {
+            this.db.exec(`CREATE TABLE discord_settings (
+                event_id TEXT PRIMARY KEY REFERENCES events(id) ON DELETE CASCADE,
+                application_id TEXT NOT NULL UNIQUE, public_key TEXT NOT NULL,
+                guild_id TEXT NOT NULL UNIQUE, channels TEXT NOT NULL DEFAULT '{}',
+                enabled INTEGER NOT NULL DEFAULT 0 CHECK(enabled IN (0,1)),
+                link_secret TEXT NOT NULL, revision INTEGER NOT NULL DEFAULT 0
+            );
+            CREATE TABLE discord_actions (
+                interaction_id TEXT PRIMARY KEY, event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+                team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+                user_id TEXT NOT NULL, user_name TEXT NOT NULL, kind TEXT NOT NULL,
+                created_at INTEGER NOT NULL, result TEXT NOT NULL DEFAULT '{}'
+            );
+            CREATE INDEX discord_actions_user ON discord_actions(event_id,user_id,created_at);
+            CREATE INDEX discord_actions_team ON discord_actions(event_id,team_id,created_at);
+            CREATE TABLE discord_matrix_flows (
+                id TEXT PRIMARY KEY, event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+                team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+                channel_id TEXT NOT NULL, user_id TEXT NOT NULL, user_name TEXT NOT NULL,
+                created_at INTEGER NOT NULL, expires_at INTEGER NOT NULL,
+                claimed_at INTEGER, session_hash TEXT
+            );
+            CREATE INDEX discord_flows_expiry ON discord_matrix_flows(expires_at);
+            PRAGMA user_version = 9;`);
         })();
 
     }
@@ -468,18 +510,7 @@ export class SqliteStore {
     editStartupMatrix(sessionId, name, input) {
         const eventId = this.authorize(sessionId, name);
         text(input.teamId, 'team ID', 100, true);
-        const answers = input.answers;
-        const allowed = STARTUP_MATRIX_FIELDS.map(field => field.key);
-        if (!answers || typeof answers !== 'object' || Array.isArray(answers) ||
-            Object.keys(answers).some(key => !allowed.includes(key))) throw new StorageError(400, 'Neplatná pole startupové matice');
-        const patch = {};
-        for (const [key, value] of Object.entries(answers)) {
-            try { patch[key] = abstractFields(value); }
-            catch (failure) {
-                if (failure instanceof StorageError) throw new StorageError(400, `Neplatná odpověď: ${STARTUP_MATRIX_FIELDS.find(field => field.key === key).label}`);
-                throw failure;
-            }
-        }
+        const patch = matrixAnswers(input.answers);
         return this.db.transaction(() => {
             const team = this.findTeam(eventId, input);
             if (!Number.isInteger(input.revision) || input.revision !== team.revision) {

@@ -7,6 +7,7 @@
         <GitHubConnection />
         <XCollector v-if="canEdit" />
         <InstagramCollector v-if="canEdit" />
+        <DiscordConnection v-if="canEdit" />
         <Backup />
     </div>
 </template>

@@ -89,7 +89,7 @@ describe('Private reusable GitHub-verified team invitations',()=>{
   now=600001;gate.enter('same','user','shared-school-ip')();
  });
  test('schema 7 upgrades preserve existing event and wall data',async()=>{
-  const c=await fixture();expect(c.store.db.query('PRAGMA user_version').get().user_version).toBe(8);
+  const c=await fixture();expect(c.store.db.query('PRAGMA user_version').get().user_version).toBe(9);
   expect(c.store.getEvent('Event').teams[0]._id).toBe(c.teamId);
  });
 });
