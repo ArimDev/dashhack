@@ -63,19 +63,18 @@
                     <article v-for="item in columnNotes(status)" :key="item.note.id" :data-testid="`kanban-note-${item.note.id}`"
                         :draggable="canEdit && !refreshing" @pointerdown.capture="rememberDragOrigin" @dragstart="startDrag($event, item)" @dragend="endDrag"
                         :class="draggedNoteId === item.note.id ? 'opacity-50' : ''">
-                        <div class="flex items-center justify-between gap-2 px-1 pb-1.5">
-                            <NuxtLink :to="`/app/${encodeURIComponent(currentEvent)}/teams`" class="text-xs font-medium text-gray-600 dark:text-gray-300 flex items-center gap-1.5 min-w-0">
-                                <span class="w-2 h-2 rounded-full shrink-0" :style="{ backgroundColor: item.team.color }"></span>
-                                <span class="truncate">{{ item.team.name }}</span>
-                            </NuxtLink>
-                            <button v-if="canEdit" type="button" :disabled="refreshing" :draggable="!refreshing"
-                                aria-label="Drag note" title="Drag note to a column" data-testid="drag-note"
-                                class="hidden md:inline-flex min-h-11 items-center text-gray-400 hover:text-bluey-500 cursor-grab active:cursor-grabbing disabled:opacity-30 px-2">
-                                <Icon name="heroicons:arrows-up-down" size="16px" /><span class="ml-1 text-xs">Move</span>
-                            </button>
-                        </div>
                         <StickyNote :note="item.note" :team-color="item.team.color" :mentors="data.mentors || []" :read-only="!canEdit || busy"
-                            @update="note => editNote(item, note)" @delete="() => saveNote(item, null)" />
+                            @update="note => editNote(item, note)" @delete="() => saveNote(item, null)">
+                            <template #header>
+                                <NuxtLink :to="`/app/${encodeURIComponent(currentEvent)}/teams`" data-testid="note-team-name"
+                                    class="min-w-0 flex-1 break-words text-lg font-bold leading-snug">{{ item.team.name }}</NuxtLink>
+                                <button v-if="canEdit" type="button" :disabled="refreshing" :draggable="!refreshing"
+                                    aria-label="Drag note" title="Drag note to a column" data-testid="drag-note"
+                                    class="hidden md:inline-flex min-h-11 shrink-0 items-center gap-1 px-2 text-xs opacity-75 hover:opacity-100 cursor-grab active:cursor-grabbing disabled:opacity-30">
+                                    <Icon name="heroicons:arrows-up-down" size="16px" /><span>Move</span>
+                                </button>
+                            </template>
+                        </StickyNote>
                     </article>
                     <p v-if="!columnNotes(status).length" class="text-sm text-gray-400 dark:text-gray-500 text-center py-8">
                         {{ selectedTeam ? 'No matching notes' : 'No notes' }}

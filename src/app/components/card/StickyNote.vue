@@ -1,9 +1,12 @@
 <template>
     <div class="sticky-note p-4 rounded-xl border-2 shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col justify-between min-h-[160px]"
         :style="{ '--team-color': teamColor }" :data-priority="editableInKanban ? editablePriority : 'none'">
-        <header v-if="editableInKanban" data-testid="note-priority-header" :class="[priorityClass, editablePriority === 'critical' ? 'text-sm' : 'text-xs']" class="-mx-4 -mt-4 mb-3 flex items-center gap-2 rounded-t-[10px] px-4 py-2 font-bold">
-            <Icon v-if="editablePriority === 'critical'" name="heroicons:exclamation-triangle-solid" size="20px" />
-            <span>{{ priorityLabel }} priority</span>
+        <header v-if="editableInKanban" data-testid="note-priority-header" :class="[priorityClass, editablePriority === 'critical' ? 'text-sm' : 'text-xs']" class="-mx-4 -mt-4 mb-3 flex flex-col gap-2 rounded-t-[10px] px-4 py-2 font-bold">
+            <div v-if="$slots.header" class="flex items-center justify-between gap-2 normal-case tracking-normal"><slot name="header" /></div>
+            <div class="flex items-center gap-2">
+                <Icon v-if="editablePriority === 'critical'" name="heroicons:exclamation-triangle-solid" size="20px" />
+                <span data-testid="note-priority-label">{{ priorityLabel }} priority</span>
+            </div>
         </header>
         <div class="grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2">
             <label class="text-xs font-semibold text-gray-700 dark:text-gray-200">Type

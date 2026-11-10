@@ -612,15 +612,16 @@ test('notes inherit their team color and critical priority is prominent in Teams
  await expect(noteCard.getByLabel('Note color',{exact:true})).toHaveCount(0);
  const bodyColor=await noteCard.evaluate(el=>getComputedStyle(el).backgroundColor);
  await saved(page,()=>noteCard.getByLabel('Note priority',{exact:true}).selectOption('critical'));
- await expect(noteCard.getByTestId('note-priority-header')).toHaveText('Critical priority');
+ await expect(noteCard.getByTestId('note-priority-label')).toHaveText('Critical priority');
  await expect(noteCard.getByTestId('note-priority-header')).toHaveCSS('background-color','rgb(220, 38, 38)');
  expect(await noteCard.evaluate(el=>getComputedStyle(el).backgroundColor)).toBe(bodyColor);
  await expect(noteCard).toHaveCSS('box-shadow',/rgb\(220, 38, 38\).*3px/);
  await openBoard(page);
  const board=page.locator('.sticky-note');
+ await expect(board.getByTestId('note-priority-header').getByTestId('note-team-name')).toHaveText('Color notes');
  await expect(board).toHaveAttribute('data-priority','critical');await expect(board).toHaveCSS('border-color','rgb(21, 101, 192)');
  await boardSaved(page,()=>board.getByLabel('Note priority',{exact:true}).selectOption('high'));
- await expect(board.getByTestId('note-priority-header')).toHaveText('High priority');
+ await expect(board.getByTestId('note-priority-label')).toHaveText('High priority');
  await boardSaved(page,()=>board.getByLabel('Note priority',{exact:true}).selectOption('critical'));
  await page.reload();await expect(board).toHaveAttribute('data-priority','critical');
  const lightBackground=await board.evaluate(el=>getComputedStyle(el).backgroundColor);
