@@ -413,3 +413,13 @@ The user confirmed `#atthack` as the intended event hashtag. A revision-checked 
 
 
 Deployment **`e65d5ec2-7fbf-4192-a65e-c9d9d327d2e4` — SUCCESS**, source `beb740e`. Live desktop/phone verification confirms team colors in both Teams and Kanban, red critical header and themed selects. Visual preview notes were injected only into browser GET responses; all note/team write requests were blocked, and full real team API comparison confirms production notes unchanged. Screenshot inspected locally. Existing wall/tag configuration remains separate from this deployment.
+
+
+## Kanban team-name card headers — 2026-11-10
+
+Source `04bb1a6` moves the team name into each Kanban card's colored header, with larger bold wrapping text and the existing desktop drag handle. The priority warning follows on its own line; critical cards retain the red header/icon/outline. A StickyNote header slot keeps the Teams view's existing priority header intact. No notes, fields, permissions, grouping or status behavior changed.
+
+Validation: three Chromium scenarios (cross-view moves/filtering, body drag after pending save, team colors/critical/header containment/dark/phone), two Safari/WebKit scenarios, and production build pass. Safari screenshots inspected locally. Data, schema, dependencies, poll settings and infrastructure unchanged.
+
+
+Deployment **`b64961c6-bbe1-4a26-b6b4-35742c6dc9bb` — SUCCESS**, source `04bb1a6`. Live browser-only preview checks confirm the team name is nested inside the card header on desktop and phone, alongside the preserved priority warning. Team/critical styling and the Teams view still work. Note/team write requests were blocked during preview; the real team API data matches before/after. Discord integration remains a proposal only; no Discord app, endpoint, installation or messages were created by this change.
