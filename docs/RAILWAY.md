@@ -13,7 +13,7 @@ Updated 2026-11-10 for schema 9 and Discord setup. This project is separate from
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `4937bde6-66b3-4b27-bd37-e8b1d8077665` — SUCCESS, event-only policy URLs / schema 9 |
+| Latest verified deployment | `28f9ddbd-61b7-4c38-8c3e-f5d041b17613` — SUCCESS, Discord GitHub/urgency / schema 9 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -486,3 +486,6 @@ Consistent on-volume backup `/data/backups/before-team16-1794318987690.sqlite`, 
 Prepared the new Team 16 GitHub joining link through the owner API, reusing its configured test repository. No collaborator invitation was sent or GitHub API called. Private raw link stayed on Railway. Consistent backup `/data/backups/before-discord-github-1794319874139.sqlite`, 0600; all team rows, notes and wall settings unchanged, integrity `ok`. Existing fifteen-team links were retained.
 
 Validation: **95 unit tests / 675 assertions**, three Chromium and three Safari/WebKit Discord scenarios, production build, and isolated production-runtime smoke all pass. The smoke used synthetic SQLite/keys/config and actual signed HTTP requests: correct private team OAuth link, urgency form/high-priority persistence, duplicate suppression and revoked-link denial, with zero external provider calls. Actual new Discord command registration is pending the organizer's transient bot token; no claim is made that the updated definitions are already published to Discord.
+
+
+Deployment **`28f9ddbd-61b7-4c38-8c3e-f5d041b17613` — SUCCESS**, source `2dcb11c`, committed/pushed. Live health and SQLite integrity `ok`; 16 teams remain, Discord enabled only for the configured test-team channel. On-volume HMAC/expiry/repository/installation checks confirm Team 16's joining link is valid without downloading its token. Production phone preview uses fully synthetic intercepted API data and shows the updated three-command panel; real guest access and bad-signature denials pass. No actual student invitation or synthetic Discord note was generated in production. The user must register the three updated commands with the transient bot token field before `/github` appears; actual Discord delivery remains unverified.
