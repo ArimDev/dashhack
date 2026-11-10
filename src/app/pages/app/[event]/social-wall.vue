@@ -77,11 +77,27 @@
             @toggle-menu="toggleMenu(post.id)"
             @close-menu="openMenuId = null"
             @delete="confirmDelete(post.id)"
+            @edit="startEdit(post)"
           />
         </div>
       </section>
     </div>
     </fieldset>
+    <DialogShell v-if="editingPost" title="Edit post" @close="!busy && (editingPost = null)">
+      <form id="edit-wall-post" class="space-y-4" @submit.prevent="savePost">
+        <label class="block text-sm">Author
+          <input v-model="editingPost.authorName" maxlength="80" :disabled="busy" class="mt-1 min-h-11 w-full rounded-xl border bg-white px-3 dark:border-slate-600 dark:bg-slate-900" />
+        </label>
+        <label class="block text-sm">Post text
+          <textarea v-model="editingPost.text" maxlength="5000" rows="7" :disabled="busy" class="mt-1 w-full rounded-xl border bg-white p-3 dark:border-slate-600 dark:bg-slate-900" />
+        </label>
+        <p v-if="error" role="alert" class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
+      </form>
+      <template #footer>
+        <button type="button" :disabled="busy" class="min-h-11 rounded-xl border px-4" @click="editingPost = null">Cancel</button>
+        <button type="submit" form="edit-wall-post" :disabled="busy" class="min-h-11 rounded-xl bg-bluey-600 px-4 text-white">Save post</button>
+      </template>
+    </DialogShell>
   </div>
 </template>
 
@@ -97,7 +113,9 @@ const keywordsText = ref(''), blacklistAuthorsText = ref('');
 const openMenuId = ref(null), activeTab = ref('all'), sortOrder = ref('newest');
 const search=ref(''),perPage=ref(20),page=ref(1),pagination=ref({pageCount:1,totalMatched:0}),fetching=ref(false);
 let searchTimer,readController,syncingPage=false;
-const busy = ref(false), error = ref('');
+const busy = ref(false), error = ref(''), editingPost = ref(null);
+function startEdit(post) { if (canEdit.value && !busy.value) { error.value = ''; editingPost.value = { ...post }; openMenuId.value = null; } }
+async function savePost() { const draft = editingPost.value; if (draft && await change({ action:'edit', postId:draft.id, revision:draft.revision, authorName:draft.authorName, text:draft.text })) editingPost.value = null; }
 const uploadQrUrl = computed(() => import.meta.client ? `${window.location.origin}/${encodeURIComponent(currentEvent.value)}/wall/upload` : '');
 const tabLabel = { all: 'All', pending: 'Pending', approved: 'Approved', rejected: 'Rejected', pinned: 'Pinned' };
 const view=()=>({page:page.value,perPage:perPage.value,search:search.value,status:activeTab.value,sort:sortOrder.value});
@@ -135,6 +153,7 @@ async function change(payload) {
       throw new Error(response.message);
     }
     applyData(response.data);
+    return true;
   } catch (failure) { error.value = failure.message || 'Could not update social wall.'; }
   finally { busy.value = false; }
 }

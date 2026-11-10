@@ -447,3 +447,27 @@ test('cogwheel speed presets persist for the event and reject guests and stale w
   expect((await(await page.request.post(path,{data:{action:'setSpeed',speed:900,revision:saved.revision}})).json()).status).toBe(400);
   const guest=await browser.newContext();try{expect((await(await guest.request.post(path,{data:{action:'setSpeed',speed:20,revision:saved.revision}})).json()).status).toBe(401);}finally{await guest.close();}
 });
+
+test('pinned event placeholders can be edited without losing their pin',async({page})=>{
+ const name=await setup(page),encoded=encodeURIComponent(name),endpoint=`/api/wall/${encoded}/posts`;
+ await changed(page,()=>page.getByLabel('Wall enabled',{exact:true}).check());
+ const post=(await(await page.request.post(`/api/wall/${encoded}`,{data:{text:'Event placeholder',authorName:'Demo'}})).json()).data;
+ for(const [action,revision] of [['approve',0],['pin',1]])expect((await(await page.request.post(endpoint,{data:{action,postId:post.id,revision}})).json()).status).toBe(200);
+ await page.reload();const card=page.getByTestId('wall-post-'+post.id);
+ await card.getByRole('button',{name:'Edit post',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'Edit post'});
+ await dialog.getByLabel('Author',{exact:true}).fill('Pořadatelé');
+ await dialog.getByLabel('Post text',{exact:true}).fill('Program akce: <b>žádné HTML</b>');
+ await changed(page,()=>dialog.getByRole('button',{name:'Save post',exact:true}).click());
+ await expect(dialog).toHaveCount(0);await expect(card).toContainText('Program akce: <b>žádné HTML</b>');
+ await expect(card).toContainText('Pořadatelé');await expect(card).toContainText('Pinned');
+ await expect(card.locator('b')).toHaveCount(0);
+ await card.getByRole('button',{name:'Edit post',exact:true}).click();
+ await dialog.getByLabel('Post text',{exact:true}).fill('Keep this draft');
+ const latest=(await(await page.request.get(endpoint)).json()).data.posts[0];
+ await page.request.post(endpoint,{data:{action:'hide',postId:post.id,revision:latest.revision}});
+ await dialog.getByRole('button',{name:'Save post',exact:true}).click();
+ await expect(dialog.getByRole('alert')).toContainText('changed');
+ await expect(dialog.getByLabel('Post text',{exact:true})).toHaveValue('Keep this draft');
+ await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
+});

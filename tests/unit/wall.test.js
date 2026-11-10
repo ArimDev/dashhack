@@ -350,3 +350,20 @@ describe('Wall incremental pages and display speed',()=>{
         for(const scrollSpeed of [0,101,'60',30.5])expect(()=>c.wall.updateSettings(c.session,c.name,{scrollSpeed},updated.revision)).toThrow('Invalid');
     });
 });
+
+test('organizers edit community posts without changing media, pins or moderation; stale and unauthorized edits fail',async()=>{
+ const c=await setup();let p=c.wall.submit(c.name,{text:'Placeholder',authorName:'Demo'},media);
+ p=action(c,p,'approve');p=action(c,p,'pin');
+ const edit={action:'edit',postId:p.id,revision:p.revision,text:'<b>Program akce</b>',authorName:'Pořadatelé'};
+ expect(()=>c.wall.action(null,c.name,edit)).toThrow('expired');
+ const other=await c.store.createEvent('Other event','password123');
+ expect(()=>c.wall.action(c.store.createSession(other),c.name,edit)).toThrow();
+ for(const bad of [{text:'x'.repeat(5001)},{authorName:'x'.repeat(81)},{text:null}])expect(()=>c.wall.action(c.session,c.name,{...edit,...bad})).toThrow();
+ c.wall.action(c.session,c.name,edit);
+ const updated=c.wall.moderationFeed(c.session,c.name).posts[0];
+ expect(updated).toEqual({...p,text:edit.text,authorName:edit.authorName,revision:p.revision+1});
+ expect(c.wall.media(c.session,c.name,p.id).data).toEqual(media.data);
+ expect(()=>c.wall.action(c.session,c.name,edit)).toThrow('changed');
+ c.store.db.query("UPDATE wall_posts SET platform='x' WHERE event_id=? AND id=?").run(c.id,p.id);
+ expect(()=>c.wall.action(c.session,c.name,{...edit,revision:updated.revision})).toThrow('Only community');
+});

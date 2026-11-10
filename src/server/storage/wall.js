@@ -240,6 +240,15 @@ export class WallStore {
             const post = this.db.query('SELECT * FROM wall_posts WHERE event_id=? AND id=? AND deleted=0').get(id,string(input.postId,100));
             if (!post) fail('Post not found',404);
             if (input.revision !== post.revision) fail('Post changed. Reload before trying again.',409);
+            if (input.action === 'edit') {
+                if (post.platform !== 'manual') fail('Only community posts can be edited.');
+                if (typeof input.text !== 'string' || typeof input.authorName !== 'string') fail('Author and text are required.');
+                const text = string(input.text,5000), author = string(input.authorName,80);
+                if (!text && !post.image_url && !post.video_url) fail('Post description or image is required.');
+                this.db.query('UPDATE wall_posts SET text=?,author_name=?,revision=revision+1 WHERE event_id=? AND id=?')
+                    .run(text,author,id,post.id);
+                return;
+            }
             switch (input.action) {
                 case 'approve': post.status='approved'; post.hidden=0; break;
                 case 'reject': post.status='rejected'; post.hidden=1; break;
