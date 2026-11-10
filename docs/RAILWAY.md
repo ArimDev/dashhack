@@ -423,3 +423,19 @@ Validation: three Chromium scenarios (cross-view moves/filtering, body drag afte
 
 
 Deployment **`b64961c6-bbe1-4a26-b6b4-35742c6dc9bb` — SUCCESS**, source `04bb1a6`. Live browser-only preview checks confirm the team name is nested inside the card header on desktop and phone, alongside the preserved priority warning. Team/critical styling and the Teams view still work. Note/team write requests were blocked during preview; the real team API data matches before/after. Discord integration remains a proposal only; no Discord app, endpoint, installation or messages were created by this change.
+
+
+## Startup matrix Excel template exports — 2026-11-10
+
+Source `259bd07` adds saved matrix `.xlsx` exports: each expanded team matrix has Exportovat matici (.xlsx), and Teams has Export všech matic (.xlsx), covering all teams regardless of search. One team uses one template worksheet; all-team export uses a sheet per team. This is a read-only export of already publicly readable matrix data; no new authorization bypass or write endpoint.
+
+The user supplied `/home/alby/Downloads/Startupová matice.xlsx`. The tracked 49 KB template manifest preserves its exact five-by-two question layout, colored fills, borders, column widths, row heights, merged heading, CzechInvest logo, theme and landscape print setup. Team name goes into the heading, saved rich-text answers follow each original question, mentor/event go into the print footer. Unanswered fields remain explicitly unanswered. Rich bold/italic/line/bullet formatting is retained. Workbook names are sanitized/unique; cells are literal strings, so formula-looking input cannot execute as formulas. Original author/local-path/printer-device metadata is excluded by `scripts/prepare-startup-matrix-template.py`.
+
+Generation uses a lazy browser module and a small STORE-only ZIP packager; no spreadsheet runtime, Python service or new package dependency on Railway. The only Python dependency used was openpyxl under /tmp for independent validation. Existing app/SQLite/schema 8/poll settings are unchanged. Cells exceeding Excel's safe length use clearly labelled continuation worksheets with all answer text retained; UTF-16 chunking keeps emoji intact. Original fixed box heights are retained, so long answers may require row-height adjustment when reading/printing. Only the first sheet is selected, avoiding accidental grouped edits across teams.
+
+Validation: **82 unit tests / 573 assertions**, four Chromium matrix scenarios and one Safari/WebKit download scenario, including real per-team/all-team XLSX downloads at phone width. Independent openpyxl validation opens without warnings and verifies fills/borders/wrapping/merges/landscape/logo against the original template, bold/italic text, and a complete 50,000-character continuation answer. ZIP CRCs and every XML part validate. Production build passes.
+
+
+Deployment **`426b0070-94a2-4955-a5ae-2aeb21805445` — SUCCESS**, source `259bd07`. Live production frontend checks used two explicitly synthetic teams, intercepting every API request (no production payload read). Actual single-team phone and combined desktop downloads opened in openpyxl without warnings, with correct sheet names, synthetic Czech answers, logo and valid ZIP CRCs.
+
+Automatic approval review rejected the optional download of real production matrix answers to local /tmp files because that destination/payload transfer lacked specific authorization. It was not retried or bypassed; no real workbook/data was copied locally. Users can export through the deployed buttons. Do not run `/tmp/dashhack-matrix-export-live.mjs` without explicit authorization for that transfer; `/tmp/dashhack-matrix-export-synthetic-live.mjs` is the API-intercepted synthetic check.
