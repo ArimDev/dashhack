@@ -25,6 +25,8 @@
             <div v-if="info.configured" class="space-y-3 border-t border-gray-200 pt-3 dark:border-gray-600">
                 <p class="text-sm">V aplikaci nastavte tento Interactions Endpoint URL:</p>
                 <input :value="endpoint" aria-label="Discord Interactions Endpoint URL" readonly class="discord-input text-xs" @focus="$event.target.select()" />
+                <label class="block text-sm">Terms of Service URL<input :value="termsUrl" readonly class="discord-input text-xs" @focus="$event.target.select()" /></label>
+                <label class="block text-sm">Privacy Policy URL<input :value="privacyUrl" readonly class="discord-input text-xs" @focus="$event.target.select()" /></label>
                 <a :href="installUrl" target="_blank" rel="noopener noreferrer" class="inline-block min-h-11 text-sm text-bluey-500 underline">Nainstalovat příkazy do serveru</a>
                 <label class="block text-sm">Bot token pro jednorázovou registraci<input v-model="token" type="password" autocomplete="new-password" aria-label="Discord bot token" class="discord-input" /></label>
                 <p class="text-xs text-gray-500 dark:text-gray-400">Token z karty Bot se neukládá. Aplikace nepotřebuje číst zprávy ani oprávnění Administrator.</p>
@@ -40,6 +42,8 @@
 <script setup>
 const currentEvent=useState('currentEvent'),info=ref(null),config=ref(null),loading=ref(false),busy=ref(false),error=ref(''),feedback=ref(''),token=ref('');
 const endpoint=computed(()=>import.meta.client?location.origin+'/api/discord/interactions':'');
+const termsUrl=computed(()=>import.meta.client?location.origin+'/terms.html':'');
+const privacyUrl=computed(()=>import.meta.client?location.origin+'/privacy.html':'');
 const dirty=computed(()=>info.value&&JSON.stringify(config.value)!==JSON.stringify(info.value.config));
 const installUrl=computed(()=>info.value?.configured?'https://discord.com/oauth2/authorize?'+new URLSearchParams({client_id:info.value.config.applicationId,scope:'applications.commands',guild_id:info.value.config.guildId,disable_guild_select:'true',integration_type:'0'}):'');
 function apply(data){info.value=data;config.value=JSON.parse(JSON.stringify(data.config));}

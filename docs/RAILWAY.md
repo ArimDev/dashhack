@@ -461,3 +461,9 @@ Validation: **92 unit tests / 654 assertions**, five targeted Chromium and five 
 
 
 Deployment **`3f8b32dc-e62f-46a6-85fe-cb9f6de38dda` — SUCCESS**, source `1be220f`, committed/pushed to `feat_alby_design`. Production frontend generated both single-team phone and combined desktop downloads using entirely synthetic intercepted API data. Independent openpyxl validation confirms exactly one five-row sheet per synthetic team, a complete 600-character answer only in its answer cell, matching colors/logo, one-page landscape print area and no continuation sheets or parser warnings. No production answers were read/downloaded or modified; existing Discord configuration, social collection settings, schema and infrastructure were not changed.
+
+## Discord Terms and Privacy pages — 2026-11-10
+
+Added public static `/terms.html` and `/privacy.html` with shared `/legal.css`; no JavaScript or login is required. They explicitly cover only this DashHack deployment and Discord application for the private AT&T Hackathon Junior 2026 event, its organizers, mentors and invited teams. Terms cover permitted event use and submissions. Privacy describes actual Discord/event/cookie/optional integration data, event-only purpose, shared-login audit visibility, existing event-URL public reading, Railway's SFO hosting, cleanup/backup limits and organizer contact for correction/deletion. No unsupported confidentiality, automatic deletion or legal-compliance guarantee is made. Policy URLs are also shown as copyable read-only fields in organizer Discord Settings. Existing access rules, stored data, app registration, command enablement and infrastructure are unchanged.
+
+Build passed; both HTML documents have one heading, valid local stylesheet/navigation links and no scripts. Generated production public assets are present. Actual Discord Developer Portal URL entry remains the user's action; no portal setting was changed automatically.
