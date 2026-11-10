@@ -399,3 +399,17 @@ Validation: **78 unit tests / 522 assertions**, targeted Chromium and Safari/Web
 
 
 Deployment **`67719072-540e-498a-8d0e-df04e58b6574` — SUCCESS**, source `382729a`. Live authenticated checks confirm exactly two pinned manual posts, no downloaded feed, all query lists empty and both collectors OFF. Desktop and 390px phone edit dialogs open with the original author/text and fit the viewport; both were canceled and full post/settings API comparison confirms no incidental writes.
+
+
+## Team-colored notes, Critical priority and confirmed event tag — 2026-11-10
+
+Source `beb740e`. Both Teams and Kanban derive note surface tint/border from the current team color, so old notes inherit immediately and a team's color change follows through automatically. New UI notes store the current team color; legacy note.color is retained in persistence/backups but no longer independently editable in the card. Light and dark surfaces use team tints with appropriate text colors. Priority headers remain independent: low neutral, medium blue, high amber, new critical solid red/uppercase with a warning icon and prominent red outline. Plain notes outside Kanban have no priority header or outline; their saved priority is retained for future reuse.
+
+Both whole-team and per-note save paths accept `critical` through shared NOTE_PRIORITIES validation. The existing TEXT column requires no migration; schema remains 8. Critical priority persists across reopening. Note content/media ownership/revision behavior is unchanged. No dependencies or services added. Safari note selects use explicit appearance/arrow styling to avoid invisible text on native controls in dark themes.
+
+Validation: **79 unit tests / 525 assertions**; three existing Chromium note/Kanban scenarios plus the new inheritance/priority/persistence/dark/phone scenario, and the new Safari/WebKit scenario. Critical is saved through both API paths, body color is retained when priority changes, warnings remain visible and mobile cards fit. Production build passes; Safari screenshots inspected locally.
+
+The user confirmed `#atthack` as the intended event hashtag. A revision-checked production settings patch configures shared, X and Instagram hashtag lists to that one tag, while explicitly retaining both collectors OFF. X handles remain empty. Full wall-settings comparison confirms every other setting is unchanged. No provider fetch or imported post was generated.
+
+
+Deployment **`e65d5ec2-7fbf-4192-a65e-c9d9d327d2e4` — SUCCESS**, source `beb740e`. Live desktop/phone verification confirms team colors in both Teams and Kanban, red critical header and themed selects. Visual preview notes were injected only into browser GET responses; all note/team write requests were blocked, and full real team API comparison confirms production notes unchanged. Screenshot inspected locally. Existing wall/tag configuration remains separate from this deployment.
