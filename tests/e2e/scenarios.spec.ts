@@ -1,3 +1,4 @@
+import { readFile } from 'node:fs/promises';
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
@@ -636,4 +637,29 @@ test('notes inherit their team color and critical priority is prominent in Teams
  await expect(board).toBeVisible();
  const box=await board.boundingBox();expect(box.x).toBeGreaterThanOrEqual(0);expect(box.x+box.width).toBeLessThanOrEqual(390);
  await page.screenshot({path:test.info().outputPath('critical-kanban-phone.png')});
+});
+
+
+
+function workbookEntries(buffer){
+ const entries=new Map();let offset=0;
+ while(buffer.readUInt32LE(offset)===0x04034b50){const size=buffer.readUInt32LE(offset+18),nameSize=buffer.readUInt16LE(offset+26),extra=buffer.readUInt16LE(offset+28),name=buffer.subarray(offset+30,offset+30+nameSize).toString('utf8'),start=offset+30+nameSize+extra;entries.set(name,buffer.subarray(start,start+size));offset=start+size;}
+ return entries;
+}
+test('startup matrix downloads the supplied Excel template per team and with all teams on separate sheets',async({page})=>{
+ await addTeam(page,'Export <matrix>');await addTeam(page,'Second export team');
+ const event=(await(await page.request.get(`/api/event/${eventName}`)).json()).data;
+ const first=event.teams.find(team=>team.name==='Export <matrix>');
+ expect((await(await page.request.patch('/api/team/matrix',{data:{username:eventName,teamId:first._id,revision:first.revision,answers:{problem:[{type:'paragraph',runs:[{text:'Česká odpověď <img src=x onerror=alert(1)>',bold:true}]}]}}})).json()).status).toBe(200);await page.reload();
+ const card=page.getByTestId('team-card-Export <matrix>');await card.getByText('Startupová matice',{exact:true}).click();
+ const matrix=card.getByTestId('startup-matrix'),download=page.waitForEvent('download');
+ await matrix.getByRole('button',{name:'Exportovat matici (.xlsx)',exact:true}).click();
+ const one=await download;expect(one.suggestedFilename()).toMatch(/\.xlsx$/);const single=workbookEntries(await readFile(await one.path()));
+ expect(single.get('xl/workbook.xml').toString()).toContain('Export &lt;matrix&gt;');expect(single.has('xl/worksheets/sheet2.xml')).toBe(false);
+ const sheet=single.get('xl/worksheets/sheet1.xml').toString();expect(sheet).toContain('Česká odpověď &lt;img');expect(sheet).toContain('mergeCell ref="A1:E1"');expect(sheet).toContain('orientation="landscape"');expect(single.get('xl/media/image1.jpeg').length).toBeGreaterThan(20000);
+ await page.setViewportSize({width:390,height:844});const allDownload=page.waitForEvent('download');
+ await page.getByRole('button',{name:'Export všech matic (.xlsx)',exact:true}).click();
+ const all=await allDownload,combined=workbookEntries(await readFile(await all.path()));
+ expect(combined.get('xl/workbook.xml').toString()).toContain('Second export team');expect(combined.has('xl/worksheets/sheet2.xml')).toBe(true);
+ const fresh=(await(await page.request.get(`/api/event/${eventName}`)).json()).data.teams.find(team=>team._id===first._id);expect(fresh.startupMatrix.problem[0].runs[0].text).toContain('<img');
 });

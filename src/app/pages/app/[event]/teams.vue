@@ -31,6 +31,9 @@
                     </select>
                 </div>
             </div>
+            <div class="mb-4 flex justify-end">
+                <MatrixExport :teams="data.teams" :event-name="currentEvent" :mentors="data.mentors || []" label="Export všech matic (.xlsx)" />
+            </div>
             <div v-if="!visibleIds.size" class="py-12 text-center text-gray-500 dark:text-gray-400">No teams match your search.</div>
             <div data-testid="teams-grid" class="grid grid-cols-1 items-start gap-5 lg:grid-cols-2">
                 <div v-for="team in data.teams" :key="team._id" v-show="visibleIds.has(team._id)" :id="`team-${team._id}`" tabindex="-1" class="team-anchor min-w-0 rounded-xl focus-visible:outline-2 focus-visible:outline-bluey-500">

@@ -5,6 +5,7 @@
                 <p class="text-sm text-gray-500 dark:text-gray-400">Otázky CzechInvestu pomáhají ověřit nápad a jeho konkurenceschopnost. Vyplnit můžete jen některé odpovědi.</p>
                 <p class="text-xs text-gray-500 dark:text-gray-400 mt-1">Vyplněno {{ completed }}/10 odpovědí.<span v-if="mentorName"> Zpracoval/a: {{ mentorName }}.</span></p>
             </div>
+            <MatrixExport v-if="!editing" :teams="[team]" :event-name="currentEvent" :mentors="eventData.mentors || []" />
             <button v-if="canEdit && !editing" type="button" @click="startEditing"
                 class="rounded-lg px-3 py-2 bg-bluey-500 hover:bg-bluey-600 text-white text-sm">Upravit matici</button>
         </div>
