@@ -365,3 +365,13 @@ Validation: two Chromium and three Safari/WebKit/iPhone checks cover phone portr
 
 
 Final deployment **`215966a0-51c1-411c-9330-db20a439f3e8` — SUCCESS**, source `ace870f`. Live checks passed at 1920×1080 (4 columns, 856px QR), 3440×1440 (7 columns, 1216px QR), 3840×2160 (8 columns, 1936px QR), phone portrait/landscape and 768×1366 portrait tablet. Every QR remains square and inside the viewport; dialog and upload headings are centered. Live screenshot inspected locally. Existing production data and collector settings were not modified.
+
+
+## Wall QR placement correction — 2026-11-10
+
+Source `72106de` corrects the preceding responsive-wall interpretation. The user wanted the existing floating QR vertically centered and filling its own column, while retaining the header/bar size. The feed is restored to its original 1800px cap and one/two/three/four-column breakpoints; no ultrawide columns. The desktop sharing card stays 186px wide (160px content), centered vertically at the right edge, and its square image fills the content width. The left header sizing is unchanged. The user explicitly approved the full-screen modal, so its centered title and viewport-sized QR remain. Upload header centering remains too.
+
+Validation: targeted Chromium checks pass; three Safari/WebKit/iPhone checks also pass, covering the corrected wall at 1280/1920/3440/3840px, original card width/full-content QR, centered card, capped feed, unchanged modal, and phone/tablet QR fit. Production build passes. No schema, data, collector settings, dependencies or infrastructure changes.
+
+
+Deployment **`7bb9a908-4165-4af8-a001-68969ff8fba0` — SUCCESS**, source `72106de`. Live verification confirms the 1800px feed cap, four columns on ultrawide/4K, 186px desktop sharing card with full-content square QR at the vertical center, phone/tablet fit, and preserved approved modal. Live wall screenshot inspected locally. No production data/settings were modified.
