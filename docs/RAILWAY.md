@@ -13,7 +13,7 @@ Updated 2026-11-10 for schema 9 and Discord setup. This project is separate from
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `28f9ddbd-61b7-4c38-8c3e-f5d041b17613` — SUCCESS, Discord GitHub/urgency / schema 9 |
+| Latest verified deployment | `b32df033-e09f-42b9-b5a2-0550af14db41` — SUCCESS, To Do priority ordering / schema 9 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -495,3 +495,6 @@ Deployment **`28f9ddbd-61b7-4c38-8c3e-f5d041b17613` — SUCCESS**, source `2dcb1
 To Do displays Critical, High, Medium, Low in that order. Stable sorting preserves equal-priority order, filters still apply, and missing/unknown legacy priorities fall back to medium. Only a freshly filtered display array is sorted; no team/note positions or persistence/API data are rewritten. In Progress and Done retain their original order. Existing priority warning/color/drag behavior remains intact. No dependencies, migration, settings or infrastructure changes.
 
 Validation: three existing Chromium scenarios (moves/filtering, pending-save drag and priority/team-color/header styling), two existing Safari/WebKit Kanban scenarios, and production build pass. No new persistence tests or packages were added for this display-only change.
+
+
+Deployment **`b32df033-e09f-42b9-b5a2-0550af14db41` — SUCCESS**, source `b9a01c9`, committed/pushed. Live production frontend verification used seven entirely synthetic notes across two synthetic teams, intercepting every API request. To Do order is Critical → High → Medium → Low, equal-priority order is stable across teams, team filters and phone layout pass, and In Progress order remains intact. Phone screenshot inspected. No real production note/team content was read or changed by the preview.
