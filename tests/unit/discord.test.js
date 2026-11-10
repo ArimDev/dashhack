@@ -16,12 +16,12 @@ async function setup(){let now=1800000000000;const store=new SqliteStore(':memor
  const payload=(extra={})=>({id:String(interaction++),application_id:APP,guild_id:GUILD,channel_id:CHANNEL,member:{user:{id:USER,username:'Verified student'}},type:2,data:{name:'matice'},...extra});
  return {store,discord,eventId,session,teamId,otherTeam,config,payload,advance:ms=>{now+=ms;}};
 }
-test('schema 8 upgrades to 11 without changing event, team, matrix, notes or active sessions',async()=>{
+test('schema 8 upgrades to 12 without changing event, team, matrix, notes or active sessions',async()=>{
  const dir=mkdtempSync(join(tmpdir(),'dashhack-discord-migration-'));dirs.push(dir);const file=join(dir,'app.sqlite'),store=new SqliteStore(file);stores.push(store);
  const id=await store.createEvent('Migration','password123'),session=store.createSession(id),teamId=store.addTeam(session,'Migration',{teamName:'Keep',teamColor:'#123456'});
  store.editStartupMatrix(session,'Migration',{teamId,revision:0,answers:{problem:answer('Keep answer')}});const before=store.getEvent('Migration');
- store.db.exec('DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; PRAGMA user_version=8;');store.close();const reopened=new SqliteStore(file);stores.push(reopened);
- expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(11);expect(reopened.getEvent('Migration')).toEqual(before);expect(reopened.getSession(session).eventId).toBe(id);expect(reopened.db.query('SELECT COUNT(*) n FROM discord_settings').get().n).toBe(0);
+ store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; PRAGMA user_version=8;');store.close();const reopened=new SqliteStore(file);stores.push(reopened);
+ expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(12);expect(reopened.getEvent('Migration')).toEqual(before);expect(reopened.getSession(session).eventId).toBe(id);expect(reopened.db.query('SELECT COUNT(*) n FROM discord_settings').get().n).toBe(0);
 });
 test('Discord settings are owner-only, revision checked, unique and omit private link keys',async()=>{
  const c=await setup();expect(()=>c.discord.owner(null,'Discord event')).toThrow();const other=await c.store.createEvent('Other','password123');expect(()=>c.discord.owner(c.store.createSession(other),'Discord event')).toThrow();

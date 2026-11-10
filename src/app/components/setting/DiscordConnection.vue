@@ -36,10 +36,11 @@
                     <h2 class="font-semibold">Oznámení do mentor-chat</h2>
                     <p>Nové help requesty se posílají jako karty s odkazem do Kanbanu.</p>
                     <p>Kanál: {{ info.notifications.channelId || 'Nenastaven' }} · Token: {{ info.notifications.tokenConfigured ? 'Nastaven' : 'Chybí' }}</p>
+                    <p v-if="info.notifications.doneThreadId" class="text-xs">Dokončené: vlákno Done tickets. Znovu otevřené karty se vrací do mentor-chat.</p>
                     <p v-if="info.notifications.roleId" class="text-xs">Zmínka role: {{ info.notifications.roleId }}. Role musí být zmínitelná.</p>
                     <p v-if="!info.notifications.tokenConfigured" class="text-xs">Nastavte NUXT_DISCORD_BOT_TOKEN v Railway. Sem token neukládejte.</p>
                     <a :href="botInstallUrl" target="_blank" rel="noopener noreferrer" class="inline-block min-h-11 text-bluey-500 underline">Přidat bota s oprávněním posílat oznámení</a>
-                    <p class="text-xs">V mentor-chat povolte View Channel, Send Messages a Embed Links.</p>
+                    <p class="text-xs">V mentor-chat povolte View Channel, Send Messages, Embed Links, Create Public Threads a Send Messages in Threads.</p>
                     <p v-if="info.notifications.counts.length" class="text-xs">{{ info.notifications.counts.map(row => `${notificationLabels[row.state]}: ${row.count}`).join(' · ') }}</p>
                     <p v-if="info.notifications.lastError" role="alert" class="text-xs text-red-600 dark:text-red-400">{{ info.notifications.lastError }}</p>
                 </div>
@@ -57,7 +58,7 @@ const termsUrl=computed(()=>import.meta.client?location.origin+'/terms.html':'')
 const privacyUrl=computed(()=>import.meta.client?location.origin+'/privacy.html':'');
 const dirty=computed(()=>info.value&&JSON.stringify(config.value)!==JSON.stringify(info.value.config));
 const installUrl=computed(()=>info.value?.configured?'https://discord.com/oauth2/authorize?'+new URLSearchParams({client_id:info.value.config.applicationId,scope:'applications.commands',guild_id:info.value.config.guildId,disable_guild_select:'true',integration_type:'0'}):'');
-const botInstallUrl=computed(()=>info.value?.configured?'https://discord.com/oauth2/authorize?'+new URLSearchParams({client_id:info.value.config.applicationId,scope:'bot applications.commands',permissions:'19456',guild_id:info.value.config.guildId,disable_guild_select:'true',integration_type:'0'}):'');
+const botInstallUrl=computed(()=>info.value?.configured?'https://discord.com/oauth2/authorize?'+new URLSearchParams({client_id:info.value.config.applicationId,scope:'bot applications.commands',permissions:'309237664768',guild_id:info.value.config.guildId,disable_guild_select:'true',integration_type:'0'}):'');
 const notificationLabels={pending:'Čeká',sending:'Odesílání',sent:'Odesláno',failed:'Chyba'};
 function apply(data){info.value=data;config.value=JSON.parse(JSON.stringify(data.config));}
 async function load(){loading.value=true;error.value='';try{const r=await $fetch('/api/discord/settings',{query:{event:currentEvent.value}});if(r.status!==200)throw new Error(r.message);apply(r.data);}catch(e){error.value=e.message;}finally{loading.value=false;}}

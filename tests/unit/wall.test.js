@@ -24,7 +24,7 @@ describe('Social wall adapted from PR #6',() => {
     test('schema 6 migrates without changing existing event, notes or credentials; wall defaults off',async () => {
         const c=await setup();
         c.store.addTeam(c.session,c.name,{ teamName:'Tým',teamColor:'#123456',teamOriginality:'Originální' });
-        c.store.db.exec('DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; PRAGMA user_version=6');
+        c.store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; PRAGMA user_version=6');
         const before=publicEvent(c.store.getEvent(c.name)); c.store.close();
         const reopened=new SqliteStore(c.filename); stores.push(reopened);
         expect(publicEvent(reopened.getEvent(c.name))).toEqual(before);

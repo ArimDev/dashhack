@@ -118,7 +118,7 @@ export class SqliteStore {
             PRAGMA mmap_size = 0;
         `);
         const version = this.db.query('PRAGMA user_version').get().user_version;
-        if (version > 11) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
+        if (version > 12) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
         if (version === 0) this.db.transaction(() => {
             this.db.exec(`
                 CREATE TABLE events (
@@ -293,6 +293,18 @@ export class SqliteStore {
             ALTER TABLE discord_notifications ADD COLUMN sync_attempts INTEGER NOT NULL DEFAULT 0;
             ALTER TABLE discord_notifications ADD COLUMN sync_after INTEGER NOT NULL DEFAULT 0;
             PRAGMA user_version = 11;`);
+        })();
+        if (version < 12) this.db.transaction(() => {
+            this.db.exec(`ALTER TABLE discord_notifications ADD COLUMN move_state TEXT NOT NULL DEFAULT '' CHECK(move_state IN ('','posting','uncertain'));
+            CREATE TABLE discord_message_cleanup (
+                message_id TEXT PRIMARY KEY, channel_id TEXT NOT NULL,
+                event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+                note_id TEXT NOT NULL, created_at INTEGER NOT NULL,
+                attempts INTEGER NOT NULL DEFAULT 0, next_attempt_at INTEGER NOT NULL,
+                last_error TEXT NOT NULL DEFAULT ''
+            );
+            CREATE INDEX discord_cleanup_queue ON discord_message_cleanup(next_attempt_at);
+            PRAGMA user_version = 12;`);
         })();
     }
 

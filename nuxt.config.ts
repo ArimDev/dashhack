@@ -30,6 +30,7 @@ export default defineNuxtConfig({
         githubTeamInviteSecret: '',
         discordBotToken: '',
         discordMentorChannelId: '',
+        discordDoneThreadId: '',
         discordMentorRoleId: '',
         githubAppId: '',
         githubAppClientId: '',

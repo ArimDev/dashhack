@@ -28,9 +28,9 @@ describe('SQLite persistence', () => {
         const {store,filename}=makeStore();const {session}=await account(store);store.addTeam(session,'event',team);
         const names=['events','teams','notes','mentors','github_connections','wall_settings','wall_posts','wall_media'];
         const before=Object.fromEntries(names.map(n=>[n,store.db.query('SELECT * FROM '+n).all()]));
-        store.db.exec('DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; PRAGMA user_version=7;');store.close();
+        store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; PRAGMA user_version=7;');store.close();
         const upgraded=new SqliteStore(filename);stores.push(upgraded);
-        expect(upgraded.db.query('PRAGMA user_version').get().user_version).toBe(11);
+        expect(upgraded.db.query('PRAGMA user_version').get().user_version).toBe(12);
         for(const n of names)expect(upgraded.db.query('SELECT * FROM '+n).all()).toEqual(before[n]);
         expect(upgraded.db.query('SELECT COUNT(*) n FROM team_invite_links').get().n).toBe(0);
         expect(upgraded.db.query('PRAGMA integrity_check').get().integrity_check).toBe('ok');
@@ -39,7 +39,7 @@ describe('SQLite persistence', () => {
     test('schema 5 upgrades preserve demo data while GitHub connection details stay out of public reads', async () => {
         const { store, filename } = makeStore(); const { session } = await account(store);
         store.addTeam(session, 'event', team);
-        store.db.exec('DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; DROP TABLE github_oauth_flows; DROP TABLE github_connections; PRAGMA user_version=5;');
+        store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; DROP TABLE github_oauth_flows; DROP TABLE github_connections; PRAGMA user_version=5;');
         store.close();
         const reopened = new SqliteStore(filename); stores.push(reopened);
         const flow = reopened.beginGitHubFlow(session, 'event', [{ id: 123, account: 'school', type: 'Organization' }]);
@@ -73,7 +73,7 @@ describe('SQLite persistence', () => {
     test('version 4 upgrade preserves project data and creates an empty startup matrix', async () => {
         const { store, filename } = makeStore(); const { session } = await account(store);
         store.addTeam(session, 'event', { ...team, teamOriginality: 'Original idea' });
-        store.db.exec('DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; DROP TABLE github_oauth_flows; DROP TABLE github_connections; ALTER TABLE teams DROP COLUMN matrix_mentor_id; ALTER TABLE teams DROP COLUMN startup_matrix; PRAGMA user_version = 4;');
+        store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; DROP TABLE github_oauth_flows; DROP TABLE github_connections; ALTER TABLE teams DROP COLUMN matrix_mentor_id; ALTER TABLE teams DROP COLUMN startup_matrix; PRAGMA user_version = 4;');
         store.close();
         const upgraded = new SqliteStore(filename); stores.push(upgraded);
         expect(upgraded.getEvent('event').teams[0]).toMatchObject({ originality: 'Original idea', startupMatrix: {}, matrixMentorId: null });
@@ -122,7 +122,7 @@ describe('SQLite persistence', () => {
         const { store, filename } = makeStore(); const { session } = await account(store);
         store.addTeam(session, 'event', team);
         store.editTeam(session, 'event', { ...team, oldName: team.teamName, revision: 0, stickyNotes: [note] });
-        store.db.exec('DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; DROP TABLE github_oauth_flows; DROP TABLE github_connections; ALTER TABLE teams DROP COLUMN matrix_mentor_id; ALTER TABLE teams DROP COLUMN startup_matrix; ALTER TABLE teams DROP COLUMN originality; ALTER TABLE teams DROP COLUMN project_abstract; PRAGMA user_version = 3;');
+        store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; DROP TABLE github_oauth_flows; DROP TABLE github_connections; ALTER TABLE teams DROP COLUMN matrix_mentor_id; ALTER TABLE teams DROP COLUMN startup_matrix; ALTER TABLE teams DROP COLUMN originality; ALTER TABLE teams DROP COLUMN project_abstract; PRAGMA user_version = 3;');
         store.close();
         const upgraded = new SqliteStore(filename); stores.push(upgraded);
         expect(upgraded.getEvent('event').teams[0]).toMatchObject({ name: team.teamName, originality: '', projectAbstract: [], stickyNotes: [note] });
@@ -160,7 +160,7 @@ describe('SQLite persistence', () => {
         const mentor = store.addMentor(session, 'event', { name: 'Mentor' });
         const teamId = store.addTeam(session, 'event', team);
         store.editTeam(session, 'event', { ...team, teamId, revision: 0, stickyNotes: [{ ...note, creatorId: mentor.id }] });
-        store.db.exec('DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; DROP TABLE github_oauth_flows; DROP TABLE github_connections; ALTER TABLE teams DROP COLUMN matrix_mentor_id; ALTER TABLE teams DROP COLUMN startup_matrix; ALTER TABLE teams DROP COLUMN originality; ALTER TABLE teams DROP COLUMN project_abstract; ALTER TABLE notes DROP COLUMN in_kanban; PRAGMA user_version = 2;');
+        store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; DROP TABLE github_oauth_flows; DROP TABLE github_connections; ALTER TABLE teams DROP COLUMN matrix_mentor_id; ALTER TABLE teams DROP COLUMN startup_matrix; ALTER TABLE teams DROP COLUMN originality; ALTER TABLE teams DROP COLUMN project_abstract; ALTER TABLE notes DROP COLUMN in_kanban; PRAGMA user_version = 2;');
         store.close();
         const upgraded = new SqliteStore(filename); stores.push(upgraded);
         expect(upgraded.getEvent('event').teams[0].stickyNotes[0]).toMatchObject({ ...note, creatorId: mentor.id, inKanban: true });
@@ -186,10 +186,10 @@ describe('SQLite persistence', () => {
         const teamId = store.addTeam(session, 'event', team);
         store.editTeam(session, 'event', { ...team, teamId, revision: 0, stickyNotes: [note] });
         // Recreate the prior schema, including an existing note with no attribution.
-        store.db.exec('DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; DROP TABLE github_oauth_flows; DROP TABLE github_connections; ALTER TABLE teams DROP COLUMN matrix_mentor_id; ALTER TABLE teams DROP COLUMN startup_matrix; ALTER TABLE teams DROP COLUMN originality; ALTER TABLE teams DROP COLUMN project_abstract; ALTER TABLE notes DROP COLUMN in_kanban; ALTER TABLE notes DROP COLUMN creator_id; ALTER TABLE notes DROP COLUMN type; DROP TABLE mentors; PRAGMA user_version = 1;');
+        store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; DROP TABLE github_oauth_flows; DROP TABLE github_connections; ALTER TABLE teams DROP COLUMN matrix_mentor_id; ALTER TABLE teams DROP COLUMN startup_matrix; ALTER TABLE teams DROP COLUMN originality; ALTER TABLE teams DROP COLUMN project_abstract; ALTER TABLE notes DROP COLUMN in_kanban; ALTER TABLE notes DROP COLUMN creator_id; ALTER TABLE notes DROP COLUMN type; DROP TABLE mentors; PRAGMA user_version = 1;');
         store.close();
         const upgraded = new SqliteStore(filename); stores.push(upgraded);
-        expect(upgraded.db.query('PRAGMA user_version').get().user_version).toBe(11);
+        expect(upgraded.db.query('PRAGMA user_version').get().user_version).toBe(12);
         expect(upgraded.getEvent('event').teams[0].stickyNotes[0]).toMatchObject({ ...note, type: 'mentor_note', creatorId: null, inKanban: true });
         expect(upgraded.getEvent('event').mentors).toEqual([]);
         expect((await upgraded.checkPassword('event', 'password123')).event).toBe('event');

@@ -53,18 +53,18 @@ export class DiscordStore{
         this.db.query('UPDATE teams SET revision=revision+1 WHERE id=?').run(ctx.team.id);this.store.touch(ctx.settings.event_id);
         const result={noteId,teamName:ctx.team.name};this.record(ctx,'help',result);return result;
     })();}
-    mentorStatus(payload,{channelId,roleId}={}){return this.db.transaction(()=>{
+    mentorStatus(payload,{channelId,doneThreadId,roleId}={}){return this.db.transaction(()=>{
         const settings=this.settingsByApp(payload.application_id),match=/^dh-status:([a-zA-Z0-9-]{1,100}):(todo|progress|done):(todo|progress|done)$/.exec(payload.data?.custom_id||'');
-        if(!settings?.enabled||settings.guild_id!==payload.guild_id||!snowflake(channelId)||payload.channel_id!==channelId||
+        if(!settings?.enabled||settings.guild_id!==payload.guild_id||!snowflake(channelId)||!([channelId,...(snowflake(doneThreadId)&&doneThreadId!==channelId?[doneThreadId]:[])]).includes(payload.channel_id)||
             !snowflake(payload.id)||!snowflake(payload.member?.user?.id)||payload.member.user.bot||!match||payload.data?.component_type!==2)
             fail('Toto tlačítko není dostupné.',403);
         if(!snowflake(roleId)||!Array.isArray(payload.member.roles)||!payload.member.roles.includes(roleId))
             fail('Stav mohou měnit pouze mentoři.',403);
         const row=this.db.query("SELECT * FROM discord_notifications WHERE note_id=? AND event_id=? AND state='sent' AND message_id=? AND channel_id=?")
-            .get(match[1],settings.event_id,payload.message?.id||'',channelId);
+            .get(match[1],settings.event_id,payload.message?.id||'',payload.channel_id);
         const team=row&&this.db.query('SELECT * FROM teams WHERE id=? AND event_id=?').get(row.team_id,settings.event_id);
         if(!team)fail('Karta nebyla nalezena.',404);
-        const ctx={settings,team,userId:payload.member.user.id,userName:String(payload.member.nick||payload.member.user.global_name||payload.member.user.username||'Mentor').slice(0,80),channelId,interactionId:payload.id};
+        const ctx={settings,team,userId:payload.member.user.id,userName:String(payload.member.nick||payload.member.user.global_name||payload.member.user.username||'Mentor').slice(0,80),channelId:payload.channel_id,interactionId:payload.id};
         const previous=this.previous(ctx,'status');if(previous)return previous;
         const note=this.db.query('SELECT * FROM notes WHERE id=? AND team_id=?').get(row.note_id,team.id);
         if(!note||note.type!=='help_request'||!note.in_kanban)fail('Požadavek už není aktivní.',409);
