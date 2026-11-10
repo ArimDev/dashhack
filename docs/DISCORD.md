@@ -79,3 +79,6 @@ The visible Kanban refreshes every 15 seconds while idle, preserving active form
 
 
 Status-controls validation on 2026-11-10: **109 unit tests / 774 assertions**, five Chromium scenarios and the same five Safari/WebKit scenarios pass, including desktop/phone completion and reopening and read-only controls. The built production server also passed isolated signed-interaction tests for Mentor-only status edits, reopening, delivery replay and student denial. Schema 10-to-11 upgrade preserves sent message IDs and adds buttons by editing existing cards only. Production build passes; no dependencies added.
+
+
+Live status sync verified: source 7480250 / deployment 110d459d-fdbb-4f38-a093-e185eadaa458 succeeded. The existing Team 16 test card received buttons, then followed production API changes Done → In Progress → To Do on the same message, with no new announcement/ping and no unrelated note/team changes. Initial To Do restored. A real human Discord click remains available for the organizer; signed HTTP authorization and replay were verified against the isolated built server.
