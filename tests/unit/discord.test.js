@@ -69,8 +69,8 @@ test('Discord interactions return private modals/links, ignore mention pings, an
  const submitted=discordInteraction(c.payload({type:5,data:{custom_id:modal.data.custom_id,components:[{type:18,component:{type:4,custom_id:'request',value:'Help'}},{type:18,component:{type:3,custom_id:'urgency',values:['high']}}]}}),c.discord,'https://example.org');expect(submitted.data.flags).toBe(64);expect(submitted.data.allowed_mentions.parse).toEqual([]);
  const link=discordInteraction(c.payload(),c.discord,'https://example.org');expect(link.data.components[0].components[0].url).toContain('/discord/matrix#');expect(link.data.flags).toBe(64);
 });
-test('command registration upserts only our three commands without storing credentials or deleting other commands',async()=>{
- const calls=[];await registerDiscordCommands({applicationId:APP,guildId:GUILD},'secret-token',async(url,options)=>{calls.push({url,options});return {ok:true};});expect(calls).toHaveLength(3);expect(calls.every(c=>c.options.method==='POST'&&c.url.startsWith('https://discord.com/api/v10/'))).toBe(true);expect(calls.map(c=>JSON.parse(c.options.body).name)).toEqual(['mentor','matice','github']);expect(JSON.parse(calls[0].options.body).options).toEqual([]);
+test('command registration upserts only our four commands without storing credentials or deleting other commands',async()=>{
+ const calls=[];await registerDiscordCommands({applicationId:APP,guildId:GUILD},'secret-token',async(url,options)=>{calls.push({url,options});return {ok:true};});expect(calls).toHaveLength(4);expect(calls.every(c=>c.options.method==='POST'&&c.url.startsWith('https://discord.com/api/v10/'))).toBe(true);expect(calls.map(c=>JSON.parse(c.options.body).name)).toEqual(['mentor','help','matice','github']);expect(JSON.parse(calls[0].options.body).options).toEqual([]);
  await expect(registerDiscordCommands({applicationId:APP,guildId:GUILD},'secret-token',async()=>({ok:false,status:401}))).rejects.toThrow('Ověřte token');
 });
 
@@ -112,4 +112,19 @@ test('mentor form requires one urgency choice, blocks forged priorities and keep
  discordInteraction(c.payload({type:5,data:{custom_id:'dashhack-mentor',components:[text,{type:18,component:{type:3,custom_id:'urgency',values:['medium']}}]}}),c.discord,'https://example.org');
  discordInteraction(c.payload({type:5,data:{custom_id:'dashhack-mentor-high',components:[text]}}),c.discord,'https://example.org');
  expect(c.store.getEvent('Discord event').teams[0].stickyNotes.map(n=>n.priority)).toEqual(['medium','high']);
+});
+
+test('/help shares the mentor form, validated submissions, notification queue, scope and rate limits',async()=>{
+ const c=await setup();
+ const mentor=discordInteraction(c.payload({data:{name:'mentor'}}),c.discord,'https://dashhack.test');
+ const help=discordInteraction(c.payload({data:{name:'help'}}),c.discord,'https://dashhack.test');expect(help).toEqual(mentor);
+ expect(c.store.getEvent('Discord event').teams[0].stickyNotes).toHaveLength(0);
+ const payload=c.payload({type:5,data:{custom_id:help.data.custom_id,components:[{type:18,component:{type:4,custom_id:'request',value:'Help alias request'}},{type:18,component:{type:3,custom_id:'urgency',values:['high']}}]}});
+ const reply=discordInteraction(payload,c.discord,'https://dashhack.test');expect(reply.data.flags).toBe(64);expect(reply.data.content).toContain('Kanbanu');
+ discordInteraction(payload,c.discord,'https://dashhack.test');
+ const team=c.store.getEvent('Discord event').teams[0];expect(team.stickyNotes).toHaveLength(1);expect(team.stickyNotes[0]).toMatchObject({type:'help_request',status:'To Do',priority:'high',inKanban:true});
+ expect(c.store.db.query('SELECT COUNT(*) n FROM discord_notifications').get().n).toBe(1);
+ const denied=discordInteraction(c.payload({channel_id:'999999999999999999',data:{name:'help'}}),c.discord,'https://dashhack.test');expect(denied.type).toBe(4);expect(denied.data.flags).toBe(64);
+ for(let i=0;i<4;i++)c.discord.help(c.payload(),'Existing mentor request');
+ const limited=discordInteraction({...payload,id:'999999999999999998'},c.discord,'https://dashhack.test');expect(limited.data.content).toContain('Příliš mnoho');
 });

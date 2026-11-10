@@ -2,6 +2,7 @@ import {createPublicKey,verify} from 'node:crypto';
 import {StorageError} from '../storage/sqlite.js';
 export const DISCORD_COMMANDS=[
     {name:'mentor',description:'Požádat mentora o pomoc',type:1,options:[]},
+    {name:'help',description:'Požádat mentora o pomoc',type:1,options:[]},
     {name:'matice',description:'Otevřít startupovou matici svého týmu',type:1},
     {name:'github',description:'Přihlásit se k GitHub repozitáři svého týmu',type:1},
 ];
@@ -19,7 +20,7 @@ export function discordInteraction(payload,store,baseUrl,{githubInvites,mentorCo
             return {type:6};
         }
         const ctx=store.context(payload);
-        if(payload.type===2&&payload.data?.name==='mentor'){
+        if(payload.type===2&&['mentor','help'].includes(payload.data?.name)){
             const urgent=payload.data.options?.some(option=>option.name==='urgent'&&option.value===true);
             return {type:9,data:{custom_id:'dashhack-mentor',title:'Požádat mentora o pomoc',components:[
                 {type:18,label:'S čím potřebujete pomoci?',component:{type:4,custom_id:'request',style:2,required:true,max_length:4000}},

@@ -21,7 +21,8 @@ test('signed Discord HTTP requests verify PING, reject forgery and create only o
  expect((await c.send(c.payload(),true)).status()).toBe(401);
  expect((await request.post('/api/discord/interactions',{data:null})).status()).toBeGreaterThanOrEqual(400);
  const modal=await (await c.send(c.payload({data:{name:'mentor'}}))).json();expect(modal.type).toBe(9);
- const submit=c.payload({type:5,data:{custom_id:modal.data.custom_id,components:[{type:18,component:{type:4,custom_id:'request',value:'Pomoc s nasazením'}},{type:18,component:{type:3,custom_id:'urgency',values:['high']}}]}});
+ const alias=await (await c.send(c.payload({data:{name:'help'}}))).json();expect(alias).toEqual(modal);
+ const submit=c.payload({type:5,data:{custom_id:alias.data.custom_id,components:[{type:18,component:{type:4,custom_id:'request',value:'Pomoc s nasazením'}},{type:18,component:{type:3,custom_id:'urgency',values:['high']}}]}});
  for(let i=0;i<2;i++){const reply=await (await c.send(submit)).json();expect(reply.data.flags).toBe(64);expect(reply.data.content).toContain('Kanbanu');}
  const event=(await (await request.get(`/api/event/${c.event}`)).json()).data;
  expect(event.teams.find(t=>t._id===c.teamId).stickyNotes).toHaveLength(1);expect(event.teams.find(t=>t._id===c.teamId).stickyNotes[0]).toMatchObject({priority:'high',type:'help_request',inKanban:true});expect(event.teams.find(t=>t._id===c.otherId).stickyNotes).toHaveLength(0);
@@ -57,7 +58,7 @@ test('organizer setup renders channel mapping and keeps registration token trans
  await panel.getByText('Kanály týmů (2)',{exact:true}).click();await expect(panel.getByLabel('Discord kanál: Discord Team',{exact:true})).toHaveValue(c.config.channels[c.teamId]);
  expect(new URL(await panel.getByRole('link',{name:'Nainstalovat příkazy do serveru'}).getAttribute('href')).searchParams.get('scope')).toBe('applications.commands');
  await page.route('**/api/discord/register',route=>route.fulfill({json:{status:200,message:'Příkazy registrovány.'}}));
- await panel.getByLabel('Discord bot token',{exact:true}).fill('synthetic-not-a-token');await panel.getByRole('button',{name:'Registrovat /mentor, /matice a /github'}).click();await expect(panel.getByRole('status')).toHaveText('Příkazy registrovány.');await expect(panel.getByLabel('Discord bot token',{exact:true})).toHaveValue('');
+ await panel.getByLabel('Discord bot token',{exact:true}).fill('synthetic-not-a-token');await panel.getByRole('button',{name:'Registrovat příkazy'}).click();await expect(panel.getByRole('status')).toHaveText('Příkazy registrovány.');await expect(panel.getByLabel('Discord bot token',{exact:true})).toHaveValue('');
  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
 });
 

@@ -1,7 +1,7 @@
 <template>
     <section id="discord-app" class="rounded-3xl bg-white p-5 shadow-md dark:bg-gray-800 space-y-4 sm:col-span-2">
         <h1 class="text-2xl font-bold">Discord</h1>
-        <p class="text-sm">/mentor otevře žádost s naléhavostí. /matice otevře matici. /github vrátí odkaz týmu.</p>
+        <p class="text-sm">/mentor nebo /help otevře žádost s naléhavostí. /matice otevře matici. /github vrátí odkaz týmu.</p>
         <a href="https://discord.com/developers/applications" target="_blank" rel="noopener noreferrer" class="text-sm text-bluey-500 underline">Vytvořit aplikaci v Discord Developer Portal</a>
         <p v-if="loading" role="status">Načítání…</p>
         <template v-if="info">
@@ -30,7 +30,7 @@
                 <a :href="installUrl" target="_blank" rel="noopener noreferrer" class="inline-block min-h-11 text-sm text-bluey-500 underline">Nainstalovat příkazy do serveru</a>
                 <label class="block text-sm">Bot token pro jednorázovou registraci<input v-model="token" type="password" autocomplete="new-password" aria-label="Discord bot token" class="discord-input" /></label>
                 <p class="text-xs text-gray-500 dark:text-gray-400">Toto pole token neukládá. Oznámení používají token nastavený v Railway. Aplikace nepotřebuje číst zprávy ani oprávnění Administrator.</p>
-                <button type="button" :disabled="busy || !token || dirty" @click="register" class="min-h-11 rounded-lg border border-gray-300 px-4 py-2 text-sm disabled:opacity-50 dark:border-gray-600">Registrovat /mentor, /matice a /github</button>
+                <button type="button" :disabled="busy || !token || dirty" @click="register" class="min-h-11 rounded-lg border border-gray-300 px-4 py-2 text-sm disabled:opacity-50 dark:border-gray-600">Registrovat příkazy</button>
                 <button type="button" :disabled="busy" @click="load" class="ml-3 min-h-11 text-sm underline">Obnovit</button>
                 <div v-if="info.notifications" class="rounded-xl border border-gray-200 p-3 text-sm dark:border-gray-600 space-y-2">
                     <h2 class="font-semibold">Oznámení do mentor-chat</h2>
