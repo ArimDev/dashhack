@@ -470,3 +470,10 @@ Build passed; both HTML documents have one heading, valid local stylesheet/navig
 
 
 Deployment **`4937bde6-66b3-4b27-bd37-e8b1d8077665` — SUCCESS**, source `9b77020`, committed/pushed. Both live policy URLs return HTTP 200 HTML without authentication or JavaScript. Live Chromium checks confirm the private-event/mentor/organizer scope, phone layout without horizontal overflow, working stylesheet and healthy app endpoint. Privacy phone screenshot inspected. No schema, data, provider or permission changes.
+
+
+## Recreated Team 16 for Discord testing — 2026-11-10
+
+At the user's request, added **Team 16 - TEST**, ID `96173152-c894-477f-ba4c-c8da7655207d`, as the sixteenth team in the existing event. Purple `#8B5CF6`, short Czech test description, existing `AT-T-Hackathon-Junior-2026/test-team-invitation` repository URL reused (no GitHub repository or invitation operation). Mapped Discord channel `1569708054633775166` and enabled Discord commands so `/mentor` and `/matice` can be tried in that channel. Application `1569701943780057230` and server `1285378042478329867` were checked before writing; no other channel mapping existed. The owner's API authorization and configuration revision checks were used; no credentials left Railway.
+
+Consistent on-volume backup `/data/backups/before-team16-1794318987690.sqlite`, 0600. All original 15 team rows, every note and all wall settings matched before/after; SQLite integrity `ok`. Exactly one mapped team, 16 total teams. No test notes or matrix answers were added, no social polling setting changed. Config save rotates/revokes Discord form flows as documented. Actual Discord installation/command registration/delivery remains unverified until the user runs the commands. Cleanup metadata: ignored 0600 `.data/discord-test-team.json`; old invitation test record refers to the deleted previous team. No application deployment was necessary for this data-only change.
