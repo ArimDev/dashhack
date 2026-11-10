@@ -489,3 +489,9 @@ Validation: **95 unit tests / 675 assertions**, three Chromium and three Safari/
 
 
 Deployment **`28f9ddbd-61b7-4c38-8c3e-f5d041b17613` — SUCCESS**, source `2dcb11c`, committed/pushed. Live health and SQLite integrity `ok`; 16 teams remain, Discord enabled only for the configured test-team channel. On-volume HMAC/expiry/repository/installation checks confirm Team 16's joining link is valid without downloading its token. Production phone preview uses fully synthetic intercepted API data and shows the updated three-command panel; real guest access and bad-signature denials pass. No actual student invitation or synthetic Discord note was generated in production. The user must register the three updated commands with the transient bot token field before `/github` appears; actual Discord delivery remains unverified.
+
+## Kanban To Do priority ordering — 2026-11-10
+
+To Do displays Critical, High, Medium, Low in that order. Stable sorting preserves equal-priority order, filters still apply, and missing/unknown legacy priorities fall back to medium. Only a freshly filtered display array is sorted; no team/note positions or persistence/API data are rewritten. In Progress and Done retain their original order. Existing priority warning/color/drag behavior remains intact. No dependencies, migration, settings or infrastructure changes.
+
+Validation: three existing Chromium scenarios (moves/filtering, pending-save drag and priority/team-color/header styling), two existing Safari/WebKit Kanban scenarios, and production build pass. No new persistence tests or packages were added for this display-only change.

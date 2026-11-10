@@ -87,7 +87,7 @@
 
 <script setup>
 const mobileStatus = ref('To Do');
-import { NOTE_STATUSES, noteColumn } from '~~/shared/noteStatuses.js';
+import { NOTE_PRIORITIES, NOTE_STATUSES, noteColumn } from '~~/shared/noteStatuses.js';
 
 definePageMeta({ layout: 'dashboard', middleware: ['routes'] });
 const currentEvent = useState('currentEvent');
@@ -110,7 +110,14 @@ const allNotes = computed(() => data.value.teams.flatMap(team => (team.stickyNot
 const visibleNotes = computed(() => allNotes.value.filter(item =>
     (!selectedTeam.value || item.team._id === selectedTeam.value) &&
     (!selectedType.value || (item.note.type || 'mentor_note') === selectedType.value)));
-function columnNotes(status) { return visibleNotes.value.filter(item => noteColumn(item.note.status) === status); }
+const priorityRank = new Map(NOTE_PRIORITIES.map((priority, index) => [priority, index]));
+function columnNotes(status) {
+    const notes = visibleNotes.value.filter(item => noteColumn(item.note.status) === status);
+    if (status === 'To Do') notes.sort((a, b) =>
+        (priorityRank.get(b.note.priority) ?? priorityRank.get('medium')) -
+        (priorityRank.get(a.note.priority) ?? priorityRank.get('medium')));
+    return notes;
+}
 
 async function refreshBoard() {
     refreshing.value = true;
