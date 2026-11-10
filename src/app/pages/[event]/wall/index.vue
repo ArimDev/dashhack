@@ -12,7 +12,7 @@
     </div>
 
     <div
-      class="relative mx-auto flex h-full w-full flex-col"
+      class="relative mx-auto flex h-full w-full max-w-[1800px] flex-col"
     >
       <PublicWallHeader
         :event-name="displayTitle"
@@ -51,8 +51,7 @@
             :ref="copy === 1 ? setFirstFeedCopy : undefined"
             :aria-hidden="copy > 1 ? 'true' : undefined"
             :data-wall-copy="copy"
-            class="grid items-start gap-4 pb-4"
-            :style="{ gridTemplateColumns: `repeat(${columnCount}, minmax(0, 1fr))` }"
+            class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 pb-4"
           >
             <div v-for="(column, columnIndex) in postColumns" :key="columnIndex" class="min-w-0">
               <WallPostCard
@@ -116,11 +115,7 @@ const postColumns = computed(() => {
   renderedPosts.value.forEach((post, index) => columns[index % columns.length].push(post));
   return columns;
 });
-function updateColumnCount() {
-  // Keep familiar card sizes, then add columns for ultrawide and 4K displays.
-  columnCount.value = innerWidth > 1920 ? Math.max(4, Math.floor((innerWidth - 96) / 420))
-    : innerWidth >= 1536 ? 4 : innerWidth >= 1280 ? 3 : innerWidth >= 640 ? 2 : 1;
-}
+function updateColumnCount() { columnCount.value = innerWidth >= 1536 ? 4 : innerWidth >= 1280 ? 3 : innerWidth >= 640 ? 2 : 1; }
 const readingPost = ref(null), qrExpanded=ref(false), wallTitle=ref('');
 const displayTitle=computed(()=>wallTitle.value || eventName.value);
 function closeQr(){readerResumeUntil=performance.now()+idleWaitSeconds.value*1000;pauseUntil=readerResumeUntil;qrExpanded.value=false;nextTick(()=>document.querySelector('[aria-label="Wall display settings"]')?.focus());}

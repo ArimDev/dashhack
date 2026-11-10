@@ -152,7 +152,7 @@ test('moderation search and pagination request bounded pages and explain filters
   await expect(page.locator('#blocked-authors-hint')).toContainText('Commas or new lines');
 });
 
-test('projector wall keeps QR in the top corner and display controls collapsed', async ({ page }) => {
+test('projector wall centers the sharing QR without widening the feed', async ({ page }) => {
   const name = await setup(page), encoded = encodeURIComponent(name);
   await changed(page, () => page.getByLabel('Wall enabled', { exact: true }).check());
   const config=(await(await page.request.get(`/api/wall/${encoded}/posts`)).json()).data.wall;
@@ -172,16 +172,17 @@ test('projector wall keeps QR in the top corner and display controls collapsed',
     expect(new URL(await qr.getAttribute('src')).searchParams.get('data')).toBe(new URL(`/${encoded}/wall/upload`, page.url()).href);
     const qrBox = await qr.boundingBox(), feed = await page.locator('[data-wall-viewport]').boundingBox(), cogBox = await cog.boundingBox();
     expect(qrBox.x).toBeGreaterThan(viewport.width * 0.8);
-    expect(qrBox.y).toBeLessThan(40);
+    const sharingBox = await page.getByTestId('wall-sharing-qr').boundingBox();
+    expect(Math.abs(sharingBox.y + sharingBox.height / 2 - viewport.height / 2)).toBeLessThan(2);
+    expect(sharingBox.width).toBe(186);
+    expect(qrBox.width).toBe(sharingBox.width - 26);
+    expect(feed.width).toBe(Math.min(1800, viewport.width));
     expect(qrBox.width).toBeGreaterThanOrEqual(160);
     expect(viewport.width-qrBox.x-qrBox.width).toBeGreaterThanOrEqual(16);
     expect(qrBox.y+qrBox.height).toBeGreaterThan(feed.y);
     const rail=await page.getByTestId('wall-title-rail').boundingBox();expect(rail.x).toBe(0);
     await expect(page.getByRole('heading',{name:'AT&T Hackathon Junior 2026',exact:true})).toHaveCSS('writing-mode','vertical-rl');
     expect(feed.height).toBeGreaterThan(viewport.height * 0.9);
-    expect(feed.width).toBe(viewport.width);
-    const columns = await page.locator('[data-wall-copy="1"]').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length);
-    expect(columns).toBe(viewport.width > 1920 ? Math.floor((viewport.width - 96) / 420) : viewport.width >= 1536 ? 4 : 3);
     expect(cogBox.y).toBeGreaterThan(viewport.height - 80);
     await cog.click();
     await expect(page.getByRole('switch', { name: 'Enable auto-scroll layout' })).toBeChecked();
