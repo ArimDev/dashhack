@@ -385,3 +385,17 @@ Targeted Chromium and Safari/WebKit projector checks pass at 1280, 1920, the exa
 
 
 Deployment **`2a2e2dcc-7396-445b-97eb-8ccbfd83520d` — SUCCESS**, source `a15739e`. Live measurements confirm 312px card at 2488×1298, 788px at 3440×1440 and 988px at 3840×2160, each filling the right gutter with 16px side padding, while the feed remains 1800px/four columns. Phone/tablet and unchanged modal checks pass. Screenshot at the user's exact dimensions inspected locally. No production content/settings changed.
+
+
+## Event wall cleanup and editable placeholders — 2026-11-10
+
+At the user's request, cleared downloaded test feeds for event `97c87fe6-f510-4117-9558-1e2380fdaa6a` / ATT Hackathon Junior 2026. Full consistent on-volume snapshot: `/data/backups/before-wall-cleanup-1794305826073.sqlite`, permissions 0600. A scoped transaction removed 102 X posts and six unpinned, explicitly identified manual demo fixtures; both pinned manual event placeholders were retained byte-for-byte, with their media. Media foreign keys cascade for removed posts. All nine other checked tables match within the transaction: events, teams, notes, mentors, GitHub connections, team invite links/flows/audit and sessions. Integrity and foreign keys pass.
+
+Cleared shared/X/Instagram query hashtags and X handles, including the old test #atthack query. Both collectors are OFF; every other setting is preserved and revision advances to reject stale settings writes. No provider calls, credentials changes, reseed or new query guesses. Actual event tags remain for the user to supply/configure.
+
+Feature source `382729a` adds “Edit post” for manual/community posts in authenticated Social Wall moderation. Organizers can change author and text, retaining pin/status/hidden state, timestamp, media and source links. Server enforces matching event ownership, manual-only platform, text limits and post revision. Text remains escaped. Conflicts retain the modal draft and require cancellation/reopening against fresh data. Imported social posts cannot be rewritten. No schema or dependency change.
+
+Validation: **78 unit tests / 522 assertions**, targeted Chromium and Safari/WebKit editor scenarios (saved pin/author/text, escaped HTML, conflicting edit retains draft), and production build pass.
+
+
+Deployment **`67719072-540e-498a-8d0e-df04e58b6574` — SUCCESS**, source `382729a`. Live authenticated checks confirm exactly two pinned manual posts, no downloaded feed, all query lists empty and both collectors OFF. Desktop and 390px phone edit dialogs open with the original author/text and fit the viewport; both were canceled and full post/settings API comparison confirms no incidental writes.
