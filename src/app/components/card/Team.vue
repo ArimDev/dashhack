@@ -96,6 +96,7 @@
                         v-for="note in team.stickyNotes || []"
                         :key="note.id"
                         :note="note"
+                        :team-color="team.color"
                         :mentors="eventData.mentors || []"
                         :read-only="!canEdit"
                         @update="note => $emit('update-note', { teamName: team.name, note })"

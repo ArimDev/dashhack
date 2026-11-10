@@ -2,7 +2,7 @@ import { Database } from 'bun:sqlite';
 import { randomUUID, randomBytes } from 'node:crypto';
 import { mkdirSync, chmodSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
-import { NOTE_STATUSES } from '../../shared/noteStatuses.js';
+import { NOTE_STATUSES, NOTE_PRIORITIES } from '../../shared/noteStatuses.js';
 import { STARTUP_MATRIX_FIELDS } from '../../shared/startupMatrix.js';
 
 export class StorageError extends Error {
@@ -66,7 +66,7 @@ function teamFields(input) {
 
 function noteFields(note) {
     if (!note || typeof note !== 'object') throw new StorageError(400, 'Invalid note');
-    if (!['low', 'medium', 'high'].includes(note.priority ?? 'medium')) throw new StorageError(400, 'Invalid note priority');
+    if (!NOTE_PRIORITIES.includes(note.priority ?? 'medium')) throw new StorageError(400, 'Invalid note priority');
     const color = text(note.color ?? '#ffeb3b', 'note color', 7, true);
     if (!/^#[\da-f]{6}$/i.test(color)) throw new StorageError(400, 'Invalid note color');
     const type = note.type ?? 'mentor_note';

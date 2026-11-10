@@ -171,7 +171,7 @@ const addStickyNote = ({ teamName, type }) => {
     const newNote = {
         id: uuidv4(),
         content: '',
-        color: '#ffeb3b',
+        color: data.value.teams[teamIndex].color,
         priority: 'medium',
         type,
         creatorId: null,

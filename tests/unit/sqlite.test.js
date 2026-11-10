@@ -357,3 +357,15 @@ describe('SQLite persistence', () => {
         expect(snapshot.db.query('PRAGMA integrity_check').get().integrity_check).toBe('ok');
     });
 });
+
+test('critical priority persists through whole-team and individual-note writes without changing team identity',async()=>{
+ const {store,filename}=makeStore();const {session}=await account(store);
+ const teamId=store.addTeam(session,'event',team);
+ store.editTeam(session,'event',{...team,teamId,revision:0,stickyNotes:[{...note,priority:'critical'}]});
+ expect(store.getEvent('event').teams[0].stickyNotes[0].priority).toBe('critical');
+ store.editNote(session,'event',{teamId,noteId:note.id,revision:1,patch:{priority:'high'}});
+ store.editNote(session,'event',{teamId,noteId:note.id,revision:2,patch:{priority:'critical'}});
+ store.close();const reopened=new SqliteStore(filename);stores.push(reopened);
+ const restored=reopened.getEvent('event').teams[0];
+ expect(restored.color).toBe(team.teamColor);expect(restored.stickyNotes[0]).toMatchObject({...note,priority:'critical'});
+});

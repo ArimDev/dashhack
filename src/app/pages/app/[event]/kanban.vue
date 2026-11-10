@@ -74,7 +74,7 @@
                                 <Icon name="heroicons:arrows-up-down" size="16px" /><span class="ml-1 text-xs">Move</span>
                             </button>
                         </div>
-                        <StickyNote :note="item.note" :mentors="data.mentors || []" :read-only="!canEdit || busy"
+                        <StickyNote :note="item.note" :team-color="item.team.color" :mentors="data.mentors || []" :read-only="!canEdit || busy"
                             @update="note => editNote(item, note)" @delete="() => saveNote(item, null)" />
                     </article>
                     <p v-if="!columnNotes(status).length" class="text-sm text-gray-400 dark:text-gray-500 text-center py-8">
