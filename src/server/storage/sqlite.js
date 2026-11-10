@@ -3,7 +3,7 @@ import { randomUUID, randomBytes } from 'node:crypto';
 import { mkdirSync, chmodSync } from 'node:fs';
 import { dirname, resolve } from 'node:path';
 import { NOTE_STATUSES, NOTE_PRIORITIES } from '../../shared/noteStatuses.js';
-import { STARTUP_MATRIX_FIELDS } from '../../shared/startupMatrix.js';
+import { STARTUP_MATRIX_FIELDS, matrixAnswerError } from '../../shared/startupMatrix.js';
 
 export class StorageError extends Error {
     constructor(status, message) { super(message); this.status = status; }
@@ -88,9 +88,13 @@ export function matrixAnswers(answers) {
         Object.keys(answers).some(key => !allowed.includes(key))) throw new StorageError(400, 'Neplatná pole startupové matice');
     const patch = {};
     for (const [key, value] of Object.entries(answers)) {
-        try { patch[key] = abstractFields(value); }
+        try {
+            patch[key] = abstractFields(value);
+            const error = matrixAnswerError(patch[key]);
+            if (error) throw new StorageError(400, error);
+        }
         catch (failure) {
-            if (failure instanceof StorageError) throw new StorageError(400, `Neplatná odpověď: ${STARTUP_MATRIX_FIELDS.find(field => field.key === key).label}`);
+            if (failure instanceof StorageError) throw new StorageError(400, `${STARTUP_MATRIX_FIELDS.find(field => field.key === key).label}: ${failure.message}`);
             throw failure;
         }
     }

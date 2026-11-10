@@ -35,7 +35,9 @@ test('student matrix link works on phone, strips secret, saves partial answers a
  try{
  await page.goto(url);await expect(page.getByRole('heading',{name:'Startupová matice'})).toBeVisible();await expect(page.getByText('Discord Team',{exact:true})).toBeVisible();expect(new URL(page.url()).hash).toBe('');
  expect((await student.cookies()).find(c=>c.name==='discordMatrixSession')?.httpOnly).toBe(true);
- await expect(page.getByRole('textbox',{name:'PROBLÉM',exact:true})).toBeVisible();await page.getByRole('textbox',{name:'PROBLÉM',exact:true}).fill('Studentská odpověď');await page.getByRole('button',{name:'Uložit odpovědi',exact:true}).click();await expect(page.getByRole('status')).toHaveText('Odpovědi uloženy.');
+ await expect(page.getByRole('textbox',{name:'PROBLÉM',exact:true})).toBeVisible();await page.getByRole('textbox',{name:'PROBLÉM',exact:true}).fill('x'.repeat(601));await expect(page.getByRole('button',{name:'Uložit odpovědi',exact:true})).toBeDisabled();await expect(page.getByText('601/600',{exact:false})).toBeVisible();
+ const tooLong=await student.request.patch('/api/discord/matrix',{data:{revision:0,answers:{problem:[{type:'paragraph',runs:[{text:'x'.repeat(601)}]}]}}});expect((await tooLong.json()).status).toBe(400);
+ await page.getByRole('textbox',{name:'PROBLÉM',exact:true}).fill('Studentská odpověď');await page.getByRole('button',{name:'Uložit odpovědi',exact:true}).click();await expect(page.getByRole('status')).toHaveText('Odpovědi uloženy.');
  await page.reload();await expect(page.getByRole('textbox',{name:'PROBLÉM',exact:true})).toHaveText('Studentská odpověď');
  expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
  const event=(await (await request.get(`/api/event/${c.event}`)).json()).data,team=event.teams.find(t=>t._id===c.teamId);

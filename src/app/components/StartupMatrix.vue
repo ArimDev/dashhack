@@ -10,7 +10,7 @@
                 class="rounded-lg px-3 py-2 bg-bluey-500 hover:bg-bluey-600 text-white text-sm">Upravit matici</button>
         </div>
         <form v-if="editing" @submit.prevent="save" class="space-y-4">
-            <p class="text-sm text-gray-500 dark:text-gray-400">Výchozí otázky nahraďte nebo doplňte odpověďmi týmu. Nezměněné otázky se nepočítají jako odpovědi.</p>
+            <p class="text-sm text-gray-500 dark:text-gray-400">Nejvýše 600 znaků na odpověď. Otázky nahraďte odpověďmi týmu.</p>
             <label class="block text-sm font-medium">Zpracoval/a mentor
                 <select v-model="mentorId" :disabled="saving" aria-label="Mentor startupové matice"
                     class="block mt-1 rounded-lg border border-gray-300 dark:border-gray-600 bg-white dark:bg-gray-800 px-3 py-2 max-w-full">
@@ -23,11 +23,12 @@
                 <div v-for="field in STARTUP_MATRIX_FIELDS" :key="field.key" class="min-w-0 space-y-2">
                     <h3 class="text-sm font-semibold">{{ field.label }}</h3>
                     <ProjectAbstract v-model="draft[field.key]" :label="field.label" :read-only="saving" />
+                    <p class="text-xs" :class="matrixAnswerError(draft[field.key]) ? 'text-red-600 dark:text-red-400' : 'text-gray-500'">{{ matrixAnswerText(draft[field.key]).length }}/{{ MATRIX_ANSWER_LIMIT }}<span v-if="matrixAnswerError(draft[field.key])"> · {{ matrixAnswerError(draft[field.key]) }}</span></p>
                 </div>
             </div>
             <p v-if="error" role="alert" class="rounded-lg p-3 bg-red-50 dark:bg-red-950/30 text-red-700 dark:text-red-300 text-sm">{{ error }}</p>
             <div class="flex flex-wrap gap-3">
-                <button type="submit" :disabled="saving" class="rounded-lg px-4 py-2 bg-bluey-500 hover:bg-bluey-600 text-white text-sm disabled:opacity-50">{{ saving ? 'Ukládání…' : 'Uložit matici' }}</button>
+                <button type="submit" :disabled="saving || invalid" class="rounded-lg px-4 py-2 bg-bluey-500 hover:bg-bluey-600 text-white text-sm disabled:opacity-50">{{ saving ? 'Ukládání…' : 'Uložit matici' }}</button>
                 <button type="button" :disabled="saving" @click="editing = false" class="rounded-lg px-4 py-2 border border-gray-300 dark:border-gray-600 text-sm">Zrušit</button>
                 <button v-if="conflict" type="button" :disabled="saving" @click="reload"
                     class="text-sm underline">Zahodit rozepsané změny a načíst aktuální data</button>
@@ -48,7 +49,7 @@
 </template>
 
 <script setup>
-import { STARTUP_MATRIX_FIELDS, matrixQuestion } from '~~/shared/startupMatrix.js';
+import { STARTUP_MATRIX_FIELDS, matrixQuestion, matrixAnswerError, matrixAnswerText, MATRIX_ANSWER_LIMIT } from '~~/shared/startupMatrix.js';
 const props = defineProps({ team: { type: Object, required: true } });
 const eventData = useState('eventData');
 const currentEvent = useState('currentEvent');
@@ -56,6 +57,7 @@ const canEdit = useState('eventCanEdit', () => false);
 const editing = ref(false), saving = ref(false), conflict = ref(false);
 const draft = ref({}), mentorId = ref(''), error = ref(''), feedback = ref('');
 let revision, base;
+const invalid = computed(() => STARTUP_MATRIX_FIELDS.some(field => matrixAnswerError(draft.value[field.key] || [])));
 const completed = computed(() => STARTUP_MATRIX_FIELDS.filter(field => props.team.startupMatrix?.[field.key]?.some(block => block.runs.some(run => run.text.trim()))).length);
 const mentorName = computed(() => eventData.value.mentors?.find(mentor => mentor.id === props.team.matrixMentorId)?.name);
 
@@ -68,7 +70,7 @@ function startEditing() {
     error.value = ''; feedback.value = ''; conflict.value = false; editing.value = true;
 }
 async function save() {
-    if (!canEdit.value || saving.value) return;
+    if (!canEdit.value || saving.value || invalid.value) return;
     saving.value = true; error.value = ''; conflict.value = false;
     const answers = {};
     for (const field of STARTUP_MATRIX_FIELDS) {

@@ -109,7 +109,7 @@ describe('SQLite persistence', () => {
         expect(() => store.editStartupMatrix(b.session, 'a', input)).toThrow('permission');
         expect(() => store.editStartupMatrix(b.session, 'b', input)).toThrow('Team not found');
         expect(() => store.editStartupMatrix(a.session, 'a', { ...input, mentorId: foreignMentor.id })).toThrow('this event');
-        for (const answers of [null, [], { unknown: [] }, { problem: '<script>alert(1)</script>' }, { problem: [{ type: 'paragraph', runs: [{ text: 'x'.repeat(50001) }] }] }]) {
+        for (const answers of [null, [], { unknown: [] }, { problem: '<script>alert(1)</script>' }, { problem: [{ type: 'paragraph', runs: [{ text: 'x'.repeat(601) }] }] }]) {
             expect(() => store.editStartupMatrix(a.session, 'a', { ...input, answers })).toThrow();
         }
         expect(store.getEvent('a').teams[0]).toMatchObject({ revision: 0, startupMatrix: {}, matrixMentorId: null });

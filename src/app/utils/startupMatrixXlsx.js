@@ -1,4 +1,4 @@
-import { STARTUP_MATRIX_FIELDS } from '../../shared/startupMatrix.js';
+import { STARTUP_MATRIX_FIELDS, matrixAnswerError, matrixAnswerFontSize } from '../../shared/startupMatrix.js';
 const NS='http://schemas.openxmlformats.org/spreadsheetml/2006/main';
 const REL='http://schemas.openxmlformats.org/officeDocument/2006/relationships';
 const PACKAGE='http://schemas.openxmlformats.org/package/2006/relationships';
@@ -21,22 +21,12 @@ function answerRuns(blocks=[]){
     });
     return runs;
 }
-// Excel cells hold at most 32,767 UTF-16 units. Preserve oversized answers in
-// continuation sheets in 30,000-unit chunks, without splitting surrogate pairs.
-function chunks(runs){
-    const result=[[]];let size=0;
-    for(const part of runs){let text='';for(const char of part.text){if(size+char.length>30000){if(text)result.at(-1).push({...part,text});result.push([]);size=0;text='';}text+=char;size+=char.length;}if(text)result.at(-1).push({...part,text});}
-    return result;
-}
 function shortName(value,limit){let text='';for(const char of value){if(text.length+char.length>limit)break;text+=char;}return text.replace(/^'+|'+$/g,'')||'Tým';}
 function sheetName(value,used){
     const base=String(value).replace(/[\\/?*\[\]:\u0000-\u001F]/g,' ').replace(/^'+|'+$/g,'').trim()||'Tým';
     let name=shortName(base,31),index=2;
     while(used.has(name.toLowerCase())){const suffix=` (${index++})`;name=shortName(base,31-suffix.length)+suffix;}
     used.add(name.toLowerCase());return name;
-}
-function continuationSheet(label,parts){
-    return XML+`<worksheet xmlns="${NS}"><cols><col min="1" max="1" width="120" customWidth="1"/></cols><sheetData><row r="1"><c r="A1" t="inlineStr"><is>${run(label,true)}</is></c></row>${parts.map((part,index)=>`<row r="${index+2}" ht="409" customHeight="1"><c r="A${index+2}" s="1" t="inlineStr"><is>${part.map(p=>run(p.text,p.bold,p.italic)).join('')}</is></c></row>`).join('')}</sheetData></worksheet>`;
 }
 export function matrixWorkbookParts(template,eventName,teams,mentors=[]){
     const files=Object.fromEntries(Object.entries(template.files).map(([name,value])=>[name,value.text??Uint8Array.from(atob(value.base64),c=>c.charCodeAt(0))]));
@@ -45,21 +35,22 @@ export function matrixWorkbookParts(template,eventName,teams,mentors=[]){
         if(drawing){files[`xl/drawings/drawing${index}.xml`]=template.files['xl/drawings/drawing1.xml'].text;files[`xl/drawings/_rels/drawing${index}.xml.rels`]=template.files['xl/drawings/_rels/drawing1.xml.rels'].text;files[`xl/worksheets/_rels/sheet${index}.xml.rels`]=XML+`<Relationships xmlns="${PACKAGE}"><Relationship Id="rId2" Type="${REL}/drawing" Target="../drawings/drawing${index}.xml"/></Relationships>`;}
     };
     for(const team of teams){
-        const name=sheetName(team.name,used),overflow=[];
+        const name=sheetName(team.name,used);
         let sheet=replaceCell(template.sheet,'A1',run(`Startupová matice – ${team.name}`,true,false,20));
         STARTUP_MATRIX_FIELDS.forEach((field,index)=>{
             const blocks=team.startupMatrix?.[field.key]||[],hasAnswer=blocks.some(b=>b.runs.some(r=>r.text.trim())),runs=hasAnswer?answerRuns(blocks):[{text:'Bez odpovědi.',italic:true}];
-            const length=runs.reduce((n,r)=>n+r.text.length,0)+field.prompt.length+field.label.length+16;
-            let content=runs;
-            if(length>32000){const extraName=sheetName(`${team.name} ${field.label}`,used);overflow.push({name:extraName,label:`${team.name} – ${field.label}`,parts:chunks(runs)});content=[{text:`Celá odpověď: list ${extraName}`,bold:true}];}
-            sheet=replaceCell(sheet,CELLS[index],template.cells[CELLS[index]]+run('\n\n')+content.map(p=>run(p.text,p.bold,p.italic)).join(''));
+            const error=matrixAnswerError(blocks);
+            if(error)throw new Error(`${team.name} – ${field.label}: ${error}`);
+            const column=String.fromCharCode(65+index%5),questionRow=index<5?2:4,answerRow=questionRow+1;
+            sheet=replaceCell(sheet,`${column}${questionRow}`,template.cells[CELLS[index]]);
+            sheet=replaceCell(sheet,`${column}${answerRow}`,runs.map(p=>run(p.text,p.bold,p.italic,matrixAnswerFontSize(blocks))).join(''));
         });
         const mentor=mentors.find(m=>m.id===team.matrixMentorId)?.name;
         const footer=[eventName.slice(0,100),mentor?`Zpracoval/a: ${mentor}`:''].filter(Boolean).join(' · ').replace(/&/g,'&&');
         sheet=sheet.replace('<drawing ',`<headerFooter><oddFooter>${xml('&C'+footer)}</oddFooter></headerFooter><drawing `);
-        addSheet(name,sheet,true);for(const extra of overflow)addSheet(extra.name,continuationSheet(extra.label,extra.parts),false);
+        addSheet(name,sheet,true);
     }
-    files['xl/workbook.xml']=XML+`<workbook xmlns="${NS}" xmlns:r="${REL}"><bookViews><workbookView/></bookViews><sheets>${sheets.map(s=>`<sheet name="${xml(s.name)}" sheetId="${s.index}" r:id="rId${s.index}"/>`).join('')}</sheets></workbook>`;
+    files['xl/workbook.xml']=XML+`<workbook xmlns="${NS}" xmlns:r="${REL}"><bookViews><workbookView/></bookViews><sheets>${sheets.map(s=>`<sheet name="${xml(s.name)}" sheetId="${s.index}" r:id="rId${s.index}"/>`).join('')}</sheets><definedNames>${sheets.map(s=>`<definedName name="_xlnm.Print_Area" localSheetId="${s.index-1}">${xml("'"+s.name.replace(/'/g,"''")+"'!$A$1:$E$5")}</definedName>`).join('')}</definedNames></workbook>`;
     files['xl/_rels/workbook.xml.rels']=XML+`<Relationships xmlns="${PACKAGE}">${sheets.map(s=>`<Relationship Id="rId${s.index}" Type="${REL}/worksheet" Target="worksheets/sheet${s.index}.xml"/>`).join('')}<Relationship Id="styles" Type="${REL}/styles" Target="styles.xml"/><Relationship Id="theme" Type="${REL}/theme" Target="theme/theme1.xml"/></Relationships>`;
     files['_rels/.rels']=XML+`<Relationships xmlns="${PACKAGE}"><Relationship Id="workbook" Type="${REL}/officeDocument" Target="xl/workbook.xml"/></Relationships>`;
     const overrides=[['/xl/workbook.xml','spreadsheetml.sheet.main+xml'],['/xl/styles.xml','spreadsheetml.styles+xml'],['/xl/theme/theme1.xml','theme+xml'],...sheets.map(s=>[`/xl/worksheets/sheet${s.index}.xml`,'spreadsheetml.worksheet+xml']),...Object.keys(files).filter(n=>/^xl\/drawings\/drawing\d+\.xml$/.test(n)).map(n=>['/'+n,'drawing+xml'])];
