@@ -120,3 +120,30 @@ Matrix-refresh validation: five targeted Chromium scenarios and the same five Sa
 
 
 Team 16's live testing was completed and the user requested its removal on 2026-11-10. Its team record, scoped sessions/actions/channel mapping and both current bot cards are now removed, along with the test repository and invitations. Historical test IDs in this document are no longer active. The shared Done tickets feature/thread and existing user-provided team-16 Discord channel remain; the latter is unmapped. Do not recreate the test fixture automatically. See the final cleanup record in RAILWAY.md.
+
+
+## Real team Discord channels linked — 2026-11-10
+
+Production Discord settings revision 5 now maps all 15 real numbered teams to the new `team-NN` text channels under **💎 Teams 💎** (`1285716341050839091`). Mapping is explicit by channel ID; archived channels and `x-team-16` remain unmapped. Saved through the authenticated settings API with a revision check; team content, notes, GitHub invitations and wall settings hashes were unchanged. SQLite integrity passes. Private pre-change snapshot: `/data/backups/before-link-team-channels-1794346593548.sqlite`. No source, schema or deployment change.
+
+| Team | Discord channel ID |
+| --- | --- |
+| 11 - Detrio | `1569778304947454093` |
+| 12 - 505 | `1569778526864019506` |
+| 13 - AYA | `1569778577778675713` |
+| 14 - BugBusters | `1569778591661555852` |
+| 15 - Indy a Vích | `1569778604550783058` |
+| 21 - InovaTeam | `1569778739879874711` |
+| 22 - Last Dance - DOGY | `1569778757080719432` |
+| 23 - New6en | `1569778786420129932` |
+| 24 - Ownit | `1569778802261758052` |
+| 25 - pan.png | `1569778814547009646` |
+| 31 - YoGurts | `1569779005173800960` |
+| 32 - Penguins | `1569778829533253834` |
+| 33 - Pixel_Penguin | `1569779023855226970` |
+| 34 - Replay | `1569779039969747135` |
+| 35 - Velcord | `1569779056180990032` |
+
+The bot receives `403 Missing Access` when reading these private channels through the channel API; their existing privacy overwrites were preserved. Our commands use signed interactions, private replies and modals rather than reading team-channel messages. Application-command permissions are separate from bot channel access ([Discord documentation](https://docs.discord.com/developers/interactions/application-commands#authorizing-your-application)). Students still need permission to use application commands in their own channels. A real student invocation in a new channel has not been tested by the agent.
+
+Post-save verification confirmed all four guild commands registered with no default member restriction, mentor-chat accessible, 15 active real-team GitHub links, 15 unique mapped channels and zero foreign-key violations. No new requests, messages or student sessions were created.
