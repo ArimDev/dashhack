@@ -13,7 +13,7 @@ Updated 2026-11-10 for schema 9 and Discord setup. This project is separate from
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `3f8b32dc-e62f-46a6-85fe-cb9f6de38dda` — SUCCESS, printable matrices / schema 9 |
+| Latest verified deployment | `4937bde6-66b3-4b27-bd37-e8b1d8077665` — SUCCESS, event-only policy URLs / schema 9 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -467,3 +467,6 @@ Deployment **`3f8b32dc-e62f-46a6-85fe-cb9f6de38dda` — SUCCESS**, source `1be22
 Added public static `/terms.html` and `/privacy.html` with shared `/legal.css`; no JavaScript or login is required. They explicitly cover only this DashHack deployment and Discord application for the private AT&T Hackathon Junior 2026 event, its organizers, mentors and invited teams. Terms cover permitted event use and submissions. Privacy describes actual Discord/event/cookie/optional integration data, event-only purpose, shared-login audit visibility, existing event-URL public reading, Railway's SFO hosting, cleanup/backup limits and organizer contact for correction/deletion. No unsupported confidentiality, automatic deletion or legal-compliance guarantee is made. Policy URLs are also shown as copyable read-only fields in organizer Discord Settings. Existing access rules, stored data, app registration, command enablement and infrastructure are unchanged.
 
 Build passed; both HTML documents have one heading, valid local stylesheet/navigation links and no scripts. Generated production public assets are present. Actual Discord Developer Portal URL entry remains the user's action; no portal setting was changed automatically.
+
+
+Deployment **`4937bde6-66b3-4b27-bd37-e8b1d8077665` — SUCCESS**, source `9b77020`, committed/pushed. Both live policy URLs return HTTP 200 HTML without authentication or JavaScript. Live Chromium checks confirm the private-event/mentor/organizer scope, phone layout without horizontal overflow, working stylesheet and healthy app endpoint. Privacy phone screenshot inspected. No schema, data, provider or permission changes.
