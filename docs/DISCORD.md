@@ -117,3 +117,6 @@ Team 16's original maximum-length export fixture had TEST EXPORTU headings and n
 
 
 Matrix-refresh validation: five targeted Chromium scenarios and the same five Safari/WebKit scenarios pass, covering saved rich text, read-only access, collapsed/stale draft preservation, the supplied Excel export and external-answer refresh. The new regression also delays a read until after a newer matrix save and confirms it cannot overwrite that saved answer. Production build passes. The cleaned synthetic workbook has ten complete 600-character cells, unchanged template colors and A1:E5 one-page layout.
+
+
+Team 16's live testing was completed and the user requested its removal on 2026-11-10. Its team record, scoped sessions/actions/channel mapping and both current bot cards are now removed, along with the test repository and invitations. Historical test IDs in this document are no longer active. The shared Done tickets feature/thread and existing user-provided team-16 Discord channel remain; the latter is unmapped. Do not recreate the test fixture automatically. See the final cleanup record in RAILWAY.md.
