@@ -60,9 +60,9 @@
                     <span class="text-xs font-medium rounded-full bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 px-2 py-0.5">{{ columnNotes(status).length }}</span>
                 </header>
                 <div class="space-y-3">
-                    <article v-for="item in columnNotes(status)" :key="item.note.id" :data-testid="`kanban-note-${item.note.id}`"
+                    <article v-for="item in columnNotes(status)" :key="item.note.id" :id="`kanban-note-${item.note.id}`" class="scroll-mt-24" :data-testid="`kanban-note-${item.note.id}`"
                         :draggable="canEdit && !refreshing" @pointerdown.capture="rememberDragOrigin" @dragstart="startDrag($event, item)" @dragend="endDrag"
-                        :class="draggedNoteId === item.note.id ? 'opacity-50' : ''">
+                        :class="[draggedNoteId === item.note.id ? 'opacity-50' : '', route.query.note === item.note.id ? 'rounded-2xl ring-2 ring-bluey-500 ring-offset-2' : '']">
                         <StickyNote :note="item.note" :team-color="item.team.color" :mentors="data.mentors || []" :read-only="!canEdit || busy"
                             @update="note => editNote(item, note)" @delete="() => saveNote(item, null)">
                             <template #header>
@@ -91,6 +91,7 @@ import { NOTE_PRIORITIES, NOTE_STATUSES, noteColumn } from '~~/shared/noteStatus
 
 definePageMeta({ layout: 'dashboard', middleware: ['routes'] });
 const currentEvent = useState('currentEvent');
+const route = useRoute();
 const data = useState('eventData');
 const canEdit = useState('eventCanEdit', () => false);
 useHead({ title: computed(() => `${currentEvent.value} | Kanban | DashHack`) });
@@ -118,6 +119,17 @@ function columnNotes(status) {
         (priorityRank.get(a.note.priority) ?? priorityRank.get('medium')));
     return notes;
 }
+
+async function focusLinkedNote() {
+    if (typeof route.query.note !== 'string') return;
+    const item = allNotes.value.find(item => item.note.id === route.query.note);
+    if (!item) return;
+    selectedTeam.value = ''; selectedType.value = ''; mobileStatus.value = noteColumn(item.note.status);
+    await nextTick();
+    document.getElementById(`kanban-note-${item.note.id}`)?.scrollIntoView({block:'center',behavior:'smooth'});
+}
+onMounted(focusLinkedNote);
+watch(() => route.query.note, focusLinkedNote);
 
 async function refreshBoard() {
     refreshing.value = true;

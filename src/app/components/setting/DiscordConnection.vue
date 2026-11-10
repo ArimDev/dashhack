@@ -29,9 +29,20 @@
                 <label class="block text-sm">Privacy Policy URL<input :value="privacyUrl" readonly class="discord-input text-xs" @focus="$event.target.select()" /></label>
                 <a :href="installUrl" target="_blank" rel="noopener noreferrer" class="inline-block min-h-11 text-sm text-bluey-500 underline">Nainstalovat příkazy do serveru</a>
                 <label class="block text-sm">Bot token pro jednorázovou registraci<input v-model="token" type="password" autocomplete="new-password" aria-label="Discord bot token" class="discord-input" /></label>
-                <p class="text-xs text-gray-500 dark:text-gray-400">Token z karty Bot se neukládá. Aplikace nepotřebuje číst zprávy ani oprávnění Administrator.</p>
+                <p class="text-xs text-gray-500 dark:text-gray-400">Toto pole token neukládá. Oznámení používají token nastavený v Railway. Aplikace nepotřebuje číst zprávy ani oprávnění Administrator.</p>
                 <button type="button" :disabled="busy || !token || dirty" @click="register" class="min-h-11 rounded-lg border border-gray-300 px-4 py-2 text-sm disabled:opacity-50 dark:border-gray-600">Registrovat /mentor, /matice a /github</button>
                 <button type="button" :disabled="busy" @click="load" class="ml-3 min-h-11 text-sm underline">Obnovit</button>
+                <div v-if="info.notifications" class="rounded-xl border border-gray-200 p-3 text-sm dark:border-gray-600 space-y-2">
+                    <h2 class="font-semibold">Oznámení do mentor-chat</h2>
+                    <p>Nové help requesty se posílají jako karty s odkazem do Kanbanu.</p>
+                    <p>Kanál: {{ info.notifications.channelId || 'Nenastaven' }} · Token: {{ info.notifications.tokenConfigured ? 'Nastaven' : 'Chybí' }}</p>
+                    <p v-if="info.notifications.roleId" class="text-xs">Zmínka role: {{ info.notifications.roleId }}. Role musí být zmínitelná.</p>
+                    <p v-if="!info.notifications.tokenConfigured" class="text-xs">Nastavte NUXT_DISCORD_BOT_TOKEN v Railway. Sem token neukládejte.</p>
+                    <a :href="botInstallUrl" target="_blank" rel="noopener noreferrer" class="inline-block min-h-11 text-bluey-500 underline">Přidat bota s oprávněním posílat oznámení</a>
+                    <p class="text-xs">V mentor-chat povolte View Channel, Send Messages a Embed Links.</p>
+                    <p v-if="info.notifications.counts.length" class="text-xs">{{ info.notifications.counts.map(row => `${notificationLabels[row.state]}: ${row.count}`).join(' · ') }}</p>
+                    <p v-if="info.notifications.lastError" role="alert" class="text-xs text-red-600 dark:text-red-400">{{ info.notifications.lastError }}</p>
+                </div>
                 <details v-if="info.audit.length" class="text-sm"><summary class="cursor-pointer font-semibold">Poslední požadavky</summary><ul class="mt-2 space-y-2"><li v-for="(row,index) in info.audit" :key="index" class="break-words">{{ row.teamName }} · {{ row.userName }} · {{ row.kind }} · {{ new Date(row.createdAt).toLocaleString('cs-CZ') }}</li></ul></details>
             </div>
         </template>
@@ -46,6 +57,8 @@ const termsUrl=computed(()=>import.meta.client?location.origin+'/terms.html':'')
 const privacyUrl=computed(()=>import.meta.client?location.origin+'/privacy.html':'');
 const dirty=computed(()=>info.value&&JSON.stringify(config.value)!==JSON.stringify(info.value.config));
 const installUrl=computed(()=>info.value?.configured?'https://discord.com/oauth2/authorize?'+new URLSearchParams({client_id:info.value.config.applicationId,scope:'applications.commands',guild_id:info.value.config.guildId,disable_guild_select:'true',integration_type:'0'}):'');
+const botInstallUrl=computed(()=>info.value?.configured?'https://discord.com/oauth2/authorize?'+new URLSearchParams({client_id:info.value.config.applicationId,scope:'bot applications.commands',permissions:'19456',guild_id:info.value.config.guildId,disable_guild_select:'true',integration_type:'0'}):'');
+const notificationLabels={pending:'Čeká',sending:'Odesílání',sent:'Odesláno',failed:'Chyba'};
 function apply(data){info.value=data;config.value=JSON.parse(JSON.stringify(data.config));}
 async function load(){loading.value=true;error.value='';try{const r=await $fetch('/api/discord/settings',{query:{event:currentEvent.value}});if(r.status!==200)throw new Error(r.message);apply(r.data);}catch(e){error.value=e.message;}finally{loading.value=false;}}
 async function save(){if(busy.value)return;busy.value=true;error.value='';feedback.value='';try{const r=await $fetch('/api/discord/settings',{method:'POST',body:{event:currentEvent.value,config:config.value}});if(r.status!==200)throw new Error(r.message);apply(r.data);feedback.value='Nastavení Discordu uloženo.';}catch(e){error.value=e.message;}finally{busy.value=false;}}

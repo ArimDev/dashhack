@@ -60,3 +60,12 @@ test('organizer setup renders channel mapping and keeps registration token trans
  await panel.getByLabel('Discord bot token',{exact:true}).fill('synthetic-not-a-token');await panel.getByRole('button',{name:'Registrovat /mentor, /matice a /github'}).click();await expect(panel.getByRole('status')).toHaveText('Příkazy registrovány.');await expect(panel.getByLabel('Discord bot token',{exact:true})).toHaveValue('');
  await page.setViewportSize({width:390,height:844});expect(await page.evaluate(()=>document.documentElement.scrollWidth<=innerWidth+1)).toBe(true);
 });
+
+test('mentor notification links focus the exact card and reveal its column on phone',async({page})=>{
+ const c=await setup(page.request);
+ await c.send(c.payload({type:5,data:{custom_id:'dashhack-mentor',components:[{type:18,component:{type:4,custom_id:'request',value:'Linked mentor request'}},{type:18,component:{type:3,custom_id:'urgency',values:['high']}}]}}));
+ const event=(await (await page.request.get(`/api/event/${c.event}`)).json()).data,team=event.teams.find(t=>t._id===c.teamId),note=team.stickyNotes[0];
+ expect((await(await page.request.patch('/api/note/edit',{data:{username:c.event,teamId:c.teamId,noteId:note.id,revision:team.revision,patch:{status:'In Progress'}}})).json()).status).toBe(200);
+ await page.setViewportSize({width:390,height:844});await page.goto(`/app/${c.event}/kanban?note=${note.id}`);
+ const card=page.getByTestId('kanban-note-'+note.id);await expect(card).toBeVisible();await expect(card).toHaveClass(/ring-2/);await expect(page.getByTestId('kanban-column-In Progress')).toBeVisible();await expect(page.getByRole('button',{name:/In Progress/})).toHaveAttribute('aria-pressed','true');
+});

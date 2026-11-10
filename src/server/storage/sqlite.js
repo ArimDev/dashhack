@@ -118,7 +118,7 @@ export class SqliteStore {
             PRAGMA mmap_size = 0;
         `);
         const version = this.db.query('PRAGMA user_version').get().user_version;
-        if (version > 9) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
+        if (version > 10) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
         if (version === 0) this.db.transaction(() => {
             this.db.exec(`
                 CREATE TABLE events (
@@ -270,6 +270,20 @@ export class SqliteStore {
             );
             CREATE INDEX discord_flows_expiry ON discord_matrix_flows(expires_at);
             PRAGMA user_version = 9;`);
+        })();
+
+        if (version < 10) this.db.transaction(() => {
+            this.db.exec(`CREATE TABLE discord_notifications (
+                note_id TEXT PRIMARY KEY, event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+                team_id TEXT NOT NULL REFERENCES teams(id) ON DELETE CASCADE,
+                author TEXT NOT NULL DEFAULT '', state TEXT NOT NULL DEFAULT 'pending'
+                    CHECK(state IN ('pending','sending','sent','failed')),
+                attempts INTEGER NOT NULL DEFAULT 0, created_at INTEGER NOT NULL,
+                next_attempt_at INTEGER NOT NULL, last_attempt_at INTEGER,
+                message_id TEXT NOT NULL DEFAULT '', last_error TEXT NOT NULL DEFAULT ''
+            );
+            CREATE INDEX discord_notification_queue ON discord_notifications(state,next_attempt_at);
+            PRAGMA user_version = 10;`);
         })();
 
     }
@@ -474,6 +488,16 @@ export class SqliteStore {
         return team;
     }
 
+    queueHelpNotification(eventId, teamId, note, author = '') {
+        if (note.type !== 'help_request' || !note.inKanban ||
+            !this.db.query('SELECT 1 FROM discord_settings WHERE event_id=? AND enabled=1').get(eventId)) return;
+        if (this.db.query('SELECT COUNT(*) n FROM discord_notifications WHERE event_id=?').get(eventId).n >= 5000) return;
+        // No note FK: whole-team saves replace note rows. Keep the delivery marker
+        // through those saves so editing a request can never announce it again.
+        this.db.query('INSERT OR IGNORE INTO discord_notifications(note_id,event_id,team_id,author,created_at,next_attempt_at) VALUES(?,?,?,?,?,?)')
+            .run(note.id,eventId,teamId,author.slice(0,100),this.now(),this.now());
+    }
+
     editTeam(sessionId, name, input) {
         const eventId = this.authorize(sessionId, name);
         let notes;
@@ -502,9 +526,11 @@ export class SqliteStore {
             this.db.query('UPDATE teams SET name = ?, color = ?, github = ?, description = ?, originality = ?, project_abstract = ?, revision = revision + 1 WHERE id = ?')
                 .run(fields.name, fields.color, fields.github, fields.description, fields.originality, JSON.stringify(fields.projectAbstract), team.id);
             if (notes) {
+                const oldIds = new Set(this.db.query('SELECT id FROM notes WHERE team_id=?').all(team.id).map(note=>note.id));
                 this.db.query('DELETE FROM notes WHERE team_id = ?').run(team.id);
                 const insert = this.db.query('INSERT INTO notes (id, team_id, content, color, priority, status, position, type, creator_id, in_kanban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
                 notes.forEach((note, position) => insert.run(note.id, team.id, note.content, note.color, note.priority, note.status, position, note.type, note.creatorId, Number(note.inKanban)));
+                for (const note of notes) if (!oldIds.has(note.id)) this.queueHelpNotification(eventId,team.id,note);
             }
             this.touch(eventId);
             return team.revision + 1;

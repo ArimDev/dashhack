@@ -139,3 +139,7 @@ Schema 8 adds revocable per-team invitation records, browser-bound ten-minute st
 ## Discord channel integration (schema 9)
 
 Schema 9 adds event-scoped Discord configuration, bounded audit/idempotency records and expiring matrix sessions in one transaction. Existing tables, content, credentials and sessions are preserved. HTTP interactions use built-in Ed25519/HMAC and SQLite in the existing process; no Gateway daemon, SDK, background worker, package dependency or extra replica. Student forms patch only their channel-mapped team's matrix and preserve mentor attribution; they never acquire an organizer session. See [Discord setup/security/limits](DISCORD.md).
+
+## Mentor announcements (schema 10)
+
+Schema 10 transactionally adds the per-note `discord_notifications` outbox/delivery table without changing earlier content, sessions or Discord/GitHub settings. Queue insertion accompanies new tracked help requests; no historical notes are replayed. Stable delivery markers survive the existing delete/reinsert whole-team save path, avoiding duplicate announcements. The bounded in-process dispatcher uses a server-only runtime bot token, validates Discord app/guild/channel scope and sends after the request response. No new package/service/replica. Explicit 429s retry up to three attempts; uncertain sends are terminal to avoid duplicates. See [setup and delivery tradeoffs](DISCORD.md).

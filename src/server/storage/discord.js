@@ -48,6 +48,7 @@ export class DiscordStore{
         this.rate(ctx,'help');if(this.db.query('SELECT COUNT(*) n FROM notes WHERE team_id=?').get(ctx.team.id).n>=1000)fail('Tým má příliš mnoho poznámek.',413);
         const noteId=randomUUID(),position=this.db.query('SELECT COALESCE(MAX(position),-1)+1 n FROM notes WHERE team_id=?').get(ctx.team.id).n;
         this.db.query(`INSERT INTO notes(id,team_id,content,color,priority,status,position,type,creator_id,in_kanban) VALUES(?,?,?,?,?,'To Do',?,'help_request',NULL,1)`).run(noteId,ctx.team.id,text.trim()+`\n\nDiscord: ${ctx.userName}`,ctx.team.color,priority,position);
+        this.store.queueHelpNotification(ctx.settings.event_id,ctx.team.id,{id:noteId,type:'help_request',inKanban:true},ctx.userName);
         this.db.query('UPDATE teams SET revision=revision+1 WHERE id=?').run(ctx.team.id);this.store.touch(ctx.settings.event_id);
         const result={noteId,teamName:ctx.team.name};this.record(ctx,'help',result);return result;
     })();}
