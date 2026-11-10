@@ -13,7 +13,7 @@ Updated 2026-11-10 for schema 9 and Discord setup. This project is separate from
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `50aaa328-2dac-4bd8-b086-f0260f62c2d6` — SUCCESS, Discord setup / schema 9 |
+| Latest verified deployment | `3f8b32dc-e62f-46a6-85fe-cb9f6de38dda` — SUCCESS, printable matrices / schema 9 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -458,3 +458,6 @@ The user approved five Excel rows (title, questions, answers, questions, answers
 Each team uses exactly one colored template sheet, separate answer cells on rows 3 and 5, 85pt question rows and 160pt answer rows. Answer text uses 9/8/7pt as required. Landscape A4 print area A1:E5 fits one page wide/high. CzechInvest logo, field colors, original question wording, rich styles, mentor footer and literal-string safety are preserved. Template regeneration is reproducible from the original workbook. No dependencies, services, schema or production data writes.
 
 Validation: **92 unit tests / 654 assertions**, five targeted Chromium and five Safari/WebKit matrix/student scenarios, and production build pass. The synthetic `.data/examples/startupova-matice-tisk.xlsx` contains two full 600-character answers and independently opens in openpyxl without warnings, with one sheet, correct question/answer rows, matching fills, logo, print area/settings and valid ZIP CRCs. No native Excel/PDF printer rendering was available; text fit uses the shared conservative estimate and fixed row geometry.
+
+
+Deployment **`3f8b32dc-e62f-46a6-85fe-cb9f6de38dda` — SUCCESS**, source `1be220f`, committed/pushed to `feat_alby_design`. Production frontend generated both single-team phone and combined desktop downloads using entirely synthetic intercepted API data. Independent openpyxl validation confirms exactly one five-row sheet per synthetic team, a complete 600-character answer only in its answer cell, matching colors/logo, one-page landscape print area and no continuation sheets or parser warnings. No production answers were read/downloaded or modified; existing Discord configuration, social collection settings, schema and infrastructure were not changed.
