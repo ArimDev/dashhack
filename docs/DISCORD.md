@@ -107,3 +107,13 @@ Validation before deployment: **118 unit tests / 864 assertions**, five Chromium
 
 
 Live Done-thread verification completed with source c355ab3 / deployment 61687168-54b6-4918-a180-a9cc4387b22f at schema 12. The existing Team 16 request completed into the thread, reopened into mentor-chat and returned to its original In Progress status. Actual message read-back confirmed green/reopen presentation, no role pings and removal of old cards. Matrix/other notes/teams were preserved. The old test Discord message link is historical; read current IDs from ignored cleanup metadata.
+
+
+## Matrix answer visibility follow-up
+
+Team matrices share one stored answer set between the student Discord form and mentor dashboard. The dashboard previously held its route-load snapshot until navigation, so externally saved answers could remain invisible in an already-open Teams tab. Teams now reads a fresh event snapshot when a matrix opens, on window focus, via Refresh and every 15 seconds while a matrix is open in a visible tab. Refresh is blocked during any matrix draft (including collapsed drafts), modal, focused form control or queued note save. The response is discarded if the event, state object or team revisions changed during its read, preserving newer edits and normal conflict checks. No extra service, dependency, schema or API endpoint.
+
+Team 16's original maximum-length export fixture had TEST EXPORTU headings and numeric padding; those were sample answer text, not CzechInvest labels or user attribution. On 2026-11-10 only the exact unchanged fixture was replaced with readable Czech answers, retaining all ten 600-character limits, safe print lines, mentor attribution and the colored Excel template. Existing real-team data and notes were preserved. On-volume backup `/data/backups/before-team16-clean-matrix-1794326010908.sqlite` remains private; the ignored synthetic example workbook was regenerated.
+
+
+Matrix-refresh validation: five targeted Chromium scenarios and the same five Safari/WebKit scenarios pass, covering saved rich text, read-only access, collapsed/stale draft preservation, the supplied Excel export and external-answer refresh. The new regression also delays a read until after a newer matrix save and confirms it cannot overwrite that saved answer. Production build passes. The cleaned synthetic workbook has ten complete 600-character cells, unchanged template colors and A1:E5 one-page layout.

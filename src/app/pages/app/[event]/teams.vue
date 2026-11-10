@@ -31,7 +31,10 @@
                     </select>
                 </div>
             </div>
-            <div class="mb-4 flex justify-end">
+            <div class="mb-4 flex flex-wrap items-center justify-end gap-3">
+                <button type="button" @click="refreshTeams(true)" :disabled="refreshingTeams" class="min-h-11 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold disabled:opacity-50 dark:border-gray-600">
+                    {{ refreshingTeams ? 'Refreshing…' : 'Refresh' }}
+                </button>
                 <MatrixExport :teams="data.teams" :event-name="currentEvent" :mentors="data.mentors || []" label="Export všech matic (.xlsx)" />
             </div>
             <div v-if="!visibleIds.size" class="py-12 text-center text-gray-500 dark:text-gray-400">No teams match your search.</div>
@@ -44,6 +47,7 @@
                         @add-note="addStickyNote"
                         @update-note="updateStickyNote"
                         @delete-note="deleteStickyNote"
+                        @refresh="refreshTeams(false)"
                     />
                 </div>
             </div>
@@ -132,6 +136,48 @@ const findTeamIndex = (teamName) => {
 // Keep snapshots in order, but use the last acknowledged revision for each save.
 // A rejected queue skips subsequent stale snapshots until the event is refreshed.
 const saveQueues = new Map();
+const refreshingTeams = ref(false);
+let refreshTimer, refreshController;
+function canRefreshTeams() {
+    return !openAddTeam.value && !openConfirm.value && !saveQueues.size &&
+        !document.querySelector('[data-matrix-editing="true"]') &&
+        !document.activeElement?.closest('input,textarea,select,[contenteditable="true"]');
+}
+async function refreshTeams(manual = false) {
+    if (refreshingTeams.value) return;
+    if (!canRefreshTeams()) {
+        if (manual) showToast('Finish editing first', 'Save or close your draft before refreshing.');
+        return;
+    }
+    const snapshot = data.value, eventName = currentEvent.value;
+    const revisions = snapshot.teams.map(team => `${team._id}:${team.revision}`).join('|');
+    const controller = refreshController = new AbortController();
+    refreshingTeams.value = true;
+    try {
+        const response = await $fetch(`/api/event/${encodeURIComponent(eventName)}`, { signal: controller.signal });
+        if (response.status !== 200) throw new Error(response.message || 'Unable to refresh teams');
+        // A save or a newly opened draft may have started while this read was in flight.
+        if (controller.signal.aborted || currentEvent.value !== eventName || data.value !== snapshot || !canRefreshTeams() ||
+            revisions !== data.value.teams.map(team => `${team._id}:${team.revision}`).join('|')) return;
+        data.value = response.data;
+        canEdit.value = !!response.canEdit;
+    } catch (failure) {
+        if (manual && !controller.signal.aborted) showToast('Could not refresh teams', failure.message);
+    } finally { if (refreshController === controller) { refreshingTeams.value = false; refreshController = null; } }
+}
+onMounted(() => {
+    refreshTimer = setInterval(() => {
+        if (document.visibilityState === 'visible' && document.querySelector('details[open] > [data-testid="startup-matrix"]')) refreshTeams(false);
+    }, 15000);
+    window.addEventListener('focus', refreshOnFocus);
+});
+function refreshOnFocus() { if (document.visibilityState === 'visible') refreshTeams(false); }
+onBeforeUnmount(() => {
+    clearInterval(refreshTimer);
+    refreshController?.abort();
+    window.removeEventListener('focus', refreshOnFocus);
+});
+
 const saveTeamChanges = (teamIndex, successMessage) => {
     const snapshot = JSON.parse(JSON.stringify(data.value.teams[teamIndex]));
     const task = (saveQueues.get(snapshot._id) || Promise.resolve()).then(async () => {

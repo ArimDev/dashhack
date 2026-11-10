@@ -1,5 +1,5 @@
 <template>
-    <div class="space-y-4 pt-3" data-testid="startup-matrix">
+    <div class="space-y-4 pt-3" data-testid="startup-matrix" :data-matrix-editing="editing || saving">
         <div class="flex flex-wrap justify-between items-start gap-3">
             <div>
                 <p class="text-sm text-gray-500 dark:text-gray-400">Otázky CzechInvestu pomáhají ověřit nápad a jeho konkurenceschopnost. Vyplnit můžete jen některé odpovědi.</p>

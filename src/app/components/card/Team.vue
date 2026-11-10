@@ -56,7 +56,7 @@
                 </div>
             </div>
 
-            <details @toggle="matrixLoaded = matrixLoaded || $event.target.open" class="border-t border-gray-100 dark:border-gray-700 px-4 py-3">
+            <details @toggle="matrixToggled" class="border-t border-gray-100 dark:border-gray-700 px-4 py-3">
                 <summary class="cursor-pointer text-sm font-semibold text-gray-800 dark:text-gray-200">Startupová matice</summary>
                 <StartupMatrix v-if="matrixLoaded" :team="team" />
             </details>
@@ -128,13 +128,18 @@
 
 <script setup>
 const Apexchart = defineAsyncComponent(() => import("vue3-apexcharts"));
-const emit = defineEmits(["edit", "delete", "add-note", "update-note", "delete-note"]);
+const emit = defineEmits(["edit", "delete", "add-note", "update-note", "delete-note", "refresh"]);
 const props = defineProps({
     team: Object,
 });
 
 const showGraph = ref(false);
 const matrixLoaded = ref(false);
+function matrixToggled(event) {
+    if (!event.target.open) return;
+    matrixLoaded.value = true;
+    emit('refresh');
+}
 const eventData = useState('eventData');
 const canEdit = useState('eventCanEdit', () => false);
 const showNotes = ref(false);

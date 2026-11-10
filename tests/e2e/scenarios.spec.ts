@@ -663,3 +663,25 @@ test('startup matrix downloads the supplied Excel template per team and with all
  expect(combined.get('xl/workbook.xml').toString()).toContain('Second export team');expect(combined.has('xl/worksheets/sheet2.xml')).toBe(true);
  const fresh=(await(await page.request.get(`/api/event/${eventName}`)).json()).data.teams.find(team=>team._id===first._id);expect(fresh.startupMatrix.problem[0].runs[0].text).toContain('<img');
 });
+
+test('matrix opens with fresh external answers and refresh never replaces an active draft or newer local save',async({page})=>{
+ const card=await addTeam(page,'Matrix response sync');
+ const event=(await(await page.request.get(`/api/event/${eventName}`)).json()).data,team=event.teams[0];
+ const answer=text=>[{type:'paragraph',runs:[{text,bold:false,italic:false}]}];
+ const external=await(await page.request.patch('/api/team/matrix',{data:{username:eventName,teamId:team._id,revision:team.revision,answers:{problem:answer('Odpověď týmu z jiného okna')}}})).json();expect(external.status).toBe(200);
+ await card.getByText('Startupová matice',{exact:true}).click();const matrix=card.getByTestId('startup-matrix');
+ await expect(matrix.getByTestId('matrix-field-problem')).toContainText('Odpověď týmu z jiného okna');
+ await matrix.getByRole('button',{name:'Upravit matici'}).click();await matrix.getByRole('textbox',{name:'PROBLÉM',exact:true}).fill('Můj rozepsaný koncept');
+ const changed=await(await page.request.patch('/api/team/matrix',{data:{username:eventName,teamId:team._id,revision:external.revision,answers:{solution:answer('Nové řešení od týmu')}}})).json();expect(changed.status).toBe(200);
+ await page.getByRole('button',{name:'Refresh',exact:true}).click();await expect(matrix.getByRole('textbox',{name:'PROBLÉM',exact:true})).toHaveText('Můj rozepsaný koncept');
+ await matrix.getByRole('button',{name:'Uložit matici',exact:true}).click();await expect(matrix.getByRole('alert')).toContainText('mezitím');
+ await matrix.getByRole('button',{name:'Zahodit rozepsané změny a načíst aktuální data'}).click();await expect(matrix.getByRole('textbox',{name:'ŘEŠENÍ',exact:true})).toHaveText('Nové řešení od týmu');
+ await matrix.getByRole('button',{name:'Zrušit',exact:true}).click();
+ // A read started before a later edit must not replace that later saved revision.
+ let release;const pending=new Promise(resolve=>release=resolve);let intercepted;
+ const readStarted=new Promise(resolve=>intercepted=resolve);
+ await page.route(`**/api/event/${eventName}`,async route=>{const response=await route.fetch();const json=await response.json();intercepted();await pending;await route.fulfill({json});},{times:1});
+ await page.getByRole('button',{name:'Refresh',exact:true}).click();await readStarted;
+ await matrix.getByRole('button',{name:'Upravit matici'}).click();await matrix.getByRole('textbox',{name:'PROBLÉM',exact:true}).fill('Novější uložená odpověď');await matrix.getByRole('button',{name:'Uložit matici',exact:true}).click();await expect(matrix.getByRole('status')).toHaveText('Startupová matice uložena.');
+ release();await expect(page.getByRole('button',{name:'Refresh',exact:true})).toBeEnabled();await expect(matrix.getByTestId('matrix-field-problem')).toContainText('Novější uložená odpověď');
+});
