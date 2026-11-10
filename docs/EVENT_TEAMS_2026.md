@@ -1,6 +1,6 @@
 # Týmy — AT&T Hackathon Junior 2026
 
-Produkční událost a přihlašovací jméno: **ATT Hackathon Junior 2026**. Heslo zůstává stejné. Čísla týmů zatím nejsou přidělena. Pořadí odpovídá dodanému seznamu.
+Produkční událost a přihlašovací jméno: **ATT Hackathon Junior 2026**. Heslo zůstává stejné. Čísla odpovídají potvrzenému zasedacímu pořádku. Karty jdou po řádcích: 11/21/31, 12/22/32, 13/23/33, 14/24/34, 15/25/35.
 
 Všech 15 repozitářů je soukromých. Původní nepoužité `team-01` až `team-15` byly přejmenovány; jejich ID a oprávnění zůstala zachována. README obsahují skutečný název týmu a barvu trička.
 
@@ -10,21 +10,21 @@ Všech 15 repozitářů je soukromých. Původní nepoužité `team-01` až `tea
 
 | Název týmu | Barva trička | HEX | Repozitář | Přijetí pozvánky (po pozvání účtu) |
 | --- | --- | --- | --- | --- |
-| 505 | yellow | `#FFD600` | [505](https://github.com/AT-T-Hackathon-Junior-2026/505) | [Přijmout](https://github.com/settings/organizations) |
-| AYA | red | `#E53935` | [aya](https://github.com/AT-T-Hackathon-Junior-2026/aya) | [Přijmout](https://github.com/settings/organizations) |
-| BugBusters | blue | `#1565C0` | [bugbusters](https://github.com/AT-T-Hackathon-Junior-2026/bugbusters) | [Přijmout](https://github.com/settings/organizations) |
-| Detrio | green | `#2E7D32` | [detrio](https://github.com/AT-T-Hackathon-Junior-2026/detrio) | [Přijmout](https://github.com/settings/organizations) |
-| Indy a Vích | písková | `#C2A477` | [indy-a-vich](https://github.com/AT-T-Hackathon-Junior-2026/indy-a-vich) | [Přijmout](https://github.com/settings/organizations) |
-| InovaTeam | yellow | `#F9A825` | [inovateam](https://github.com/AT-T-Hackathon-Junior-2026/inovateam) | [Přijmout](https://github.com/settings/organizations) |
-| Last Dance - DOGY | red | `#B71C1C` | [last-dance-dogy](https://github.com/AT-T-Hackathon-Junior-2026/last-dance-dogy) | [Přijmout](https://github.com/settings/organizations) |
-| New6en | blue | `#00ACC1` | [new6en](https://github.com/AT-T-Hackathon-Junior-2026/new6en) | [Přijmout](https://github.com/settings/organizations) |
-| Ownit | green | `#8BC34A` | [ownit](https://github.com/AT-T-Hackathon-Junior-2026/ownit) | [Přijmout](https://github.com/settings/organizations) |
-| pan.png | písková | `#E6CBA8` | [pan.png](https://github.com/AT-T-Hackathon-Junior-2026/pan.png) | [Přijmout](https://github.com/settings/organizations) |
-| Penguins | yellow | `#D4A000` | [penguins](https://github.com/AT-T-Hackathon-Junior-2026/penguins) | [Přijmout](https://github.com/settings/organizations) |
-| Pixel_Penguin | red | `#FF7043` | [pixel_penguin](https://github.com/AT-T-Hackathon-Junior-2026/pixel_penguin) | [Přijmout](https://github.com/settings/organizations) |
-| Replay | blue | `#3949AB` | [replay](https://github.com/AT-T-Hackathon-Junior-2026/replay) | [Přijmout](https://github.com/settings/organizations) |
-| Velcord | green | `#00897B` | [velcord](https://github.com/AT-T-Hackathon-Junior-2026/velcord) | [Přijmout](https://github.com/settings/organizations) |
-| YoGurts | písková | `#A67C52` | [yogurts](https://github.com/AT-T-Hackathon-Junior-2026/yogurts) | [Přijmout](https://github.com/settings/organizations) |
+| 11 - Detrio | green | `#2E7D32` | [11-detrio](https://github.com/AT-T-Hackathon-Junior-2026/11-detrio) | [Přijmout](https://github.com/settings/organizations) |
+| 21 - InovaTeam | yellow | `#F9A825` | [21-inovateam](https://github.com/AT-T-Hackathon-Junior-2026/21-inovateam) | [Přijmout](https://github.com/settings/organizations) |
+| 31 - YoGurts | písková | `#A67C52` | [31-yogurts](https://github.com/AT-T-Hackathon-Junior-2026/31-yogurts) | [Přijmout](https://github.com/settings/organizations) |
+| 12 - 505 | yellow | `#FFD600` | [12-505](https://github.com/AT-T-Hackathon-Junior-2026/12-505) | [Přijmout](https://github.com/settings/organizations) |
+| 22 - Last Dance - DOGY | red | `#B71C1C` | [22-last-dance-dogy](https://github.com/AT-T-Hackathon-Junior-2026/22-last-dance-dogy) | [Přijmout](https://github.com/settings/organizations) |
+| 32 - Penguins | yellow | `#D4A000` | [32-penguins](https://github.com/AT-T-Hackathon-Junior-2026/32-penguins) | [Přijmout](https://github.com/settings/organizations) |
+| 13 - AYA | red | `#E53935` | [13-aya](https://github.com/AT-T-Hackathon-Junior-2026/13-aya) | [Přijmout](https://github.com/settings/organizations) |
+| 23 - New6en | blue | `#00ACC1` | [23-new6en](https://github.com/AT-T-Hackathon-Junior-2026/23-new6en) | [Přijmout](https://github.com/settings/organizations) |
+| 33 - Pixel_Penguin | red | `#FF7043` | [33-pixel_penguin](https://github.com/AT-T-Hackathon-Junior-2026/33-pixel_penguin) | [Přijmout](https://github.com/settings/organizations) |
+| 14 - BugBusters | blue | `#1565C0` | [14-bugbusters](https://github.com/AT-T-Hackathon-Junior-2026/14-bugbusters) | [Přijmout](https://github.com/settings/organizations) |
+| 24 - Ownit | green | `#8BC34A` | [24-ownit](https://github.com/AT-T-Hackathon-Junior-2026/24-ownit) | [Přijmout](https://github.com/settings/organizations) |
+| 34 - Replay | blue | `#3949AB` | [34-replay](https://github.com/AT-T-Hackathon-Junior-2026/34-replay) | [Přijmout](https://github.com/settings/organizations) |
+| 15 - Indy a Vích | písková | `#C2A477` | [15-indy-a-vich](https://github.com/AT-T-Hackathon-Junior-2026/15-indy-a-vich) | [Přijmout](https://github.com/settings/organizations) |
+| 25 - pan.png | písková | `#E6CBA8` | [25-pan.png](https://github.com/AT-T-Hackathon-Junior-2026/25-pan.png) | [Přijmout](https://github.com/settings/organizations) |
+| 35 - Velcord | green | `#00897B` | [35-velcord](https://github.com/AT-T-Hackathon-Junior-2026/35-velcord) | [Přijmout](https://github.com/settings/organizations) |
 
 ## Záznam změny — 2026-11-09
 
@@ -33,3 +33,7 @@ V produkci bylo atomicky nahrazeno 15 ukázkových týmů a odstraněno jejich 4
 Úplná konzistentní záloha před změnou: `/data/backups/before-real-teams-1794255544253.sqlite` (jen na privátním Railway volume, oprávnění 0600). SQLite integrity i cizí klíče jsou v pořádku. Neměnit zpět podle demo seed skriptu.
 
 Oficiální dokumentace: [outside collaborators](https://docs.github.com/en/organizations/managing-user-access-to-your-organizations-repositories/managing-outside-collaborators/adding-outside-collaborators-to-repositories-in-your-organization), [repository invitations API](https://docs.github.com/en/rest/collaborators/invitations).
+
+## Čísla stolů — 2026-11-10
+
+Po výslovném schválení přepisu zasedacího plánku bylo 15 reálných týmů přejmenováno na „číslo - název“ a jejich existující repozitáře na „číslo-název“. Karty jsou seřazené po řádcích plánku, nikoli abecedně. Zachována ID repozitářů, soukromí, výchozí větve, přístup i stejné OAuth pozvánky; jejich vazby byly aktualizovány na nové cesty. Testovací Team 16, barvy, poznámky, matice i ostatní údaje zůstaly beze změny. Konzistentní záloha před přejmenováním: `/data/backups/before-table-numbering-1794324997278.sqlite`; stav postupu je vedle ní v privátním JSON. Staré názvy repozitářů znovu nepoužívat, aby fungovalo přesměrování GitHubu.
