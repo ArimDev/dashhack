@@ -62,3 +62,6 @@ A request always remains in Kanban if Discord delivery fails. A persisted send c
 
 
 Current server check: the user supplied the runtime token; Discord confirmed application `1569701943780057230` and the already-mentionable **Mentor** role `1285378042478329872`. Channel `1285378043099086852` returned HTTP 403, so the user must allow the bot View Channel, Send Messages and Embed Links in mentor-chat. The non-secret role ID is configured for the next deployment. Scope is both Discord-created and DashHack-created help requests, with an intentional Mentor ping.
+
+
+Live check completed on 2026-11-10 after channel permissions were granted: source `6d675fe` / deployment `014d6328-e2dc-4c2f-b54a-497d445bf533`, schema 10. A clearly marked Team 16 app-created help request produced one mentor-chat card on the first attempt; Discord confirmed the Mentor role in the message receipt. The note and card remain for user review. Unit/signed-runtime tests separately verify the Discord `/mentor` path uses the same durable queue. There is no extra slash-command definition change for this notification-only release.

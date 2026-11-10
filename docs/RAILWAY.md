@@ -13,7 +13,7 @@ Updated 2026-11-10 for schema 9 and Discord setup. This project is separate from
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `b32df033-e09f-42b9-b5a2-0550af14db41` — SUCCESS, To Do priority ordering / schema 9 |
+| Latest verified deployment | `014d6328-e2dc-4c2f-b54a-497d445bf533` — SUCCESS, mentor notification cards / schema 10 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
@@ -515,3 +515,8 @@ The user subsequently set `NUXT_DISCORD_BOT_TOKEN`, confirmed notifications for 
 
 
 Final validation after adding the requested Mentor ping: **104 unit tests / 731 assertions** (including one-role-only allowed mentions and receipt confirmation), four Chromium/four Safari flows and the final production runtime smoke/build pass. The user fixed channel permissions; read-only verification now returns HTTP 200 for mentor-chat in the correct guild and confirms the same mentionable Mentor role. A clearly marked Team 16 request will be used for live delivery verification after deployment.
+
+
+Deployment **`014d6328-e2dc-4c2f-b54a-497d445bf533` — SUCCESS**, source `6d675fe`, committed/pushed. Schema 10 and integrity `ok`; all sixteen pre-existing table hashes exactly matched the private pre-deployment snapshot before the live test, with an empty new queue. Runtime bot/channel/role were configured, and the user-fixed mentor-chat/role checks returned HTTP 200 with the correct guild/application.
+
+Created one clearly marked high-priority help request only in **Team 16 - TEST** through the owner API. It queued atomically and posted one styled Discord message on the first attempt. The Discord receipt included the intended Mentor role; no error or duplicate. The card links to the exact new Kanban note. Other team rows and all prior test notes were preserved. No historical help requests were replayed. Local ignored 0600 `.data/discord-test-team.json` records the synthetic test-note/message IDs for later user-authorized cleanup; no actual tokens/capability links were copied. User can review the live card in mentor-chat. Existing social wall settings/collectors and infrastructure were not changed.
