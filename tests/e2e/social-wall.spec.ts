@@ -469,7 +469,15 @@ test('pinned event placeholders can be edited without losing their pin',async({p
  await dialog.getByRole('button',{name:'Save post',exact:true}).click();
  await expect(dialog.getByRole('alert')).toContainText('changed');
  await expect(dialog.getByRole('textbox',{name:'Post text',exact:true})).toHaveText('Keep this draft');
+ const editor=dialog.getByRole('textbox',{name:'Post text',exact:true}),editorBox=await editor.boundingBox();
+ await page.mouse.move(editorBox.x+editorBox.width/2,editorBox.y+editorBox.height/2);
+ await page.mouse.down();await page.mouse.move(2,2,{steps:8});await page.mouse.up();
+ await expect(dialog).toBeVisible();await expect(editor).toHaveText('Keep this draft');
  await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
+ await card.getByRole('button',{name:'Edit post',exact:true}).click();
+ await expect(dialog).toBeVisible();
+ await page.locator('.dialog-backdrop').click({position:{x:2,y:2}});
+ await expect(dialog).toHaveCount(0);
 });
 
 test('pinned announcements support optional photos and formatted full text',async({page,browser})=>{

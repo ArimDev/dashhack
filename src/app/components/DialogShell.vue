@@ -1,6 +1,8 @@
 <template>
     <Teleport to="body">
-        <div class="dialog-backdrop" :class="{ 'dialog-backdrop-fullscreen': fullscreen }" @click.self="emit('close')" @keydown.esc.stop.prevent="emit('close')">
+        <div class="dialog-backdrop" :class="{ 'dialog-backdrop-fullscreen': fullscreen }"
+            @pointerdown="beginBackdropClick" @pointerup="endBackdropClick" @pointercancel="cancelBackdropClick"
+            @click.self="closeFromBackdrop" @keydown.esc.stop.prevent="emit('close')">
             <section ref="panel" role="dialog" aria-modal="true" :aria-labelledby="headingId" tabindex="-1"
                 class="dialog-panel" :class="{ 'dialog-panel-wide': wide, 'dialog-panel-fullscreen': fullscreen }" @keydown.tab="trapFocus">
                 <header :class="centeredTitle ? 'grid grid-cols-[2.75rem_minmax(0,1fr)_2.75rem]' : 'flex justify-between'" class="shrink-0 items-center gap-3 border-b border-gray-100 px-5 py-4 dark:border-gray-700 sm:px-6">
@@ -20,6 +22,23 @@ defineProps({ title: { type: String, required: true }, wide: Boolean, fullscreen
 const emit = defineEmits(['close']);
 const panel = ref(null), headingId = useId();
 let previousFocus, previousOverflow, previousInert;
+let pointerStart = null, backdropClick = false;
+function beginBackdropClick(event) {
+    backdropClick = false;
+    pointerStart = event.button === 0 && event.target === event.currentTarget
+        ? { id: event.pointerId, x: event.clientX, y: event.clientY } : null;
+}
+function endBackdropClick(event) {
+    backdropClick = !!pointerStart && pointerStart.id === event.pointerId && event.target === event.currentTarget
+        && Math.hypot(event.clientX - pointerStart.x, event.clientY - pointerStart.y) <= 8;
+    pointerStart = null;
+}
+function cancelBackdropClick() { pointerStart = null; backdropClick = false; }
+function closeFromBackdrop() {
+    const shouldClose = backdropClick;
+    cancelBackdropClick();
+    if (shouldClose) emit('close');
+}
 function focusable() { return [...panel.value.querySelectorAll('button:not([disabled]),input:not([disabled]),textarea:not([disabled]),select:not([disabled]),a[href],[contenteditable="true"],[tabindex="0"]')].filter(el => el.getClientRects().length); }
 function trapFocus(event) {
     const elements = focusable(), first = elements[0], last = elements.at(-1);
