@@ -38,7 +38,7 @@
                 <MatrixExport :teams="data.teams" :event-name="currentEvent" :mentors="data.mentors || []" label="Export všech matic (.xlsx)" />
             </div>
             <div v-if="!visibleIds.size" class="py-12 text-center text-gray-500 dark:text-gray-400">No teams match your search.</div>
-            <div data-testid="teams-grid" class="grid grid-cols-1 items-start gap-5 lg:grid-cols-2 xl:grid-cols-3">
+            <div data-testid="teams-grid" class="grid grid-cols-1 items-start gap-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
                 <div v-for="team in data.teams" :key="team._id" v-show="visibleIds.has(team._id)" :id="`team-${team._id}`" tabindex="-1" class="team-anchor min-w-0 rounded-xl focus-visible:outline-2 focus-visible:outline-bluey-500">
                     <Team
                         :team="team"
@@ -140,6 +140,7 @@ const refreshingTeams = ref(false);
 let refreshTimer, refreshController;
 function canRefreshTeams() {
     return !openAddTeam.value && !openConfirm.value && !saveQueues.size &&
+        !document.querySelector('[data-note-dirty="true"], [data-note-saving="true"]') &&
         !document.querySelector('[data-matrix-editing="true"]') &&
         !document.activeElement?.closest('input,textarea,select,[contenteditable="true"]');
 }
@@ -204,11 +205,12 @@ const saveTeamChanges = (teamIndex, successMessage) => {
         showToast('Success', successMessage, 2000);
     });
     saveQueues.set(snapshot._id, task);
-    task.catch(async (error) => {
+    return task.then(() => true, async (error) => {
         showToast('Error saving changes!', error.message);
         const fresh = await $fetch(`/api/event/${encodeURIComponent(currentEvent.value)}`);
         if (fresh.data) data.value = fresh.data;
-    }).catch(console.error).finally(() => {
+        return false;
+    }).catch(() => false).finally(() => {
         if (saveQueues.get(snapshot._id) === task) saveQueues.delete(snapshot._id);
     });
 };
@@ -236,15 +238,16 @@ const addStickyNote = ({ teamName, type }) => {
     saveTeamChanges(teamIndex, "Note added.");
 };
 
-const updateStickyNote = ({ teamName, note: updatedNote }) => {
+const updateStickyNote = async ({ teamName, note: updatedNote, done }) => {
     const teamIndex = findTeamIndex(teamName);
-    if (teamIndex === -1) return;
+    if (teamIndex === -1) { done?.(false); return; }
 
     const noteIndex = data.value.teams[teamIndex].stickyNotes.findIndex(n => n.id === updatedNote.id);
-    if (noteIndex === -1) return;
+    if (noteIndex === -1) { done?.(false); return; }
 
     data.value.teams[teamIndex].stickyNotes[noteIndex] = updatedNote;
-    saveTeamChanges(teamIndex, "Note updated.");
+    const ok = await saveTeamChanges(teamIndex, "Note updated.");
+    await nextTick(); done?.(ok);
 };
 
 const deleteStickyNote = ({ teamName, noteId }) => {

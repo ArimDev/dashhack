@@ -1,110 +1,104 @@
 <template>
-    <div class="sticky-note p-4 rounded-xl border-2 shadow-sm hover:shadow-md transition-shadow duration-200 flex flex-col justify-between min-h-[160px]"
-        :style="{ '--team-color': teamColor }" :data-priority="editableInKanban ? editablePriority : 'none'">
-        <header v-if="editableInKanban" data-testid="note-priority-header" :class="[priorityClass, editablePriority === 'critical' ? 'text-sm' : 'text-xs']" class="-mx-4 -mt-4 mb-3 flex flex-col gap-2 rounded-t-[10px] px-4 py-2 font-bold">
-            <div v-if="$slots.header" class="flex items-center justify-between gap-2 normal-case tracking-normal"><slot name="header" /></div>
-            <div class="flex items-center gap-2">
-                <Icon v-if="editablePriority === 'critical'" name="heroicons:exclamation-triangle-solid" size="20px" />
+    <div class="sticky-note flex min-w-0 flex-col rounded-xl border-2 p-3 shadow-sm"
+        :style="{ '--team-color': teamColor }" :data-priority="editableInKanban ? editablePriority : 'none'"
+        :data-note-dirty="hasChanges || undefined" :data-note-saving="saving || undefined">
+        <header v-if="editableInKanban" data-testid="note-priority-header" :class="priorityClass"
+            class="-mx-3 -mt-3 mb-2 rounded-t-[10px] px-3 py-2 font-bold">
+            <div v-if="$slots.header" class="mb-1 flex min-w-0 items-center justify-between gap-2 normal-case tracking-normal"><slot name="header" /></div>
+            <div class="flex items-center gap-1.5 text-xs">
+                <Icon v-if="editablePriority === 'critical'" name="heroicons:exclamation-triangle-solid" size="16px" />
                 <span data-testid="note-priority-label">{{ priorityLabel }} priority</span>
             </div>
         </header>
-        <div class="grid grid-cols-1 gap-3 mb-3 sm:grid-cols-2">
-            <label class="text-xs font-semibold text-gray-700 dark:text-gray-200">Type
-                <select v-model="editableType" :disabled="readOnly" aria-label="Note type" @change="updateNote"
-                    class="block mt-1 bg-black/5 dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-xs rounded px-2 py-1 w-full min-w-0 max-w-full">
-                    <option value="mentor_note">Mentor note</option>
-                    <option value="help_request">Help request</option>
+        <textarea data-testid="note-content" ref="textarea" v-model="editableContent" rows="1"
+            :readonly="readOnly || saving" aria-label="Note content" @input="autoResize" @blur="updateNote"
+            class="min-h-10 max-h-60 w-full resize-none overflow-y-auto border-none bg-transparent text-sm font-medium leading-relaxed text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-0 dark:text-gray-100 dark:placeholder-gray-400"
+            placeholder="Write your note here..."></textarea>
+        <div class="mt-2 grid grid-cols-2 gap-2">
+            <label class="min-w-0"><span class="sr-only">Note type</span>
+                <select v-model="editableType" :disabled="readOnly || saving" aria-label="Note type" @change="updateNote"
+                    class="block w-full min-w-0 max-w-full rounded bg-black/5 px-2 py-1 text-xs text-gray-900 dark:bg-gray-800 dark:text-gray-100">
+                    <option value="mentor_note">Mentor note</option><option value="help_request">Help request</option>
                 </select>
             </label>
-            <label class="text-xs font-semibold text-gray-700 dark:text-gray-200 min-w-0">Creator
-                <select v-model="editableCreator" :disabled="readOnly" aria-label="Note creator" @change="updateNote"
-                    class="block mt-1 bg-black/5 dark:bg-gray-800 text-gray-900 dark:text-gray-100 text-xs rounded px-2 py-1 w-full min-w-0 max-w-full">
+            <label class="min-w-0"><span class="sr-only">Note creator</span>
+                <select v-model="editableCreator" :disabled="readOnly || saving" aria-label="Note creator" @change="updateNote"
+                    class="block w-full min-w-0 max-w-full rounded bg-black/5 px-2 py-1 text-xs text-gray-900 dark:bg-gray-800 dark:text-gray-100">
                     <option value="">No creator selected</option>
                     <option v-for="mentor in mentors" :key="mentor.id" :value="mentor.id">{{ mentor.name }}</option>
                 </select>
             </label>
         </div>
-        <label class="flex items-center gap-2 mb-3 text-xs font-semibold text-gray-700 dark:text-gray-200">
-            <input type="checkbox" v-model="editableInKanban" :disabled="readOnly" @change="updateNote"
-                aria-label="Track in Kanban" class="accent-bluey-500">
-            Track in Kanban
-        </label>
-        <textarea data-testid="note-content" ref="textarea" v-model="editableContent"
-            :readonly="readOnly" aria-label="Note content" @input="autoResize" @blur="updateNote"
-            class="bg-transparent border-none focus:ring-0 focus:outline-none resize-none w-full flex-grow text-sm font-medium text-gray-900 dark:text-gray-100 placeholder-gray-500 dark:placeholder-gray-400 min-h-24 max-h-72 overflow-y-auto"
-            placeholder="Write your note here..."></textarea>
-
-        <div class="flex flex-wrap items-center gap-2 mt-3 pt-3 border-t border-black/10 dark:border-white/15 text-gray-900 dark:text-gray-100">
-            <select v-if="editableInKanban" v-model="editablePriority" :disabled="readOnly" aria-label="Note priority" @change="updateNote"
-                class="bg-black/5 dark:bg-gray-800 text-xs font-bold py-1 px-2 rounded cursor-pointer disabled:cursor-default">
-                <option value="low">Low</option>
-                <option value="medium">Med</option>
-                <option value="high">High</option>
-                <option value="critical">Critical</option>
+        <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-700 dark:text-gray-200">
+            <label class="flex min-w-0 items-center gap-2">
+                <input type="checkbox" v-model="editableInKanban" :disabled="readOnly || saving" @change="updateNote" aria-label="Track in Kanban" class="accent-bluey-500">
+                Track in Kanban
+            </label>
+            <select v-if="editableInKanban" v-model="editablePriority" :disabled="readOnly || saving" aria-label="Note priority" @change="updateNote"
+                class="max-w-full rounded bg-black/5 px-2 py-1 text-xs font-bold dark:bg-gray-800">
+                <option value="low">Low</option><option value="medium">Med</option><option value="high">High</option><option value="critical">Critical</option>
             </select>
-            <select v-if="editableInKanban" data-testid="note-status" v-model="editableStatus" :disabled="readOnly" aria-label="Note status" @change="updateNote"
-                class="bg-black/5 dark:bg-gray-800 text-xs font-medium py-1 px-2 rounded cursor-pointer disabled:cursor-default">
+        </div>
+        <div class="mt-2 flex flex-wrap items-center gap-2 border-t border-black/10 pt-2 text-gray-900 dark:border-white/15 dark:text-gray-100">
+            <select v-if="editableInKanban" data-testid="note-status" v-model="editableStatus" :disabled="readOnly || saving" aria-label="Note status" @change="updateNote"
+                class="min-w-0 max-w-full rounded bg-black/5 px-2 py-1 text-xs font-medium dark:bg-gray-800">
                 <option v-if="!NOTE_STATUSES.includes(editableStatus)" :value="editableStatus" disabled>{{ editableStatus }}</option>
                 <option v-for="status in NOTE_STATUSES" :key="status" :value="status">{{ status }}</option>
             </select>
-            <button v-if="!readOnly" data-testid="delete-note-btn" @click="$emit('delete', note.id)"
-                class="text-gray-500 dark:text-gray-400 hover:text-red-600 transition-colors p-1 ml-auto" title="Delete note" aria-label="Delete note">
+            <button v-if="!readOnly || saving" type="button" data-testid="save-note-btn" :disabled="readOnly || saving || !hasChanges"
+                @pointerdown.prevent @click="updateNote" class="ml-auto min-h-8 rounded-lg bg-bluey-600 px-2 text-xs font-semibold text-white disabled:opacity-50">
+                {{ saving ? 'Saving...' : saved && !hasChanges ? 'Saved' : 'Save note' }}
+            </button>
+            <button v-if="!readOnly" type="button" :disabled="saving" data-testid="delete-note-btn" @click="$emit('delete', note.id)"
+                class="note-delete rounded-lg p-1 text-gray-500 transition-colors hover:text-red-600 disabled:opacity-40 dark:text-gray-400" :class="{ 'ml-auto': readOnly }" title="Delete note" aria-label="Delete note">
                 <Icon name="heroicons:trash" size="18px" />
             </button>
         </div>
+        <p v-if="saveError" aria-live="polite" class="mt-2 text-xs text-red-700 dark:text-red-300">{{ saveError }}</p>
+        <span class="sr-only" aria-live="polite">{{ saving ? 'Saving note' : saved && !hasChanges ? 'Note saved' : hasChanges ? 'Unsaved note changes' : '' }}</span>
     </div>
 </template>
 
 <script setup>
 import { NOTE_STATUSES } from '~~/shared/noteStatuses.js';
-
-const props = defineProps({
-    note: { type: Object, required: true },
-    teamColor: { type: String, default: '#ffeb3b' },
-    readOnly: { type: Boolean, default: false },
-    mentors: { type: Array, default: () => [] },
-});
+const props = defineProps({ note: { type: Object, required: true }, teamColor: { type: String, default: '#ffeb3b' }, readOnly: { type: Boolean, default: false }, mentors: { type: Array, default: () => [] } });
 const emit = defineEmits(['update', 'delete']);
-const textarea = ref(null);
-const editableContent = ref(props.note.content);
-const editablePriority = ref(props.note.priority);
-const editableStatus = ref(props.note.status || 'To Do');
-const editableType = ref(props.note.type || 'mentor_note');
-const editableCreator = ref(props.note.creatorId || '');
-const editableInKanban = ref(props.note.inKanban !== false);
+const textarea = ref(null), saving = ref(false), saved = ref(false), saveError = ref('');
+const normalize = note => ({ content: note.content || '', priority: note.priority || 'medium', status: note.status || 'To Do', type: note.type || 'mentor_note', creatorId: note.creatorId || '', inKanban: note.inKanban !== false });
+const acknowledged = ref(normalize(props.note));
+const editableContent = ref(acknowledged.value.content), editablePriority = ref(acknowledged.value.priority), editableStatus = ref(acknowledged.value.status);
+const editableType = ref(acknowledged.value.type), editableCreator = ref(acknowledged.value.creatorId), editableInKanban = ref(acknowledged.value.inKanban);
+const draft = () => ({ content: editableContent.value, priority: editablePriority.value, status: editableStatus.value, type: editableType.value, creatorId: editableCreator.value, inKanban: editableInKanban.value });
+const hasChanges = computed(() => JSON.stringify(draft()) !== JSON.stringify(acknowledged.value));
 const priorityLabel = computed(() => ({ low: 'Low', medium: 'Medium', high: 'High', critical: 'Critical' }[editablePriority.value] || 'Medium'));
-const priorityClass = computed(() => ({
-    low: 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100',
-    medium: 'bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-100',
-    high: 'bg-amber-300 text-amber-950 dark:bg-amber-800 dark:text-amber-50',
-    critical: 'bg-[#dc2626] text-white uppercase tracking-wide',
-}[editablePriority.value]));
-
-watch(() => props.note, (note) => {
-    editableContent.value = note.content;
-    editablePriority.value = note.priority;
-    editableStatus.value = note.status || 'To Do';
-    editableType.value = note.type || 'mentor_note';
-    editableCreator.value = note.creatorId || '';
-    editableInKanban.value = note.inKanban !== false;
+const priorityClass = computed(() => ({ low: 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100', medium: 'bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-100', high: 'bg-amber-300 text-amber-950 dark:bg-amber-800 dark:text-amber-50', critical: 'bg-[#dc2626] text-white uppercase tracking-wide' }[editablePriority.value]));
+function applyNote(note) {
+    const value = normalize(note); acknowledged.value = value;
+    editableContent.value = value.content; editablePriority.value = value.priority; editableStatus.value = value.status;
+    editableType.value = value.type; editableCreator.value = value.creatorId; editableInKanban.value = value.inKanban;
     nextTick(autoResize);
-}, { deep: true });
+}
+watch(() => props.note, note => { if (!saving.value && !hasChanges.value) applyNote(note); }, { deep: true });
 onMounted(() => nextTick(autoResize));
-
 function autoResize() {
     if (!textarea.value) return;
-    textarea.value.style.height = 'auto';
-    textarea.value.style.height = textarea.value.scrollHeight + 'px';
+    textarea.value.style.height = 'auto'; textarea.value.style.height = textarea.value.scrollHeight + 'px';
 }
-function updateNote() {
-    if (props.readOnly) return;
-    if (editableContent.value === props.note.content && editablePriority.value === props.note.priority &&
-        editableStatus.value === (props.note.status || 'To Do') &&
-        editableType.value === (props.note.type || 'mentor_note') && editableCreator.value === (props.note.creatorId || '') &&
-        editableInKanban.value === (props.note.inKanban !== false)) return;
-    emit('update', { ...props.note, content: editableContent.value, priority: editablePriority.value,
-        status: editableStatus.value, type: editableType.value, creatorId: editableCreator.value || null,
-        inKanban: editableInKanban.value });
+function updateNote(event) {
+    if (saveError.value && event?.type === 'blur') return;
+    if (props.readOnly || saving.value || !hasChanges.value) return;
+    const submitted = draft(), textChanged = submitted.content !== acknowledged.value.content;
+    saving.value = true; saved.value = false; saveError.value = '';
+    emit('update', { ...props.note, ...submitted, creatorId: submitted.creatorId || null }, (ok, message) => {
+        if (ok) { acknowledged.value = submitted; saved.value = true; }
+        else {
+            // Reloaded server fields remain authoritative; retain unsaved issue text for an explicit retry.
+            const text = editableContent.value; applyNote(props.note);
+            if (textChanged) editableContent.value = text;
+            saveError.value = message || (textChanged ? 'Could not save note. Your text is kept; retry Save note.' : 'Could not save note. Review the latest values and try again.');
+        }
+        saving.value = false; nextTick(autoResize);
+    });
 }
 </script>
 

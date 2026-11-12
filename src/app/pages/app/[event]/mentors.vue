@@ -1,10 +1,10 @@
 <template>
-    <div class="max-w-3xl mx-auto space-y-6 pb-8">
+    <div class="max-w-7xl mx-auto space-y-4 pb-8">
         <div>
             <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Event mentors</h1>
             <p class="text-sm text-gray-500 dark:text-gray-400 mt-2">Add yourself here, then select your name as the creator of a help request or mentor note in Teams or Kanban.</p>
         </div>
-        <form v-if="canEdit" @submit.prevent="addMentor" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5 space-y-3">
+        <form v-if="canEdit" @submit.prevent="addMentor" class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3 space-y-2">
             <label for="mentor-name" class="block text-sm font-medium">Your name</label>
             <div class="flex flex-col gap-3 sm:flex-row">
                 <input id="mentor-name" v-model="name" required maxlength="80" :disabled="saving" autocomplete="name"
@@ -16,10 +16,10 @@
         <p v-else class="text-sm text-gray-500 dark:text-gray-400">Log in with the event password to add yourself.</p>
         <p v-if="error" role="alert" class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
         <p role="status" aria-live="polite" class="text-sm text-gray-500 dark:text-gray-400">{{ feedback }}</p>
-        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-5">
+        <div class="rounded-xl border border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-800 p-3">
             <h2 class="font-semibold mb-3">Mentors ({{ mentors.length }})</h2>
-            <ul v-if="mentors.length" class="divide-y divide-gray-100 dark:divide-gray-700">
-                <li v-for="mentor in mentors" :key="mentor.id" class="py-3 flex items-center gap-3">
+            <ul v-if="mentors.length" data-testid="mentor-grid" class="grid grid-cols-1 gap-2 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+                <li v-for="mentor in mentors" :key="mentor.id" class="min-h-11 rounded-lg border border-gray-100 px-3 py-2 flex items-center gap-2 dark:border-gray-700">
                     <Icon name="heroicons:user-circle" class="text-bluey-500 shrink-0" size="24px" />
                     <span class="break-words min-w-0">{{ mentor.name }}</span>
                 </li>

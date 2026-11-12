@@ -1,5 +1,5 @@
 <template>
-    <div class="max-w-7xl mx-auto min-w-0 space-y-5 pb-8">
+    <div class="w-full min-w-0 space-y-3 pb-8">
         <div class="flex flex-wrap items-end justify-between gap-4">
             <div>
                 <h1 class="text-xl font-semibold text-gray-900 dark:text-white">Kanban notes</h1>
@@ -49,36 +49,36 @@
                 {{ status }} <span class="block mt-1 text-xs opacity-75">{{ columnNotes(status).length }}</span>
             </button>
         </nav>
-        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-4 items-start">
+        <div class="grid grid-cols-1 md:grid-cols-2 xl:grid-cols-3 gap-3 items-start">
             <section v-for="status in NOTE_STATUSES" :key="status" :data-testid="`kanban-column-${status}`"
                 :aria-label="status" :aria-busy="busy" @dragenter.prevent="overColumn($event, status)" @dragover.prevent="overColumn($event, status)"
                 @dragleave.self="dragOver = null" @drop.prevent="dropNote($event, status)"
-                class="rounded-xl border p-3 min-h-64 transition-colors"
+                class="rounded-xl border p-2 min-h-32 transition-colors"
                 :class="[status !== mobileStatus ? 'hidden md:block' : '', dragOver === status ? 'border-bluey-500 bg-bluey-50 dark:bg-bluey-950' : 'border-gray-200 dark:border-gray-700 bg-gray-100/70 dark:bg-gray-800/40']">
                 <header class="flex items-center justify-between gap-2 px-1 pb-3">
                     <h2 class="font-semibold text-sm text-gray-700 dark:text-gray-200">{{ status }}</h2>
                     <span class="text-xs font-medium rounded-full bg-white dark:bg-gray-700 text-gray-500 dark:text-gray-300 px-2 py-0.5">{{ columnNotes(status).length }}</span>
                 </header>
-                <div class="space-y-3">
+                <div class="kanban-notes-grid grid items-start gap-2">
                     <article v-for="item in columnNotes(status)" :key="item.note.id" :id="`kanban-note-${item.note.id}`" class="scroll-mt-24" :data-testid="`kanban-note-${item.note.id}`"
                         :draggable="canEdit && !refreshing" @pointerdown.capture="rememberDragOrigin" @dragstart="startDrag($event, item)" @dragend="endDrag"
                         :class="[draggedNoteId === item.note.id ? 'opacity-50' : '', route.query.note === item.note.id ? 'rounded-2xl ring-2 ring-bluey-500 ring-offset-2' : '']">
                         <StickyNote :note="item.note" :team-color="item.team.color" :mentors="data.mentors || []" :read-only="!canEdit || busy"
-                            @update="note => editNote(item, note)" @delete="() => saveNote(item, null)">
+                            @update="(note, done) => editNote(item, note, done)" @delete="() => saveNote(item, null)">
                             <template #header>
                                 <NuxtLink :to="`/app/${encodeURIComponent(currentEvent)}/teams`" data-testid="note-team-name"
-                                    class="min-w-0 flex-1 break-words text-lg font-bold leading-snug">{{ item.team.name }}</NuxtLink>
+                                    class="min-w-0 flex-1 break-words text-base font-bold leading-snug">{{ item.team.name }}</NuxtLink>
                                 <button v-if="canEdit" type="button" :disabled="refreshing" :draggable="!refreshing"
                                     aria-label="Drag note" title="Drag note to a column" data-testid="drag-note"
-                                    class="hidden md:inline-flex min-h-11 shrink-0 items-center gap-1 px-2 text-xs opacity-75 hover:opacity-100 cursor-grab active:cursor-grabbing disabled:opacity-30">
-                                    <Icon name="heroicons:arrows-up-down" size="16px" /><span>Move</span>
+                                    class="hidden md:inline-flex min-h-8 shrink-0 items-center px-1 text-xs opacity-75 hover:opacity-100 cursor-grab active:cursor-grabbing disabled:opacity-30">
+                                    <Icon name="heroicons:arrows-up-down" size="16px" /><span class="sr-only">Move</span>
                                 </button>
                             </template>
                         </StickyNote>
                         <div v-if="canEdit" class="mt-1 flex flex-wrap gap-1" aria-label="Move note">
                             <button v-for="target in NOTE_STATUSES.filter(value => value !== status)" :key="target" type="button"
                                 :disabled="busy" @click="saveNote(item, { status: target })"
-                                class="min-h-11 rounded-lg border border-gray-300 bg-white px-3 text-xs font-semibold hover:bg-gray-100 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
+                                class="min-h-8 rounded-lg border border-gray-300 bg-white px-2 text-xs font-semibold hover:bg-gray-100 disabled:opacity-40 dark:border-gray-600 dark:bg-gray-800 dark:hover:bg-gray-700"
                                 :aria-label="`${target === 'Done' ? 'Complete' : 'Move to ' + target}: ${item.team.name}`">
                                 {{ target === 'Done' ? '✓ Complete' : target === 'To Do' ? '← To Do' : '↔ In Progress' }}
                             </button>
@@ -142,13 +142,15 @@ let refreshTimer;
 onMounted(() => {
     refreshTimer = setInterval(() => {
         if (document.visibilityState !== 'visible' || busy.value ||
+            document.querySelector('[data-note-dirty="true"], [data-note-saving="true"]') ||
             document.activeElement?.closest('input,textarea,select,[contenteditable="true"]')) return;
         refreshBoard();
     }, 15000);
 });
 onBeforeUnmount(() => clearInterval(refreshTimer));
 
-async function refreshBoard() {
+async function refreshBoard(force = false) {
+    if (force !== true && document.querySelector('[data-note-dirty="true"], [data-note-saving="true"]')) { error.value = 'Save your note changes before refreshing.'; return; }
     refreshing.value = true;
     try {
         const response = await $fetch(`/api/event/${encodeURIComponent(currentEvent.value)}`);
@@ -161,12 +163,13 @@ async function refreshBoard() {
     } finally { refreshing.value = false; }
 }
 
-function editNote(item, note) {
+async function editNote(item, note, done) {
     const patch = {};
     for (const key of ['content', 'color', 'priority', 'status', 'type', 'creatorId', 'inKanban']) {
         if (note[key] !== item.note[key]) patch[key] = note[key];
     }
-    if (Object.keys(patch).length) saveNote(item, patch);
+    const ok = Object.keys(patch).length ? await saveNote(item, patch) : true;
+    await nextTick(); done?.(ok);
 }
 
 async function saveNote(item, patch) {
@@ -201,7 +204,7 @@ async function persistNote(item, patch) {
     } catch (failure) {
         error.value = failure.message || 'Unable to save note';
         showToast('Could not save note', error.value);
-        await refreshBoard();
+        await refreshBoard(true);
         return false;
     } finally { saving.value = false; }
 }
@@ -238,3 +241,7 @@ async function dropNote(event, status) {
     if (item && item.note.status !== status) await saveNote(item, { status });
 }
 </script>
+
+<style scoped>
+.kanban-notes-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 240px), 1fr)); }
+</style>

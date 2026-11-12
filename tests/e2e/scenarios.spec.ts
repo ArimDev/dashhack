@@ -246,7 +246,7 @@ test('project abstract pastes plain text safely and can be cleared when editing'
   await page.getByRole('textbox', { name: 'Originalita', exact: true }).fill('');
   await page.getByTestId('submit-team-btn').click();
   await page.reload();
-  await expect(card.getByTestId('team-originality')).toHaveText('Not provided.');
+  await expect(card.getByTestId('team-originality')).toHaveCount(0);
   await expect(card.getByTestId('team-abstract')).toHaveCount(0);
 });
 
