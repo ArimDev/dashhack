@@ -609,3 +609,11 @@ Validation: 123 unit tests / 903 assertions, build/native packaging, direct Chro
 
 
 Modal drag fix — 2026-11-12: source dce1d2c, deployment 08c86722-9e0e-4eb3-8a0c-f7702ac77105 SUCCESS. Shared DialogShell now requires a primary pointer gesture beginning/ending on the backdrop with <=8px movement before dismissing. Selection drags beginning inside the editor preserve modal/draft even if released outside. Production build and isolated Chromium checks pass for drag retention, genuine backdrop click, Escape and Cancel. Live organizer modal verified with a temporary unsaved draft and canceled; no post saved, health ok. No schema, settings, collector or stored-content changes.
+
+## Rebuilt event QR poster — 2026-11-12
+
+At the user's request, generated one combined image and published exactly one approved/pinned organizer wall post: `996b6347-53cb-4f73-ba28-9d15d6fc7147`. The three codes cover the original event website, printed Discord invite and Wi-Fi settings; original link/SSID/password text remains below each code and in the caption. QR patterns use black/white modules, high error correction, six-module white borders and no center logos. All existing posts were retained; no application deployment was required.
+
+Shareable PNG, vector SVG, printable landscape A4 PDF, actual published WebP, receipts and verification records are stored in ignored `.data/share/atthack-2026-qrs/`. Do not commit these artifacts or repeat their Wi-Fi credential in source documentation. Original full-resolution files are separate from the prepared 1920px upload.
+
+Independent jsQR decoding passed for every code in individual PNG/WebP images, combined compressed images at 1920/1280/900/640/390px width, and the actual downloaded public wall image. Discord's public invite API confirms the original invite is valid, non-expiring and targets the event's established guild; no server join or message was sent. iPhone-sized browser verified the pinned post/full reader and preserved caption. The event website target is correct and readable through web retrieval, but direct automated mobile browser navigation returned 455 Blocked, so physical phone navigation is not claimed. Actual on-site Wi-Fi association/password acceptance cannot be tested remotely. No collectors were enabled or queried.
