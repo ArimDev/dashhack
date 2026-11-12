@@ -4,6 +4,8 @@ Read [docs/SQLITE_MIGRATION.md](docs/SQLITE_MIGRATION.md) for the current implem
 
 ## Current baseline
 
+- Moderation cards show **Posted:** with the original post `createdAt` in full browser-local date/time/timezone, including pending/hidden/rejected posts; keep it visible before approval and do not replace it with collection/approval time. Source `c649f1c`, deployment `f6da29c9-d83a-49a5-8880-9834a59d85c4` SUCCESS. See docs/RAILWAY.md.
+
 - PR #9 is merged (`6fe5ae5`, follow-up `30ba01a`) and deployed successfully as `6abd892a-cb78-4623-8e18-cacdb45ed2de` on 2026-11-12. Instagram now uses server-only `NUXT_APIFY_API_KEY` and task `EfFPXy7N73Gc1JTMQ` (#atthack, 10 posts), downloading bounded/re-encoded photos into SQLite. Production interval is explicitly **20 minutes** at the user's request; both X and Instagram remain **ON**, with existing manual approval. The first scheduled attempt imported ten pending posts/photos successfully. The provider's separate schedule is verified disabled. Failed task statuses must retain a safe error/backoff rather than report an older dataset as success. See docs/RAILWAY.md and docs/SOCIAL_WALL_PR6.md; older Captapi/OFF records are historical. Clean CLI source uploads need `--no-gitignore` to retain tracked `bun.lock` (never apply that flag to the private working checkout).
 
 - Production event URI/login name: **ATT Hackathon Junior 2026**; display title **AT&T Hackathon Junior 2026**. Stable ID `97c87fe6-f510-4117-9558-1e2380fdaa6a`. The former Student Hackathon Demo page/API URLs redirect; the existing password and sessions were preserved. Use the new name for event API payloads and login. Do not reseed or recreate the former demo event.

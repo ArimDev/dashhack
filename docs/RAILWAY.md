@@ -1,5 +1,13 @@
 # DashHack on Railway
 
+## Post publication dates during approval — 2026-11-12
+
+Source `c649f1c` is pushed on `feat_alby_design` and deployed as `f6da29c9-d83a-49a5-8880-9834a59d85c4` (**SUCCESS**). Every moderation card shows **Posted:** with its original `createdAt`, full browser-local date/time/timezone, semantic datetime and ISO tooltip. This includes pending Instagram/X/community posts and remains readable for hidden/rejected posts and on phones. Approval does not replace the original published timestamp. No server/schema/dependency changes.
+
+Pinned Bun production build/native packaging and a focused Chromium production-HTTPS check pass: an actual isolated collected Instagram post displays its original date in Europe/Prague, fits desktop/390px layouts and keeps its timestamp after approval. Source-only archive SHA-256: `ff9bd20d3eade1dde062fcfd70bf1855c94f0227133b5253cc4a94fff8219a99`. Live Chromium verifies the deployed date row/ISO metadata and desktop/phone fit using a browser-only pending fixture with an actual public Instagram timestamp. An approved Instagram photo's local event-scoped URL returns valid WebP. Health passes with zero browser errors or production writes.
+
+Private consistent snapshot: `/data/backups/before-pr9-date-20261112-1794492711816.sqlite`; baseline `/data/backups/pr9-date-20261112-baseline.json`. Post-deploy schema 15, integrity ok, zero foreign-key violations; all table counts, media and wall settings match. X/Instagram remain ON and the event's Instagram interval remains 20 minutes. Concurrent live actions changed six posts' approval/hidden/revision fields, one team's project abstract/revision, a Discord form claim and event updated_at. No rows were removed or original post timestamps changed; these user actions were preserved. Unrelated local staged submodules and working changes remain byte-for-byte identical to their pre-task patches.
+
 ## PR #9 Apify Instagram collector — 2026-11-12
 
 GitHub PR #9 is **MERGED** into `feat_alby_design` as `6fe5ae5`, preserving contributor head `33244a0`. Follow-up `30ba01a` prevents FAILED/ABORTED/TIMED-OUT or malformed Apify run responses from reading an older successful dataset and clearing the failure; provider diagnostics remain redacted and retries back off. Local pre-merge backup: `backup/feat-alby-before-pr9-20261112`.
