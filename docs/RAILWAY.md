@@ -1,5 +1,11 @@
 # DashHack on Railway
 
+## Bare top-right QR and #atthack — 2026-11-12
+
+Source `d85344f` was committed/pushed and deployed as `f6cd69ca-30aa-4d4d-bde8-ba61c92c94c1` (**SUCCESS**). The sharing link has a transparent surround with no card, shadow, border or visible label; only its square QR is white. It sits 16px from the safe-area-aware top/right edges and retains gutter-filling desktop sizing. Phones retain an icon-only upload link. The canonical ATT event's title rail now displays #atthack without changing unrelated events. The centered fullscreen QR remains unchanged.
+
+Validation: clean pinned-Bun production build/Sharp packaging; three HTTPS Chromium scenarios across five projector sizes, phones and short landscape; live Chromium verifies white QR/transparent wrapper in light/dark mode, top/right geometry, hashtag, phone link and zero browser errors. Source-only archive SHA-256 `b8c03905e84992cfe65bc40a4ec42fbb50095a97ea520b638c44c22598135709`; runtime source matches the tested build. Snapshot: `/data/backups/before-wall-bare-qr-20261112-1794476720815.sqlite`. Schema remains 15; integrity ok and zero foreign-key violations. No release content/settings/schema/runtime/infrastructure writes. Concurrent live activity changed wall posts/media, panelColumns, Instagram polling metadata, Discord and GitHub audit/flow records; these were preserved rather than restored. Event credentials and all event fields except the active event's updated_at match the snapshot, as do teams/notes/mentors/connections/invitation links. Instagram stays ON and X OFF.
+
 ## 24-hour sessions and cross-tab wall login — 2026-11-12
 
 Source `2ba71df` was committed and pushed to `origin/feat_alby_design`. Deployment `a3873031-5419-4619-b924-e20f5eb91cce` reached **SUCCESS**. New event sessions and both cookies use the same 24-hour lifetime; old sessions/cookies keep their existing deadlines until a fresh login. Login/logout/password/rename actions notify other same-origin tabs with a credential-free local-storage hint. Walls recheck matching-event permission on that hint, focus and pageshow, queueing a recheck if an earlier feed request is still running. Auth-dependent event responses and wall reads use no-store. Different hostnames still have separate cookies; this fix addresses the user's confirmed same-domain/two-tab workflow.
