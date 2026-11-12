@@ -24,39 +24,39 @@ async function expectSwitchPosition(toggle, checked) {
   })).toBe(checked);
 }
 
-test('Instagram collector saves hashtag drafts, preserves conflicts and stops without API credits', async ({ page }) => {
+test('Instagram collector saves interval drafts, preserves conflicts and stops without provider calls', async ({ page }) => {
   const name = await setup(page), encoded = encodeURIComponent(name);
   await page.goto(`/app/${encoded}/settings`);
   const form = page.locator('form').filter({ has: page.getByRole('heading', { name: 'Instagram collector', exact: true }) });
   await expect(form.getByRole('status').filter({ hasText: 'Instagram polling is paused.' })).toBeVisible();
   await expect(form.getByText('Polling OFF', { exact: true })).toBeVisible();
-  await form.getByLabel('Hashtags to query').fill('#hackathon, junior2026\n#hackathon');
+  await expect(form.getByLabel('Hashtags to query')).toHaveCount(0);
   await form.getByLabel('Polling interval (minutes)').fill('12');
-  await changed(page, () => form.getByRole('button', { name: 'Save Queries', exact: true }).click());
+  await changed(page, () => form.getByRole('button', { name: 'Save interval', exact: true }).click());
   let data = (await (await page.request.get(`/api/wall/${encoded}/posts`)).json()).data;
   expect(data.wall.instagramEnabled).toBe(false);
-  expect(data.wall.instagramQueryHashtags).toEqual(['#hackathon', '#junior2026']);
+  expect(data.wall.instagramPollIntervalMinutes).toBe(12);
   expect(data.wall.instagramModerationMode).toBeUndefined();
   expect(data.wall.xEnabled).toBe(false); expect(data.wall.moderationMode).toBe('manual');
   expect((await (await page.request.post(`/api/wall/${encoded}/posts`, { data: { action: 'updateSettings', revision: data.wall.revision, settings: { instagramEnabled: true } } })).json()).status).toBe(200);
   data = (await (await page.request.get(`/api/wall/${encoded}/posts`)).json()).data;
-  await page.reload(); await expect(form.getByLabel('Hashtags to query')).toHaveValue('#hackathon, #junior2026');
+  await page.reload(); await expect(form.getByLabel('Polling interval (minutes)')).toHaveValue('12');
   const toggle = form.getByRole('switch', { name: 'Automatic Instagram polling' });
   await expectSwitchPosition(toggle, true);
   await expect(form.getByText('Polling ON', { exact: true })).toBeVisible();
   await expect(form.getByRole('button', { name: 'Stop Instagram polling', exact: true })).toHaveCount(0);
   await page.request.post(`/api/wall/${encoded}/posts`, { data: { action: 'updateSettings', revision: data.wall.revision, settings: { windowMinutes: 1800 } } });
-  await form.getByLabel('Hashtags to query').fill('#unsaved');
+  await form.getByLabel('Polling interval (minutes)').fill('30');
   const conflict = page.waitForResponse(response => response.url().includes('/posts') && response.request().method() === 'POST');
-  await form.getByRole('button', { name: 'Save Queries', exact: true }).click();
+  await form.getByRole('button', { name: 'Save interval', exact: true }).click();
   expect((await (await conflict).json()).status).toBe(409);
   await expect(form.getByRole('alert')).toContainText('Your draft is kept');
   await changed(page, () => toggle.locator('..').click());
   await expectSwitchPosition(toggle, false);
   await expect(form.getByText('Polling OFF', { exact: true })).toBeVisible();
-  await expect(form.getByLabel('Hashtags to query')).toHaveValue('#unsaved');
+  await expect(form.getByLabel('Polling interval (minutes)')).toHaveValue('30');
   data = (await (await page.request.get(`/api/wall/${encoded}/posts`)).json()).data;
-  expect(data.wall.instagramQueryHashtags).toEqual(['#hackathon', '#junior2026']);
+  expect(data.wall.instagramPollIntervalMinutes).toBe(12);
   expect(data.wall.instagramEnabled).toBe(false);
   expect(JSON.stringify((await (await page.request.get(`/api/wall/${encoded}`)).json()))).not.toContain('instagramQuery');
   await page.setViewportSize({ width: 390, height: 844 });

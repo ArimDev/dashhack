@@ -12,7 +12,7 @@ export { MAX_UPLOAD_BYTES } from '../../shared/wallUploads.js';
 export const WALL_DEFAULTS = Object.freeze({ title: '', enabled: false, publicUploadEnabled: true, moderationMode: 'manual',
     ...WALL_LAYOUT_DEFAULTS, windowMinutes: 1440, idleCycleSeconds: 25, idleWaitSeconds: 5, scrollSpeed: 40, queryHashtags: [],
     xEnabled: false, xPollIntervalMinutes: 5, xQueryHashtags: [], xQueryHandles: [],
-    instagramEnabled: false, instagramPollIntervalMinutes: 5, instagramQueryHashtags: [],
+    instagramEnabled: false, instagramPollIntervalMinutes: 20, instagramQueryHashtags: [],
     blacklistedKeywords: [], blacklistedAuthors: [] });
 const PUBLIC_KEYS = ['title', 'enabled', 'publicUploadEnabled', 'windowMinutes', 'idleCycleSeconds', 'idleWaitSeconds', 'scrollSpeed', 'revision', ...Object.keys(WALL_LAYOUT_DEFAULTS)];
 function fail(message, status = 400) { throw new StorageError(status, message); }

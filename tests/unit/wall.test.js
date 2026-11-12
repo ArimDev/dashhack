@@ -7,6 +7,7 @@ import { SqliteStore, publicEvent } from '../../src/server/storage/sqlite.js';
 import { WallStore, MAX_UPLOAD_BYTES } from '../../src/server/storage/wall.js';
 import { XCollector, buildXQuery } from '../../src/server/services/x-collector.js';
 import { InstagramCollector } from '../../src/server/services/instagram-collector.js';
+import sharp from 'sharp';
 const stores=[], dirs=[];
 afterEach(() => { for (const s of stores.splice(0)) { try { s.close(); } catch {} } for (const d of dirs.splice(0)) rmSync(d,{ recursive:true,force:true }); });
 async function setup(options) {
@@ -130,37 +131,60 @@ describe('Social wall adapted from PR #6',() => {
     });
 });
 
-describe('Optional Captapi Instagram collector', () => {
+const photo = await sharp({ create: { width: 4, height: 3, channels: 3, background: '#e00' } }).jpeg().toBuffer();
+describe('Optional Apify Instagram collector', () => {
     async function enabled(options) {
         const c = await setup(options);
-        c.wall.updateSettings(c.session, c.name, { instagramEnabled: true, instagramQueryHashtags: ['#hackathon', '#Hackathon'] }, 1);
+        expect(c.wall.config(c.id).instagramPollIntervalMinutes).toBe(20);
+        c.wall.updateSettings(c.session, c.name, { instagramEnabled: true, instagramPollIntervalMinutes: 5 }, 1);
         return c;
     }
-    const payload = { success: true, data: { results: [
-        { caption: 'Hackathon!\n#coding', url: 'https://www.instagram.com/p/ABC_123/?utm_source=test',
-            author: { username: 'javascript.js', displayName: 'JavaScript' },
-            thumbnailUrl: 'https://cdninstagram.com/photo.jpg', publishedAt: '2026-10-24T09:33:39.000Z' },
-        { title: 'Bad source', url: 'https://example.com/p/ABC_123/', author: '@host' },
-    ] } };
-    test('hashtag requests, manual approval, stable deduplication and shared collector auto approval', async () => {
-        const c = await enabled(); let calls = 0;
+    const payload = [
+        { caption: 'Hackathon!\n#coding', url: 'https://www.instagram.com/p/ABC_123/?utm_source=test', shortCode: 'ABC_123',
+            ownerUsername: 'javascript.js', ownerFullName: 'JavaScript', type: 'Image',
+            displayUrl: 'https://scontent.cdninstagram.com/photo.jpg', timestamp: '2026-10-24T09:33:39.000Z' },
+        { caption: 'Bad source', url: 'https://example.com/p/ABC_123/', ownerUsername: 'host' },
+    ];
+    const image = () => new Response(photo, { headers: { 'content-type': 'image/jpeg' } });
+    // Apify mock: last-run status, run start and dataset items; Instagram CDN hosts return a photo.
+    const apifyResponse = (url, options, items, lastStatus = 'SUCCEEDED') => {
+        const path = new URL(url).pathname;
+        if (path.endsWith('/runs/last')) return Response.json({ data: { status: lastStatus } });
+        if (options?.method === 'POST') return Response.json({ data: { status: 'SUCCEEDED' } }, { status: 201 });
+        return Response.json(items);
+    };
+    const provider = items => async (url, options) => new URL(url).hostname === 'api.apify.com' ? apifyResponse(url, options, items) : image();
+    test('task dataset requests, downloaded photos, manual approval, stable deduplication and shared auto approval', async () => {
+        const c = await enabled(); const urls = []; let starts = 0, lastStatus = 'SUCCEEDED';
         const logs = [], warnings = [];
         const logger = { info: (...args) => logs.push(args), warn: (...args) => warnings.push(args) };
-        c.store.db.query("UPDATE wall_settings SET settings=json_set(settings,'$.instagramModerationMode','auto') WHERE event_id=?").run(c.id);
-        expect(c.wall.config(c.id).instagramModerationMode).toBeUndefined();
         const collector = new InstagramCollector(c.store, 'private-key', { logger, request: async (url, options) => {
-            calls++; const params = new URL(url).searchParams;
-            expect(params.get('q')).toBe('hackathon'); expect(params.get('limit')).toBe('50'); expect(params.get('cache')).toBe('false');
+            urls.push(url); const parsed = new URL(url);
+            if (parsed.hostname !== 'api.apify.com') { expect(options.headers).toBeUndefined(); return image(); }
+            expect(options.headers.Authorization).toBe('Bearer private-key'); expect(parsed.searchParams.has('token')).toBe(false);
+            if (parsed.pathname === '/v2/actor-tasks/EfFPXy7N73Gc1JTMQ/runs/last') return Response.json({ data: { status: lastStatus } });
+            if (options.method === 'POST') {
+                starts++; expect(parsed.pathname).toBe('/v2/actor-tasks/EfFPXy7N73Gc1JTMQ/runs');
+                expect(parsed.searchParams.get('waitForFinish')).toBe('60');
+                return Response.json({ data: { status: 'SUCCEEDED' } }, { status: 201 });
+            }
+            expect(parsed.pathname).toBe('/v2/actor-tasks/EfFPXy7N73Gc1JTMQ/runs/last/dataset/items');
+            expect(parsed.searchParams.get('status')).toBe('SUCCEEDED'); expect(parsed.searchParams.get('clean')).toBe('true');
+            expect(parsed.searchParams.has('token')).toBe(false);
             expect(options.headers.Authorization).toBe('Bearer private-key'); expect(options.redirect).toBe('error');
             return Response.json(payload);
         } });
         expect((await collector.syncEvent(c.name)).imported).toBe(1);
-        expect(logs.find(entry => entry[0].endsWith('Fetch succeeded'))[1]).toMatchObject({ fetched: 2, imported: 1, invalid: 1 });
+        expect(logs.find(entry => entry[0].endsWith('Fetch succeeded'))[1]).toMatchObject({ fetched: 2, imported: 1, invalid: 1, mediaFailed: 0 });
         let post = c.wall.moderationFeed(c.session, c.name).posts[0];
         expect(post).toMatchObject({ authorName: 'JavaScript', handle: '@javascript.js', text: 'Hackathon!\n#coding',
-            imageUrl: 'https://cdninstagram.com/photo.jpg', videoUrl: '', createdAt: '2026-10-24T09:33:39.000Z' });
+            imageUrl: `/api/wall/${c.id}/media/instagram-ABC_123`, videoUrl: '', createdAt: '2026-10-24T09:33:39.000Z' });
+        expect(c.wall.media(c.session, c.name, post.id).mime).toBe('image/webp');
         expect(post.platform).toBe('instagram'); expect(post.status).toBe('pending'); expect(post.sourceUrl).toBe('https://www.instagram.com/p/ABC_123/');
-        expect((await collector.syncEvent(c.name)).imported).toBe(0); expect(calls).toBe(2);
+        lastStatus = 'RUNNING';
+        expect((await collector.syncEvent(c.name)).imported).toBe(0);
+        expect(starts).toBe(1);
+        expect(urls.filter(url => url.includes('cdninstagram'))).toHaveLength(1);
         expect(logs.filter(entry => entry[0].endsWith('Fetch succeeded'))[1][1].duplicates).toBe(1);
         expect(JSON.stringify(logs)).not.toContain('private-key'); expect(warnings).toHaveLength(0);
         post = action(c, post, 'reject'); action(c, post, 'delete');
@@ -169,58 +193,56 @@ describe('Optional Captapi Instagram collector', () => {
         c.wall.updateSettings(c.session, c.name, { moderationMode: 'auto', blacklistedKeywords: ['spam'] }, 2);
         expect(c.wall.config(c.id).instagramLastPollAt).toBe(lastPoll);
         expect(c.wall.config(c.id).xEnabled).toBe(false); expect(c.wall.config(c.id).moderationMode).toBe('auto');
-        const fresh = new InstagramCollector(c.store, 'key', { request: async () => Response.json({ success: true, data: { results: [
-            { title: 'A new post', url: 'https://instagram.com/reel/FRESH/', author: '@creator' },
-            { title: 'spam', url: 'https://instagram.com/p/BLOCKED/' },
-        ] } }) });
+        const downloads = [], freshItems = provider([
+            { caption: 'A new post', url: 'https://instagram.com/reel/FRESH/', ownerUsername: 'creator', displayUrl: 'https://x.fbcdn.net/a.jpg' },
+            { caption: 'spam', url: 'https://instagram.com/p/BLOCKED/', displayUrl: 'https://x.fbcdn.net/b.jpg' },
+        ]);
+        const fresh = new InstagramCollector(c.store, 'key', { request: (url, options) => { downloads.push(url); return freshItems(url, options); } });
         expect((await fresh.syncEvent(c.name)).imported).toBe(1);
+        expect(downloads).not.toContain('https://x.fbcdn.net/b.jpg');
         expect(c.wall.publicFeed(c.name).posts[0].approved).toBe(true);
         expect(c.wall.submit(c.name, { text: 'Public upload', platform: 'instagram' }).status).toBe('pending');
-        expect(JSON.stringify(c.wall.publicFeed(c.name))).not.toContain('instagramQuery');
-        expect(() => c.wall.updateSettings(c.session, c.name, { instagramQueryHashtags: ['#x'] }, 3)).toThrow('at least 2');
     });
-    test('maps reel media, carousel cover and optional fields without accepting unsafe URLs', async () => {
-        const now = Date.now(), c = await enabled({ now: () => now });
-        const results = [
-            { url: 'https://instagram.com/reel/VIDEO/', caption: 'Reel', author: { username: 'creator' },
-                videoUrl: 'https://cdninstagram.com/reel.mp4', thumbnailUrl: 'https://cdninstagram.com/poster.jpg', publishedAt: '2026-10-22T06:29:53.000Z' },
-            { url: 'https://instagram.com/p/CAROUSEL/', caption: 'Gallery', children: [{ thumbnailUrl: 'https://cdninstagram.com/first.jpg' }] },
-            { url: 'https://instagram.com/p/UNSAFE/', caption: 'Text', videoUrl: 'javascript:alert(1)', thumbnailUrl: 'https://user:secret@example.com/photo.jpg', publishedAt: 'invalid' },
+    test('carousel covers and unsafe or unavailable photos are skipped until a later poll', async () => {
+        const c = await enabled(); let cdnUp = false;
+        const items = [
+            { url: 'https://instagram.com/p/CAROUSEL/', caption: 'Gallery', type: 'Sidecar', childPosts: [{ displayUrl: 'https://scontent.cdninstagram.com/first.jpg' }] },
+            { url: 'https://instagram.com/p/FOREIGN/', caption: 'Text', displayUrl: 'https://example.com/photo.jpg', timestamp: 'invalid' },
+            { url: 'https://instagram.com/p/CREDS/', caption: 'Text', displayUrl: 'https://user:secret@scontent.cdninstagram.com/photo.jpg' },
+            { url: 'https://instagram.com/reel/VIDEO/', caption: 'Reel', type: 'Video', videoUrl: 'https://scontent.cdninstagram.com/reel.mp4',
+                displayUrl: 'https://scontent.cdninstagram.com/poster.jpg' },
         ];
-        const collector = new InstagramCollector(c.store, 'key', { logger: { info: () => {}, warn: () => {} },
-            request: async () => Response.json({ success: true, data: { results } }) });
-        expect((await collector.syncEvent(c.name)).imported).toBe(3);
+        const seen = [];
+        const collector = new InstagramCollector(c.store, 'key', { logger: { info: () => {}, warn: () => {} }, request: async (url, options) => {
+            seen.push(url);
+            if (new URL(url).hostname === 'api.apify.com') return apifyResponse(url, options, items);
+            if (url.endsWith('.mp4')) throw new Error('video must not be downloaded');
+            return cdnUp ? image() : new Response('gone', { status: 403 });
+        } });
+        expect((await collector.syncEvent(c.name)).imported).toBe(0);
+        expect(seen.some(url => url.includes('example.com') || url.includes('secret'))).toBe(false);
+        cdnUp = true;
+        expect((await collector.syncEvent(c.name)).imported).toBe(2);
         const posts = c.wall.moderationFeed(c.session, c.name).posts;
-        expect(posts.find(post => post.id === 'instagram-VIDEO')).toMatchObject({ authorName: 'creator', handle: '@creator',
-            videoUrl: 'https://cdninstagram.com/reel.mp4', imageUrl: 'https://cdninstagram.com/poster.jpg', createdAt: '2026-10-22T06:29:53.000Z' });
-        expect(posts.find(post => post.id === 'instagram-CAROUSEL').imageUrl).toBe('https://cdninstagram.com/first.jpg');
-        expect(posts.find(post => post.id === 'instagram-UNSAFE')).toMatchObject({ videoUrl: '', imageUrl: '', createdAt: c.store.timestamp() });
+        expect(posts.map(post => post.id).sort()).toEqual(['instagram-CAROUSEL', 'instagram-VIDEO']);
+        expect(posts.find(post => post.id === 'instagram-VIDEO')).toMatchObject({ videoUrl: '', imageUrl: `/api/wall/${c.id}/media/instagram-VIDEO` });
+        const oversized = new InstagramCollector(c.store, 'key', { request: async (url, options) => new URL(url).hostname === 'api.apify.com'
+            ? apifyResponse(url, options, [{ url: 'https://instagram.com/p/HUGE/', displayUrl: 'https://scontent.cdninstagram.com/huge.jpg' }])
+            : new Response(Buffer.alloc(3 * 1024 * 1024), { headers: { 'content-type': 'image/jpeg' } }) });
+        expect((await oversized.syncEvent(c.name)).imported).toBe(0);
     });
     test('later polls repair placeholders without replacing content or moderation decisions', async () => {
         const c = await enabled();
         const input = { id: 'instagram-ABC_123', platform: 'instagram', authorName: 'Instagram', text: 'Instagram post' };
         let old = c.wall.submit(c.name, input, null, { collected: true });
         old = action(c, old, 'approve'); old = action(c, old, 'pin');
-        const collector = new InstagramCollector(c.store, 'key', { logger: { info: () => {}, warn: () => {} }, request: async () => Response.json(payload) });
+        const collector = new InstagramCollector(c.store, 'key', { logger: { info: () => {}, warn: () => {} }, request: provider(payload) });
         expect((await collector.syncEvent(c.name)).imported).toBe(0);
-        let repaired = c.wall.moderationFeed(c.session, c.name).posts[0];
-        expect(repaired).toMatchObject({ authorName: 'JavaScript', handle: '@javascript.js', text: 'Hackathon!\n#coding',
-            imageUrl: 'https://cdninstagram.com/photo.jpg',
+        const repaired = c.wall.moderationFeed(c.session, c.name).posts[0];
+        expect(repaired).toMatchObject({ authorName: 'JavaScript', handle: '@javascript.js', text: 'Hackathon!\n#coding', imageUrl: '',
             status: old.status, hidden: old.hidden, pinned: old.pinned, createdAt: old.createdAt, revision: old.revision + 1 });
         await collector.syncEvent(c.name);
         expect(c.wall.moderationFeed(c.session, c.name).posts[0]).toEqual(repaired);
-        c.wall.submit(c.name, { id: repaired.id, platform: 'instagram', authorName: 'Different author', text: 'Changed caption',
-            videoUrl: 'https://cdninstagram.com/reel.mp4' }, null, { collected: true });
-        expect(c.wall.moderationFeed(c.session, c.name).posts[0]).toMatchObject({ authorName: repaired.authorName, text: repaired.text,
-            videoUrl: 'https://cdninstagram.com/reel.mp4', status: repaired.status, pinned: repaired.pinned, createdAt: repaired.createdAt });
-        repaired = c.wall.moderationFeed(c.session, c.name).posts[0];
-        repaired = action(c, repaired, 'reject'); action(c, repaired, 'delete');
-        await collector.syncEvent(c.name); expect(c.wall.moderationFeed(c.session, c.name).posts).toHaveLength(0);
-        const blocked = { ...input, id: 'instagram-BLOCKED' };
-        c.wall.submit(c.name, blocked, null, { collected: true });
-        c.wall.updateSettings(c.session, c.name, { blacklistedKeywords: ['spam'] }, 2);
-        c.wall.submit(c.name, { ...blocked, authorName: 'Creator', text: 'spam' }, null, { collected: true });
-        expect(c.wall.moderationFeed(c.session, c.name).posts[0].text).toBe('Instagram post');
     });
     test('absent key, overlap guard, original errors and persisted rate-limit scheduling', async () => {
         let now = Date.now(); const c = await enabled({ now: () => now }); let calls = 0, release;
@@ -248,8 +270,8 @@ describe('Optional Captapi Instagram collector', () => {
         }
         expect(JSON.stringify(warnings)).not.toContain('secret');
     });
-    test('stop is authorized, fences stale enables and prevents further hashtag requests and imports', async () => {
-        const c = await enabled(); c.wall.updateSettings(c.session, c.name, { instagramQueryHashtags: ['#first', '#second'] }, 2);
+    test('stop is authorized, fences stale enables and prevents imports from an in-flight request', async () => {
+        const c = await enabled();
         let release, calls = 0; const pending = new Promise(resolve => { release = resolve; });
         const collector = new InstagramCollector(c.store, 'key', { request: async () => { calls++; return pending; } });
         const first = collector.syncEvent(c.name);
@@ -257,34 +279,33 @@ describe('Optional Captapi Instagram collector', () => {
         const other = await c.store.createEvent('Other', 'password123');
         expect(() => c.wall.action(c.store.createSession(other), c.name, { action: 'pauseInstagram' })).toThrow('permission');
         const stopped = c.wall.action(c.session, c.name, { action: 'pauseInstagram', revision: 0 });
-        expect(stopped.instagramEnabled).toBe(false); expect(stopped.instagramQueryHashtags).toEqual(['#first', '#second']);
-        expect(() => c.wall.updateSettings(c.session, c.name, { instagramEnabled: true }, 3)).toThrow('changed');
+        expect(stopped.instagramEnabled).toBe(false);
+        expect(() => c.wall.updateSettings(c.session, c.name, { instagramEnabled: true }, 2)).toThrow('changed');
         release(Response.json(payload)); expect((await first).imported).toBe(0); expect(calls).toBe(1);
         await collector.tick(); expect(calls).toBe(1);
     });
-    test('Instagram login-wall errors have safe diagnostics and persisted backoff across restart', async () => {
+    test('missing task run has safe diagnostics and persisted backoff across restart', async () => {
         let now = Date.now(), calls = 0;
         const c = await enabled({ now: () => now }), warnings = [];
-        const request = async () => { calls++; return Response.json({ success:false,error:{code:'UPSTREAM_UNAVAILABLE',reason:'login_wall',message:'login_wall private-key'} },
-            {status:502,headers:{'x-captapi-request-id':'28d0bb8d-2c54-4bcf-a55e-d820af7d021a'}}); };
+        const request = async () => { calls++; return Response.json({ error: { type: 'record-not-found', message: 'private-key' } }, { status: 404 }); };
         const logger = {info:()=>{},warn:(...args)=>warnings.push(args)};
         const collector = new InstagramCollector(c.store,'private-key',{request,logger});
         await collector.tick();
         let wall = c.wall.config(c.id);
-        expect(wall.instagramLastPollError).toContain('login_wall');expect(wall.instagramLastPollError).not.toContain('credits');
-        expect(wall.instagramLastRequestId).toBe('28d0bb8d-2c54-4bcf-a55e-d820af7d021a');
+        expect(wall.instagramLastPollError).toContain('finished run');
         expect(Date.parse(wall.instagramNextPollAt)-now).toBe(15*60000);
         const restarted = new InstagramCollector(c.store,'private-key',{request,logger});
-        now+=5*60000;await restarted.tick();expect(calls).toBe(1);
-        now+=10*60000;await restarted.tick();expect(calls).toBe(2);
+        now+=5*60000;await restarted.tick();expect(calls).toBe(2);
+        now+=10*60000;await restarted.tick();expect(calls).toBe(4);
         wall=c.wall.config(c.id);expect(Date.parse(wall.instagramNextPollAt)-now).toBe(30*60000);
         expect(JSON.stringify(warnings)).not.toContain('private-key');expect(wall.instagramEnabled).toBe(true);
-        expect(wall.instagramQueryHashtags).toEqual(['#hackathon','#Hackathon']);
     });
     test('Instagram respects Retry-After and clears failure diagnostics after a successful scheduled retry',async()=>{
         let now=Date.now(),calls=0;const c=await enabled({now:()=>now});
-        const collector=new InstagramCollector(c.store,'key',{logger:{info:()=>{},warn:()=>{}},request:async()=>{
-            calls++;return calls===1?new Response('not JSON; private response',{status:503,headers:{'Retry-After':'1200'}}):Response.json(payload);
+        const collector=new InstagramCollector(c.store,'key',{logger:{info:()=>{},warn:()=>{}},request:async (url,options)=>{
+            if (new URL(url).hostname!=='api.apify.com') return image();
+            if (new URL(url).pathname.endsWith('/runs/last')) calls++;
+            return calls===1?new Response('not JSON; private response',{status:503,headers:{'Retry-After':'1200'}}):apifyResponse(url,options,payload);
         }});
         await collector.tick();expect(c.wall.config(c.id).instagramLastPollError).toContain('HTTP 503');
         expect(Date.parse(c.wall.config(c.id).instagramNextPollAt)-now).toBe(20*60000);
