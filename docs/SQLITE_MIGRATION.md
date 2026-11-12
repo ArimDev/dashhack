@@ -1,5 +1,11 @@
 # SQLite migration and resource reduction
 
+## Wall presentation follow-up — 2026-11-12
+
+Schema 14 adds wall_posts.media_layout JSON with an empty default, and schema 15 adds independent text_display JSON with an empty default. Startup applies each migration transactionally. Existing post text/media/moderation/revisions remain unchanged. Photo framing stores a selected aspect ratio and bounded horizontal/vertical focal point; optional article previews store a boolean and 1–5000 character limit. Missing settings use original photo proportions and a 100-character preview, except pinned manual organizer posts show complete text. Authenticated revision-checked post edits accept all three platforms; framing and preview changes share the post-edit transaction. Event layout controls remain in existing wall-settings JSON and require no additional table/service.
+
+Clean production build with Bun 1.3.2 and native-image packaging passes. Windows Bun 1.4.4 validates 126 unit tests / 964 assertions; eight focused Chromium production scenarios and separate HTTPS production smoke pass. Bun 1.3.2 Windows cleanup/streaming-test limitations are documented in SOCIAL_WALL_PR6.md. Snapshot and production fingerprint verification are recorded in RAILWAY.md.
+
 Completed locally on 2026-11-07 for a small private event. The app retains Nuxt/Vue and the existing design, using Bun's embedded SQLite instead of MongoDB. No Go rewrite was performed.
 
 ## Rebase

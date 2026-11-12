@@ -118,7 +118,7 @@ export class SqliteStore {
             PRAGMA mmap_size = 0;
         `);
         const version = this.db.query('PRAGMA user_version').get().user_version;
-        if (version > 13) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
+        if (version > 15) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
         if (version === 0) this.db.transaction(() => {
             this.db.exec(`
                 CREATE TABLE events (
@@ -312,6 +312,14 @@ export class SqliteStore {
                 this.db.exec("ALTER TABLE wall_posts ADD COLUMN rich_text TEXT NOT NULL DEFAULT '[]'");
             }
             this.db.exec('PRAGMA user_version = 13');
+        })();
+        if (version < 14) this.db.transaction(() => {
+            if (!this.db.query('PRAGMA table_info(wall_posts)').all().some(column => column.name === 'media_layout')) this.db.exec("ALTER TABLE wall_posts ADD COLUMN media_layout TEXT NOT NULL DEFAULT '{}' ");
+            this.db.exec('PRAGMA user_version = 14');
+        })();
+        if (version < 15) this.db.transaction(() => {
+            if (!this.db.query('PRAGMA table_info(wall_posts)').all().some(column => column.name === 'text_display')) this.db.exec("ALTER TABLE wall_posts ADD COLUMN text_display TEXT NOT NULL DEFAULT '{}' ");
+            this.db.exec('PRAGMA user_version = 15');
         })();
     }
 

@@ -21,7 +21,7 @@ export default defineNuxtConfig({
 		// Run the streaming Node-compatible server on Bun; the Bun preset eagerly buffers request bodies.
 		preset: "node-server",
 		// Bundle shared field definitions for both dev workers and production.
-		externals: { inline: [/\/shared\/(?:noteStatuses|startupMatrix|wallUploads|githubAppSetup|wallDisplay|eventRoutes|wallText)\.js$/] },
+		externals: { inline: [/\/shared\/(?:noteStatuses|startupMatrix|wallUploads|githubAppSetup|wallDisplay|eventRoutes|wallText|wallMediaLayout|wallTextDisplay)\.js$/] },
 	},
 
 	runtimeConfig: {

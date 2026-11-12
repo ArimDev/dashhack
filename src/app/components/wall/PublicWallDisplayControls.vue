@@ -3,6 +3,9 @@
     <section v-if="open" id="wall-display-settings" aria-label="Wall display settings"
       class="mb-2 flex max-h-[calc(100dvh-5rem)] w-72 max-w-[calc(100vw-1.5rem)] flex-col gap-3 overflow-y-auto rounded-2xl border border-slate-300 bg-white p-4 shadow-xl dark:border-white/15 dark:bg-slate-900">
       <h2 class="text-sm font-bold">Wall display settings</h2>
+      <WallLayoutControls :settings="layout" :disabled="layoutSaving || speedSaving" @change="$emit('set-layout', $event)" />
+      <p v-if="layoutSaving" role="status" class="text-xs text-slate-500">Saving layout…</p>
+      <p v-if="layoutError" role="alert" class="text-xs text-red-600 dark:text-red-400">{{ layoutError }}</p>
       <label class="relative flex min-h-11 cursor-pointer items-center justify-between gap-3 rounded-xl border border-slate-300 px-3 text-sm dark:border-white/15">
         <span>Auto-scroll</span>
         <input :checked="scrollingEnabled" type="checkbox" role="switch" aria-label="Enable auto-scroll layout"
@@ -45,6 +48,9 @@
 <script setup>
 import { WALL_SPEED_PRESETS as presets } from "../../../shared/wallDisplay.js";
 defineProps({
+  layout: { type: Object, required: true },
+  layoutSaving: Boolean,
+  layoutError: { type: String, default: '' },
   scrollSpeed: { type: Number, default: 40 },
   speedSaving: Boolean,
   speedError: { type: String, default: '' },
@@ -55,7 +61,7 @@ defineProps({
   qrAvailable: Boolean,
   postCount: { type: Number, required: true },
 });
-defineEmits(['set-speed', 'toggle-scroll', 'toggle-fullscreen', 'toggle-theme', 'toggle-qr', 'open-qr']);
+defineEmits(['set-layout', 'set-speed', 'toggle-scroll', 'toggle-fullscreen', 'toggle-theme', 'toggle-qr', 'open-qr']);
 const open = ref(false), controls = ref(null), toggle = ref(null);
 function dismiss(event) {
   if (!open.value) return;

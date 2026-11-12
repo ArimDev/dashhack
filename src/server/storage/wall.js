@@ -1,17 +1,20 @@
+import { validateWallTextDisplay } from '../../shared/wallTextDisplay.js';
+import { validateWallMediaLayout } from '../../shared/wallMediaLayout.js';
 import { randomUUID } from 'node:crypto';
 import { StorageError } from './sqlite.js';
 import { statfsSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { WALL_LAYOUT_DEFAULTS, WALL_LAYOUT_FIELDS } from '../../shared/wallDisplay.js';
 import { validateWallText, wallTextPlain } from '../../shared/wallText.js';
 import { MAX_UPLOAD_BYTES, WALL_MEDIA_BUDGET, EVENT_MEDIA_BUDGET, VOLUME_RESERVE, MAX_DATABASE_BYTES } from '../../shared/wallUploads.js';
 
 export { MAX_UPLOAD_BYTES } from '../../shared/wallUploads.js';
 export const WALL_DEFAULTS = Object.freeze({ title: '', enabled: false, publicUploadEnabled: true, moderationMode: 'manual',
-    windowMinutes: 1440, idleCycleSeconds: 25, idleWaitSeconds: 5, scrollSpeed: 40, queryHashtags: [],
+    ...WALL_LAYOUT_DEFAULTS, windowMinutes: 1440, idleCycleSeconds: 25, idleWaitSeconds: 5, scrollSpeed: 40, queryHashtags: [],
     xEnabled: false, xPollIntervalMinutes: 5, xQueryHashtags: [], xQueryHandles: [],
     instagramEnabled: false, instagramPollIntervalMinutes: 5, instagramQueryHashtags: [],
     blacklistedKeywords: [], blacklistedAuthors: [] });
-const PUBLIC_KEYS = ['title', 'enabled', 'publicUploadEnabled', 'windowMinutes', 'idleCycleSeconds', 'idleWaitSeconds', 'scrollSpeed', 'revision'];
+const PUBLIC_KEYS = ['title', 'enabled', 'publicUploadEnabled', 'windowMinutes', 'idleCycleSeconds', 'idleWaitSeconds', 'scrollSpeed', 'revision', ...Object.keys(WALL_LAYOUT_DEFAULTS)];
 function fail(message, status = 400) { throw new StorageError(status, message); }
 function string(value = '', max = 1000) {
     if (typeof value !== 'string' || value.length > max) fail('Invalid wall text');
@@ -56,7 +59,8 @@ function validateSettings(patch) {
             next[key] = list(value, key.toLowerCase().includes('hashtag') ? 'hashtag' : key === 'xQueryHandles' ? 'handle' : 'filter');
             if (key === 'instagramQueryHashtags' && next[key].some(term => [...term.slice(1)].length < 2)) fail('Instagram hashtags need at least 2 characters');
         } else {
-            const [min, max] = key === 'scrollSpeed' ? [10, 100] : key === 'windowMinutes' ? [15, 10080] : ['xPollIntervalMinutes', 'instagramPollIntervalMinutes'].includes(key) ? [1, 180] : [5, 600];
+            const layout = WALL_LAYOUT_FIELDS.find(field => field.key === key);
+            const [min, max] = layout ? [layout.min, layout.max] : key === 'scrollSpeed' ? [10, 100] : key === 'windowMinutes' ? [15, 10080] : ['xPollIntervalMinutes', 'instagramPollIntervalMinutes'].includes(key) ? [1, 180] : [5, 600];
             if (!Number.isInteger(value) || value < min || value > max) fail(`Invalid ${key} (${min}–${max})`);
             next[key] = value;
         }
@@ -87,6 +91,8 @@ function normalize(row) {
         imageUrl: row.image_url, videoUrl: row.video_url, sourceUrl: row.source_url, status: row.status,
         approved: row.status === 'approved', hidden: !!row.hidden, pinned: !!row.pinned,
         revision: row.revision, createdAt: row.created_at,
+        ...(row.text_display && row.text_display !== '{}' ? { textDisplay: JSON.parse(row.text_display) } : {}),
+        ...(row.media_layout && row.media_layout !== '{}' ? { mediaLayout: JSON.parse(row.media_layout) } : {}),
         ...(row.rich_text && row.rich_text !== '[]' ? { richText: JSON.parse(row.rich_text) } : {}) };
 }
 export class WallStore {
@@ -238,6 +244,10 @@ export class WallStore {
             // Even when already OFF, advance the revision to fence out an older in-flight enable.
             return this.updateSettings(session, name, { [input.action === 'pauseInstagram' ? 'instagramEnabled' : 'xEnabled']: false }, current.revision);
         }
+        if (input.action === 'setLayout') {
+            if (!input.settings || typeof input.settings !== 'object' || Array.isArray(input.settings) || !Object.keys(input.settings).length || Object.keys(input.settings).some(key => !Object.hasOwn(WALL_LAYOUT_DEFAULTS, key))) fail('Invalid panel layout');
+            return this.updateSettings(session,name,input.settings,input.revision);
+        }
         if (input.action === 'updateSettings') return this.updateSettings(session,name,input.settings,input.revision);
         if (input.action === 'setMode') return this.updateSettings(session,name,{ moderationMode: input.mode },input.revision);
         return this.db.transaction(() => {
@@ -245,7 +255,10 @@ export class WallStore {
             if (!post) fail('Post not found',404);
             if (input.revision !== post.revision) fail('Post changed. Reload before trying again.',409);
             if (input.action === 'edit') {
-                if (post.platform !== 'manual') fail('Only community posts can be edited.');
+                let textDisplay;
+                if (input.textDisplay !== undefined) { try { textDisplay = validateWallTextDisplay(input.textDisplay); } catch (error) { fail(error.message); } }
+                let framing;
+                if (input.mediaLayout !== undefined) { try { framing = validateWallMediaLayout(input.mediaLayout); } catch (error) { fail(error.message); } }
                 if (typeof input.text !== 'string' || typeof input.authorName !== 'string') fail('Author and text are required.');
                 let richText = [];
                 if (input.richText !== undefined) {
@@ -264,6 +277,8 @@ export class WallStore {
                 if (!text && !imageUrl && !videoUrl) fail('Post description or image is required.');
                 if (media || input.removeImage) this.db.query('DELETE FROM wall_media WHERE event_id=? AND post_id=?').run(id,post.id);
                 if (media) this.db.query('INSERT INTO wall_media(event_id,post_id,mime,data) VALUES(?,?,?,?)').run(id,post.id,media.mime,media.data);
+                if (textDisplay) this.db.query('UPDATE wall_posts SET text_display=? WHERE event_id=? AND id=?').run(JSON.stringify(textDisplay),id,post.id);
+                if (framing) this.db.query('UPDATE wall_posts SET media_layout=? WHERE event_id=? AND id=?').run(JSON.stringify(framing),id,post.id);
                 this.db.query('UPDATE wall_posts SET text=?,rich_text=?,author_name=?,image_url=?,video_url=?,revision=revision+1 WHERE event_id=? AND id=?')
                     .run(text,JSON.stringify(richText),author,imageUrl,videoUrl,id,post.id);
                 return;

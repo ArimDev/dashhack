@@ -1,0 +1,33 @@
+import { test, expect } from '@playwright/test';
+import { randomUUID } from 'node:crypto';
+
+test('moderator edits caption and framing before approval without replacing the photo', async ({ page }) => {
+  const name = `Framing-${randomUUID()}`, password = 'password123';
+  await page.request.post('/api/auth/create', { data: { username: name, password } });
+  await page.request.post('/api/auth/login', { data: { username: name, password } });
+  await page.request.post(`/api/wall/${name}/posts`, { data: { action: 'updateSettings', revision: 0, settings: { enabled: true } } });
+  const png=Buffer.from('iVBORw0KGgoAAAANSUhEUgAAAAIAAAACCAIAAAD91JpzAAAACXBIWXMAAAPoAAAD6AG1e1JrAAAAEklEQVQImWMwaHxg0PiAAUIBACkqBkV72qJcAAAAAElFTkSuQmCC','base64');
+  const post=(await(await page.request.post(`/api/wall/${name}`,{multipart:{authorName:'Student',text:'Original caption',file:{name:'photo.png',mimeType:'image/png',buffer:png}}})).json()).data;
+  const imageUrl=post.imageUrl;
+  await page.goto(`/app/${name}/social-wall`);
+  await page.getByRole('button', { name: 'Edit post', exact: true }).click();
+  const dialog = page.getByRole('dialog', { name: 'Edit post' });
+  await dialog.getByRole('textbox', { name: 'Post text', exact: true }).fill('Edited caption');
+  await dialog.getByLabel('Photo ratio').selectOption('1/1');
+  await dialog.getByLabel('Horizontal photo focus').fill('25');
+  await dialog.getByLabel('Vertical photo focus').fill('80');
+  await expect(dialog.getByAltText('Post photo preview')).toHaveCSS('object-position', '25% 80%');
+  await dialog.getByRole('button', { name: 'Save post', exact: true }).click();
+  await expect(dialog).toHaveCount(0);
+  const data = (await (await page.request.get(`/api/wall/${name}/posts`)).json()).data;
+  const saved = data.posts.find(p => p.id === post.id);
+  expect(saved.mediaLayout).toEqual({ ratio: '1/1', focusX: 25, focusY: 80 });
+  expect(saved.imageUrl).toBe(imageUrl);
+  expect(saved.status).toBe('pending');
+  await page.request.post(`/api/wall/${name}/posts`, { data: { action: 'approve', postId: saved.id, revision: saved.revision } });
+  await page.emulateMedia({ reducedMotion: 'reduce' });
+  await page.goto(`/${name}/wall`);
+  await expect(page.locator('[data-wall-copy="1"] article')).toContainText('Edited caption');
+  await expect(page.locator('[data-wall-copy="1"] img')).toHaveCSS('object-position', '25% 80%');
+  await expect(page.locator('[data-read-post]')).toHaveCount(0);
+});

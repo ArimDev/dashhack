@@ -53,7 +53,7 @@
       </div>
 
       <div class="relative z-10 flex flex-col gap-3 md:items-end md:gap-2">
-        <button v-if="post.platform === 'manual'" type="button" class="min-h-11 rounded-full border border-slate-300 px-4 text-sm font-semibold dark:border-slate-600" @click="emit('edit')">Edit post</button>
+        <button type="button" class="min-h-11 rounded-full border border-slate-300 px-4 text-sm font-semibold dark:border-slate-600" @click="emit('edit')">Edit post</button>
         <div v-if="post.status === 'pending'" class="flex flex-wrap items-center gap-2">
           <button
             class="rounded-full bg-emerald-500 px-4 py-2.5 text-xs font-bold text-white transition hover:bg-emerald-600 active:scale-95"

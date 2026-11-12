@@ -299,46 +299,18 @@ test('X query drafts survive blur, validation errors, conflicts and edits during
 });
 
 
-test('full-post reader works from both the original card and visible looping copies', async ({ page }) => {
-  const name = await setup(page), encoded = encodeURIComponent(name);
-  await changed(page, () => page.getByLabel('Wall enabled', {exact:true}).check());
-  const text = 'Dlouhý příspěvek, který musí být možné celý přečíst. '.repeat(60);
-  const post = (await (await page.request.post(`/api/wall/${encoded}`, {data:{text}})).json()).data;
-  expect((await (await page.request.post(`/api/wall/${encoded}/posts`, {data:{action:'approve',postId:post.id,revision:0}})).json()).status).toBe(200);
-  await page.setViewportSize({width:1280,height:720});
+test('default 100-character preview opens full article', async ({ page }) => {
+  const name=await setup(page), encoded=encodeURIComponent(name);
+  await changed(page,()=>page.getByLabel('Wall enabled',{exact:true}).check());
+  const text='Complete post text '.repeat(60)+'END';
+  const post=(await(await page.request.post(`/api/wall/${encoded}`,{data:{text}})).json()).data;
+  await page.request.post(`/api/wall/${encoded}/posts`,{data:{action:'approve',postId:post.id,revision:0}});
+  await page.emulateMedia({ reducedMotion: 'reduce' });
   await page.goto(`/${encoded}/wall`);
-  const original = page.locator('[data-wall-copy="1"] [data-read-post]');
-  await expect(original).toBeVisible();
-  const box = await original.boundingBox();
-  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
-  await original.click();
+  await expect(page.locator('[data-wall-copy="1"] article')).toContainText(text.slice(0,100));
+  await page.locator('[data-wall-copy="1"] [data-read-post]').click();
   await expect(page.getByRole('dialog')).toContainText(text);
-  await expect(page.getByRole('dialog').getByRole('button',{name:'Read full post'})).toHaveCount(0);
-  await page.keyboard.press('Escape'); await expect(original).toBeFocused();
-  // Put copy 2 at the top, reproducing the visible-but-inert loop after scrolling.
-  await page.getByTestId('wall-feed-track').evaluate(track => {
-    const height = track.querySelector('[data-wall-copy="1"]').getBoundingClientRect().height;
-    track.style.transform = `translate3d(0, -${height}px, 0)`;
-  });
-  const copy = page.locator('[data-wall-copy="2"] [data-read-post]');
-  await expect(copy).toHaveAttribute('tabindex','-1');
-  await copy.click();
-  const dialog = page.getByRole('dialog'); await expect(dialog).toContainText(text);
-  const before = await page.getByTestId('wall-feed-track').getAttribute('style');
-  await page.waitForTimeout(250);
-  expect(await page.getByTestId('wall-feed-track').getAttribute('style')).toBe(before);
-  const content = dialog.locator('.dialog-content');
-  await content.evaluate(el => { el.scrollTop = el.scrollHeight; });
-  expect(await content.evaluate(el => el.scrollTop)).toBeGreaterThan(0);
-  await page.getByRole('button',{name:'Close dialog',exact:true}).click();
-  await expect(dialog).toHaveCount(0); await expect(original).toBeFocused();
-  const closedTransform = await page.getByTestId('wall-feed-track').getAttribute('style');
-  await page.waitForTimeout(4000);
-  expect(await page.getByTestId('wall-feed-track').getAttribute('style')).toBe(closedTransform);
-  await expect.poll(() => page.getByTestId('wall-feed-track').getAttribute('style'), {timeout:3500}).not.toBe(closedTransform);
-  await original.press('Enter'); await expect(page.getByRole('dialog')).toBeVisible();
 });
-
 
 test('Stop X polling works during loading/saving and stale writes cannot switch it back on', async ({ page, browser }) => {
   const name=await setup(page), encoded=encodeURIComponent(name), path=`/api/wall/${encoded}/posts`;

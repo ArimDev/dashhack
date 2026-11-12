@@ -1,5 +1,29 @@
 # Social Wall — PR #6 integration
 
+Deployment validation update (2026-11-12): a clean source copy builds successfully with production-pinned Bun 1.3.2, including Sharp packaging. Local HTTPS production smoke and eight focused Chromium scenarios pass (reader, parked pointer, speed, pinned edits/formatting, student moderation, two-panel layout and phone wall). The default-reader test was corrected to disable animation before Playwright's stability-checked click. The complete unit suite passes on Windows Bun 1.4.4: 126 tests / 964 assertions. Bun 1.3.2's Windows test cleanup locks and streaming-test hang prevent claiming a full pinned-runtime suite pass; no runtime/dependency upgrade is included. This supersedes earlier local build/browser limitations below. Collector timestamps use the browser's locale/timezone with the original ISO value retained in the time element's title/datetime attributes.
+
+## Per-post article preview (latest local follow-up, 2026-11-12)
+
+Supersedes the full-text-only behavior below. Regular X, Instagram and student posts default to a 100-character preview and a Read full article dialog. Pinned organizer/community (`manual`) posts default to complete text, with or without photos. Edit post exposes a shortening toggle and integer character limit (1–5000); explicit per-post choices override defaults. Formatting is retained in previews. Full article view pauses scrolling and returns focus to the accessible original card; decorative loop copies remain pointer-readable. Schema 15 stores optional text-display settings independently of photo framing, preserving original text, media and moderation decisions. Older posts use computed defaults without rewriting their content.
+
+Validation: 126 unit tests / 964 assertions passed, edited Vue components compile, and standalone Chromium checks passed default/custom previews, full article dialog, focus restoration, pinned organizer full text and existing mosaic/photo framing behavior. Full Nuxt browser/build limitations recorded below still apply. No deployment performed.
+
+## Moderation photo framing and complete text (local follow-up, 2026-11-12)
+
+Reviewed the original PR #6 diff via GitHub. It used CSS masonry columns, natural variable card heights, 420px media caps, object-cover images, object-contain videos and 100-character text truncation. The local implementation retains variable-height packing and original media proportions, prioritizes video over its thumbnail, and removes the read-more button/dialog and truncation entirely. QR modal and interaction pause remain.
+
+Moderators can now edit captions/authors/photos on X and Instagram posts as well as student/community posts. Photo framing offers Original (default, no crop), square, 4:3, 3:4, 16:9 and 9:16, with horizontal/vertical focus sliders and live preview. Original bytes/URLs are preserved by framing; it does not approve a post implicitly. Schema 14 adds one media_layout JSON column with empty defaults; event ownership, post revision and framing bounds are validated transactionally.
+
+Bun 1.4.4 was found in the WinGet package directory outside PATH. The updated 124-test unit suite passed; the subsequently added three-source framing test also passed (two layout tests / 47 assertions). Standalone Chromium checks passed complete text, absence of reader controls, layout settings, tall/wide photos, square framing/focus and restoring original proportions. Real Nuxt browser startup timed out with repeated dev-worker restarts. Production client/server compilation passed, but Nitro output preparation fails with EPERM removing the existing src/.output directory. Full build and real Nuxt editor browser tests remain unverified. Nothing deployed.
+
+## Configurable mosaic (local follow-up, 2026-11-12)
+
+The public wall shows complete post text and uses measured masonry rows instead of round-robin columns. Photos/videos keep intrinsic proportions instead of a fixed 4:3 letterbox. The existing 1800px wall cap and automatic column breakpoints remain. Cards retain their DOM identity as media loads and later batches append.
+
+Authenticated display cogwheel and moderation settings expose Panels across (Automatic or 1–6), panel spacing (0–32px), content padding (0–32px), corner radius (0–32px) and post text size (14–32px). Two panels across supports larger cards; zero spacing/corners produces an edge-to-edge mosaic. Phones below 640px use one panel. Pinned text announcements continue spanning the whole feed. Natural photo proportions mean the final bottom edge can be uneven; interior cards stack without row-sized holes.
+
+Settings are stored in existing wall-settings JSON, with defaults for older events and no schema change. `setLayout` permits only these five fields, checks event authorization/revision, returns a small settings response and cannot patch collectors. Browser layout validation passed in a standalone Chromium/Vite harness using actual Vue components and mocked API/media: full text, saved two-column layout, zero gaps/corners, tall/wide intrinsic ratios, packed columns and phone fallback. Vue compilation and diff checks pass. Bun-dependent storage tests and full Nuxt build remain unrun on this host because Bun is unavailable. No deployment or live settings changes performed.
+
 **Upload follow-up:** [WALL_UPLOADS.md](WALL_UPLOADS.md) supersedes this initial review's public-upload format, size/quota and runtime details. Public submissions are now photo/text only, with bounded WebP processing, mobile paste and early streaming guards on Bun.
 
 

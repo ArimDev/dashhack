@@ -8,6 +8,8 @@ export interface WallPost {
     handle: string;
     text: string;
     richText?: { type: 'paragraph' | 'bullet'; runs: { text: string; bold: boolean; italic: boolean }[] }[];
+    mediaLayout?: { ratio: 'original' | '1/1' | '4/3' | '3/4' | '16/9' | '9/16'; focusX: number; focusY: number };
+    textDisplay?: { enabled: boolean; limit: number };
     imageUrl: string;
     videoUrl: string;
     sourceUrl: string;

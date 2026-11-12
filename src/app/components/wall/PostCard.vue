@@ -1,9 +1,10 @@
 <template>
   <article
+    ref="cardElement"
     :data-wall-post-id="post.id"
     :data-projector-announcement="projectorAnnouncement || undefined"
     :style="projectorAnnouncement ? { '--announcement-size': `${announcementSize}px` } : undefined"
-    class="relative mb-4 w-full break-inside-avoid-column overflow-hidden rounded-3xl border shadow-xl transition duration-300 hover:-translate-y-0.5"
+    class="wall-panel relative mb-4 w-full break-inside-avoid-column overflow-hidden rounded-3xl border shadow-xl transition duration-300 hover:-translate-y-0.5"
     :class="
       isBlueCard
         ? 'border-bluey-500/40 bg-bluey-500 text-white hover:border-bluey-500/60 dark:border-bluey-500/50'
@@ -37,24 +38,24 @@
       </Badge>
     </div>
 
-    <div class="p-4 flex flex-col" :class="{ 'projector-copy sm:p-6': projectorAnnouncement }">
-      <WallPostText v-if="post.richText?.length" :blocks="showFullCopy ? post.richText : wallTextPreview(post.richText, textPreviewLength)" :platform="post.platform" :decorative="decorative"
+    <div class="wall-panel-copy p-4 flex flex-col" :class="{ 'projector-copy sm:p-6': projectorAnnouncement }">
+      <WallPostText v-if="post.richText?.length" :blocks="shortened ? wallTextPreview(post.richText, textDisplay.limit) : post.richText" :platform="post.platform" :decorative="decorative"
         class="wall-formatted-copy wrap-break-word leading-relaxed" :class="textOnly ? 'text-base md:text-lg' : ''" />
-      <WallPostText v-else-if="post.text" :text="showFullCopy ? post.text : truncatedText" :platform="post.platform" :decorative="decorative" class="wall-plain-copy leading-relaxed" :class="textOnly ? 'text-base md:text-lg' : 'text-sm'" />
-      <button v-if="!showFullCopy && post.text?.length > textPreviewLength" type="button" data-read-post aria-haspopup="dialog" :tabindex="decorative ? -1 : undefined" @click="emit('read', post)"
-        class="relative z-20 mt-1 inline-flex min-h-11 items-center text-xs font-semibold underline">Read full post</button>
+      <WallPostText v-else-if="post.text" :text="shortened ? post.text.slice(0, textDisplay.limit) + '...' : post.text" :platform="post.platform" :decorative="decorative" class="wall-plain-copy leading-relaxed" :class="textOnly ? 'text-base md:text-lg' : 'text-sm'" />
+      <button v-if="shortened" type="button" data-read-post aria-haspopup="dialog" :tabindex="decorative ? -1 : undefined" class="relative z-20 mt-1 inline-flex min-h-11 items-center text-xs font-semibold underline" @click="emit('read', post)">Read full article</button>
       <div
         v-if="post.imageUrl && !post.videoUrl"
-        ref="mediaContainer" class="mt-3 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800" :class="fullText ? '' : 'aspect-[4/3]'"
+        ref="mediaContainer" class="mt-3 overflow-hidden rounded-2xl bg-slate-100 dark:bg-slate-800"
       >
         <img
           :src="mediaReady ? post.imageUrl : undefined"
+          :style="wallMediaStyle(post.mediaLayout)"
           :alt="post.authorName ? `Post by ${post.authorName}` : 'Shared post image'"
-          :class="fullText ? 'max-h-[60vh] w-full object-contain' : 'h-full w-full object-contain'"
+          :class="fullText ? 'max-h-[60vh] w-full object-contain' : 'block h-auto w-full'"
           loading="lazy" decoding="async"
         />
       </div>
-      <div v-else-if="post.videoUrl" ref="mediaContainer" class="mt-3 overflow-hidden rounded-2xl bg-black" :class="fullText ? '' : 'aspect-[4/3]'">
+      <div v-else-if="post.videoUrl" ref="mediaContainer" class="mt-3 overflow-hidden rounded-2xl bg-black">
         <video
           :src="mediaReady ? post.videoUrl : undefined"
           class="relative z-20"
@@ -64,7 +65,7 @@
           preload="none"
           playsinline
           muted
-          :class="fullText ? 'max-h-[60vh] w-full object-contain' : 'h-full w-full object-contain'"
+          :class="fullText ? 'max-h-[60vh] w-full object-contain' : 'block h-auto w-full'"
         />
       </div>
       <a
@@ -83,12 +84,14 @@
 </template>
 
 <script setup>
-import { observeWallMedia } from "../../utils/lazyWallMedia.js";
+import { wallTextDisplay } from '../../../shared/wallTextDisplay.js';
 import { wallTextPreview } from '../../../shared/wallText.js';
+import { wallMediaStyle } from '../../../shared/wallMediaLayout.js';
+import { observeWallMedia } from "../../utils/lazyWallMedia.js";
 import Badge from "../ui/Badge.vue";
 import { wallPlatformMeta } from "../../utils/wallPlatforms";
 
-const emit = defineEmits(['read']);
+const emit = defineEmits(['height', 'read']);
 const props = defineProps({
   projectorAnnouncement: Boolean,
   fullText: Boolean,
@@ -97,15 +100,22 @@ const props = defineProps({
     type: /** @type {import('vue').PropType<import('../../../shared/wallPost').WallPost>} */ (Object),
     required: true,
   },
-  textPreviewLength: {
-    type: Number,
-    default: 100,
-  },
 });
 
 const mediaContainer = ref(null), mediaReady = ref(props.fullText);
+const textDisplay = computed(() => wallTextDisplay(props.post));
+const shortened = computed(() => !props.fullText && textDisplay.value.enabled && (props.post.text || '').length > textDisplay.value.limit);
 const textOnly = computed(() => !props.post.imageUrl && !props.post.videoUrl);
-const showFullCopy = computed(() => props.fullText || (props.post.pinned && textOnly.value));
+const cardElement = ref(null);
+let cardResizeObserver;
+onMounted(() => {
+  if (props.decorative) return;
+  cardResizeObserver = new ResizeObserver(() => {
+    emit('height', props.post.id, Math.ceil(cardElement.value.getBoundingClientRect().height));
+  });
+  cardResizeObserver.observe(cardElement.value);
+});
+onBeforeUnmount(() => cardResizeObserver?.disconnect());
 const announcementSize = computed(() => {
   const text = props.post.text || '';
   // Short lines and bullet lists also consume space, independently of character count.
@@ -119,12 +129,6 @@ watch(mediaContainer, element => {
 }, { flush: 'post' });
 onBeforeUnmount(() => stopObserving?.());
 
-const truncatedText = computed(() => {
-  const text = props.post?.text || "";
-  if (text.length <= props.textPreviewLength) return text;
-  return `${text.slice(0, props.textPreviewLength)}...`;
-});
-
 const isBlueCard = computed(() => {
   const id = String(props.post?.id || "");
   let hash = 0;
@@ -136,6 +140,10 @@ const isBlueCard = computed(() => {
 </script>
 
 <style scoped>
+.wall-panel { margin-bottom: var(--panel-gap, 16px); border-radius: var(--panel-radius, 24px); }
+.wall-panel-copy { padding: var(--panel-padding, 16px); }
+.wall-panel-copy:not(.projector-copy) > .wall-plain-copy,
+.wall-panel-copy:not(.projector-copy) > .wall-formatted-copy { font-size: var(--panel-text-size, 16px); }
 .wall-formatted-copy :deep(.min-h-5) { line-height: 1.6; }
 .wall-formatted-copy.text-base { font-size: 1rem; }
 @media (min-width: 768px) { .wall-formatted-copy { font-size: 1.125rem; } }

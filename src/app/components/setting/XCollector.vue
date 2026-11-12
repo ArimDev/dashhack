@@ -16,7 +16,7 @@
       <p class="mb-3 text-sm" role="status">{{ !loaded ? 'Checking polling status…' : savedEnabled ? `Automatic X polling is on: every ${savedInterval} minutes while the wall is enabled.` : 'Automatic X polling is paused. Existing posts remain on the wall.' }}</p>
       <p class="mb-3 text-xs">The scheduler checks once a minute. Turning polling off stops future requests; a request already running may finish. The wall refreshes saved posts every 12 seconds without contacting X.</p>
       <p class="mb-3 text-xs">Handle queries collect posts authored by those accounts. Auto-approval applies to all collected posts; public submissions always require approval.</p>
-      <p v-if="lastPoll" class="text-xs">Last attempt: {{ lastPoll }}</p>
+      <p v-if="lastPoll" class="text-xs">Last attempt: <time :datetime="lastPoll" :title="lastPoll">{{ localDateTime(lastPoll) }}</time></p>
       <p v-if="pollError" role="status" class="text-sm text-amber-700">{{ pollError }}</p>
       <div class="grid grid-cols-1 md:grid-cols-2 gap-4 mb-4">
         <div>
@@ -53,6 +53,7 @@
 </template>
 
 <script setup>
+import { localDateTime } from '../../utils/localDateTime.js';
 const eventName = useState('currentEvent');
 const enabled = ref(false), intervalMinutes = ref(5), hashtags = ref(''), handles = ref('');
 const revision = ref(0), configured = ref(false), lastPoll = ref(null), pollError = ref('');

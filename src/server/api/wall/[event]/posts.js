@@ -19,6 +19,7 @@ export default apiHandler(async event => {
             return { status: 200, data: wall.moderationFeed(session,name,body.view || null) };
         }
         body = await readBody(event);
+        if (body.action === 'setLayout') return { status: 200, data: { wall: wall.action(session, name, body) } };
         if (body.action === 'setSpeed') return { status: 200, data: { wall: wall.updateSettings(session, name, { scrollSpeed: body.speed }, body.revision) } };
         wall.action(session,name,body);
         view = body.view || null;

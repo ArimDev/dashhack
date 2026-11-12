@@ -4,6 +4,7 @@
   >
     <h2 class="mb-5 text-xl font-black">Wall settings</h2>
     <div class="space-y-4">
+      <WallLayoutControls :settings="settings" @change="patch => { emit('update:settings', { ...settings, ...patch }); emit('save'); }" />
       <label class="block text-sm text-slate-600 dark:text-slate-300">Wall title
         <input :value="settings.title" maxlength="120" placeholder="Event name" class="mt-2 min-h-11 w-full rounded-xl border border-slate-300 bg-slate-50 px-3 dark:border-slate-600 dark:bg-slate-800" @change="updateSetting('title',$event.target.value); emit('save')" />
       </label>

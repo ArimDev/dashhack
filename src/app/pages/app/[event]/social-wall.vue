@@ -92,10 +92,17 @@
           <legend class="mb-1 text-sm">Post text</legend>
           <ProjectAbstract v-model="editingPost.richText" label="Post text" />
           <p class="text-xs text-slate-500">{{ wallTextPlain(editingPost.richText).length }} / 5000 characters. Pinned posts without a photo show their full text.</p>
+          <label class="flex min-h-11 items-center justify-between gap-3 text-sm">Shorten text with Read full article
+            <input v-model="editingPost.textDisplay.enabled" type="checkbox" />
+          </label>
+          <label class="block text-sm">Preview character limit
+            <input v-model.number="editingPost.textDisplay.limit" type="number" min="1" max="5000" required class="mt-1 min-h-11 w-full rounded-xl border bg-white px-3 dark:bg-slate-900" />
+          </label>
+          <p class="text-xs text-slate-500">Default: 100 characters. Pinned organizer posts show full text unless you enable shortening.</p>
           <label class="block text-sm">Photo (optional)
             <input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif" class="mt-1 block w-full text-sm" @change="selectEditImage" />
           </label>
-          <img v-if="editPreview || (!editingPost.removeImage && editingPost.imageUrl)" :src="editPreview || editingPost.imageUrl" alt="Post photo preview" class="max-h-52 w-full rounded-xl object-contain" />
+          <WallPhotoFraming v-if="editPreview || (!editingPost.removeImage && editingPost.imageUrl)" v-model="editingPost.mediaLayout" :image-url="editPreview || editingPost.imageUrl" />
           <button v-if="editFile || (!editingPost.removeImage && (editingPost.imageUrl || editingPost.videoUrl))" type="button" class="min-h-11 rounded-xl border px-4 text-sm" @click="removeEditImage">Remove image</button>
           <button v-if="editingPost.removeImage && (editingPost.imageUrl || editingPost.videoUrl)" type="button" class="min-h-11 rounded-xl border px-4 text-sm" @click="editingPost.removeImage = false">Keep original image</button>
           <p v-if="preparingImage" role="status">Preparing photo…</p>
@@ -111,6 +118,9 @@
 </template>
 
 <script setup>
+import { wallTextDisplay } from '../../../../shared/wallTextDisplay.js';
+import { WALL_MEDIA_DEFAULT } from '../../../../shared/wallMediaLayout.js';
+import { WALL_LAYOUT_DEFAULTS } from '../../../../shared/wallDisplay.js';
 import { wallTextBlocks, wallTextPlain } from '../../../../shared/wallText.js';
 import { prepareWallPhoto } from '../../../utils/prepareWallPhoto.js';
 definePageMeta({ layout: 'dashboard', middleware: ['routes'] });
@@ -129,7 +139,7 @@ const editFile = shallowRef(null), editPreview = ref(''), preparingImage = ref(f
 function clearEditFile() { if (editPreview.value) URL.revokeObjectURL(editPreview.value); editPreview.value = ''; editFile.value = null; }
 watch(editingPost, () => clearEditFile());
 onBeforeUnmount(clearEditFile);
-function startEdit(post) { if (canEdit.value && !busy.value) { error.value = ''; editingPost.value = { ...post, richText: JSON.parse(JSON.stringify(post.richText || wallTextBlocks(post.text))), removeImage: false }; openMenuId.value = null; } }
+function startEdit(post) { if (canEdit.value && !busy.value) { error.value = ''; editingPost.value = { ...post, textDisplay: wallTextDisplay(post), mediaLayout: { ...WALL_MEDIA_DEFAULT, ...post.mediaLayout }, richText: JSON.parse(JSON.stringify(post.richText || wallTextBlocks(post.text))), removeImage: false }; openMenuId.value = null; } }
 async function selectEditImage(event) {
   const file = event.target.files?.[0], draft = editingPost.value;
   if (!file || busy.value || preparingImage.value) return;
@@ -147,7 +157,7 @@ async function savePost() {
   if (!draft || preparingImage.value) return;
   const text = wallTextPlain(draft.richText);
   if (text.length > 5000) { error.value = 'Post text must be at most 5000 characters.'; return; }
-  if (await change({ action:'edit', postId:draft.id, revision:draft.revision, authorName:draft.authorName, text, richText:draft.richText, removeImage:draft.removeImage }, editFile.value)) editingPost.value = null;
+  if (await change({ action:'edit', postId:draft.id, revision:draft.revision, authorName:draft.authorName, text, richText:draft.richText, removeImage:draft.removeImage, mediaLayout:draft.mediaLayout, textDisplay:draft.textDisplay }, editFile.value)) editingPost.value = null;
 }
 const uploadQrUrl = computed(() => import.meta.client ? `${window.location.origin}/${encodeURIComponent(currentEvent.value)}/wall/upload` : '');
 const tabLabel = { all: 'All', pending: 'Pending', approved: 'Approved', rejected: 'Rejected', pinned: 'Pinned' };
@@ -193,7 +203,7 @@ async function change(payload, file = null) {
   finally { busy.value = false; }
 }
 function saveSettings() {
-  const keys = ['title','scrollSpeed','enabled','publicUploadEnabled','moderationMode','windowMinutes','idleCycleSeconds','idleWaitSeconds'];
+  const keys = [...Object.keys(WALL_LAYOUT_DEFAULTS), 'title','scrollSpeed','enabled','publicUploadEnabled','moderationMode','windowMinutes','idleCycleSeconds','idleWaitSeconds'];
   const patch = Object.fromEntries(keys.map(key => [key,settings.value[key]]));
   patch.blacklistedKeywords = keywordsText.value.split(/[,\n]+/).map(term => term.trim()).filter(Boolean);
   patch.blacklistedAuthors = blacklistAuthorsText.value.split(/[,\n]+/).map(term => term.trim()).filter(Boolean);

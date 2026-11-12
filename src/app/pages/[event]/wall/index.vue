@@ -51,7 +51,8 @@
             :ref="copy === 1 ? setFirstFeedCopy : undefined"
             :aria-hidden="copy > 1 ? 'true' : undefined"
             :data-wall-copy="copy"
-            class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 pb-4"
+            :style="mosaicStyle"
+            class="grid auto-rows-[1px] grid-flow-row-dense grid-cols-1 items-start gap-x-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 pb-4"
           >
             <WallPostCard
               v-for="post in textAnnouncements"
@@ -59,16 +60,18 @@
               :post="post"
               :decorative="copy > 1"
               class="col-span-full"
+              :style="postRowStyle(post)"
+              @height="recordPostHeight"
+              @read="openPost"
               projector-announcement
             />
-            <div v-for="(column, columnIndex) in postColumns" :key="columnIndex" class="min-w-0">
+            <div v-for="post in mosaicPosts" :key="post.id" class="min-w-0" :style="postRowStyle(post)">
               <WallPostCard
-                v-for="post in column"
                 :key="`${copy}-${post.id}`"
                 :post="post"
                 :decorative="copy > 1"
+                @height="recordPostHeight"
                 @read="openPost"
-                :text-preview-length="textPreviewLength"
               />
             </div>
           </div>
@@ -84,9 +87,13 @@
         :qr-available="uploadsEnabled && wallStatus === 'available'"
         :post-count="totalPosts"
         :scroll-speed="scrollSpeed"
+        :layout="layout"
+        :layout-saving="layoutSaving"
+        :layout-error="layoutError"
         :speed-saving="speedSaving"
         :speed-error="speedError"
         @set-speed="saveSpeed"
+        @set-layout="saveLayout"
         @toggle-scroll="setScrollingEnabled"
         @toggle-fullscreen="toggleFullscreen"
         @toggle-theme="toggleTheme"
@@ -94,15 +101,15 @@
         @open-qr="qrExpanded = true"
       />
     </div>
+    <DialogShell v-if="readingPost" title="Full article" @close="closePost">
+      <WallPostCard :post="readingPost" full-text />
+    </DialogShell>
     <DialogShell v-if="qrExpanded" title="Share a moment" centered-title fullscreen @close="closeQr">
       <div class="flex max-w-full flex-col items-center gap-4 text-center">
         <p class="text-xl font-bold">{{ displayTitle }}</p>
         <img v-if="qrUrl" :src="qrUrl" alt="Scan to upload a post" width="640" height="640" class="aspect-square w-[min(calc(100dvw-2rem),calc(100dvh-14rem))] h-auto max-w-full rounded-2xl bg-white p-4" />
         <a :href="uploadUrl" target="_blank" rel="noopener noreferrer" class="min-h-11 text-bluey-600 underline dark:text-bluey-300">Share a moment</a>
       </div>
-    </DialogShell>
-    <DialogShell v-if="readingPost" title="Full post" @close="closePost">
-      <WallPostCard :post="readingPost" full-text />
     </DialogShell>
   </main>
 </template>
@@ -111,6 +118,7 @@
 import WallPostCard from "../../../components/wall/PostCard.vue";
 import PublicWallHeader from "../../../components/wall/PublicWallHeader.vue";
 import PublicWallState from "../../../components/wall/PublicWallState.vue";
+import { WALL_LAYOUT_DEFAULTS } from '../../../../shared/wallDisplay.js';
 
 const route = useRoute();
 const colorMode = useColorMode();
@@ -118,28 +126,33 @@ const eventName = computed(() => route.params.event || "event");
 const posts = ref([]), renderedCount = ref(12), totalPosts = ref(0);
 const renderedPosts = computed(() => posts.value.slice(0, renderedCount.value));
 const columnCount = ref(1);
+const layout = reactive({ ...WALL_LAYOUT_DEFAULTS });
+const layoutSaving = ref(false), layoutError = ref('');
+const mosaicStyle = computed(() => ({
+  gridTemplateColumns: `repeat(${columnCount.value === 1 ? 1 : layout.panelColumns || columnCount.value}, minmax(0, 1fr))`,
+  columnGap: `${layout.panelGap}px`,
+  '--panel-gap': `${layout.panelGap}px`,
+  '--panel-padding': `${layout.panelPadding}px`,
+  '--panel-radius': `${layout.panelRadius}px`,
+  '--panel-text-size': `${layout.panelTextSize}px`,
+}));
 const isTextAnnouncement = post => post.pinned && !post.imageUrl && !post.videoUrl;
 const textAnnouncements = computed(() => renderedPosts.value.filter(isTextAnnouncement));
-const postColumns = computed(() => {
-  const columns = Array.from({ length: columnCount.value }, () => []);
-  renderedPosts.value.filter(post => !isTextAnnouncement(post)).forEach((post, index) => columns[index % columns.length].push(post));
-  return columns;
-});
+const mosaicPosts = computed(() => renderedPosts.value.filter(post => !isTextAnnouncement(post)));
+const postHeights = reactive({});
+function recordPostHeight(id, height) { if (postHeights[id] !== height) postHeights[id] = height; }
+function postRowStyle(post) { return { gridRowEnd: `span ${(postHeights[post.id] || 400) + layout.panelGap}` }; }
 function updateColumnCount() { columnCount.value = innerWidth >= 1536 ? 4 : innerWidth >= 1280 ? 3 : innerWidth >= 640 ? 2 : 1; }
-const readingPost = ref(null), qrExpanded=ref(false), wallTitle=ref('');
+const readingPost=ref(null), qrExpanded=ref(false), wallTitle=ref('');
 const displayTitle=computed(()=>wallTitle.value || eventName.value);
 function closeQr(){readerResumeUntil=performance.now()+idleWaitSeconds.value*1000;pauseUntil=readerResumeUntil;qrExpanded.value=false;nextTick(()=>document.querySelector('[aria-label="Wall display settings"]')?.focus());}
 function openPost(post) {
   pauseForInteraction();
-  // Loop copies support pointer input, but focus returns to the one accessible card.
-  feedViewport.value?.querySelector(`[data-wall-copy="1"] [data-wall-post-id="${CSS.escape(post.id)}"] [data-read-post]`)?.focus({ preventScroll: true });
+  feedViewport.value?.querySelector(`[data-wall-copy="1"] [data-wall-post-id="${CSS.escape(post.id)}"] [data-read-post]`)?.focus({preventScroll:true});
   readingPost.value = post;
 }
 function closePost() {
-  // Ignore focus restoration and pointer re-entry while the reader's close delay runs.
-  readerResumeUntil = performance.now() + idleWaitSeconds.value * 1000;
-  pauseUntil = readerResumeUntil;
-  readingPost.value = null;
+  readerResumeUntil=performance.now()+idleWaitSeconds.value*1000; pauseUntil=readerResumeUntil; readingPost.value=null;
 }
 const canEdit = ref(false);
 const wallStatus = ref("loading");
@@ -152,7 +165,6 @@ const firstFeedCopy = ref(null);
 const feedViewportHeight = ref(0);
 const feedCopyHeight = ref(0);
 const scrollOffset = ref(0);
-const textPreviewLength = 100;
 const scrollSpeed = ref(40), speedSaving = ref(false), speedError = ref(''), wallRevision = ref(0);
 const idleWaitSeconds = ref(5), uploadsEnabled = ref(false);
 let pauseUntil = 0, readerResumeUntil = 0, loading = false;
@@ -246,6 +258,9 @@ function applySettings(wall) {
   if (revision < wallRevision.value) return;
   wallRevision.value = revision;
   if (!speedSaving.value) scrollSpeed.value = wall.scrollSpeed || 40;
+  if (!layoutSaving.value) {
+    for (const key of Object.keys(WALL_LAYOUT_DEFAULTS)) layout[key] = wall[key] ?? WALL_LAYOUT_DEFAULTS[key];
+  }
   idleWaitSeconds.value = wall.idleWaitSeconds;
   uploadsEnabled.value = wall.publicUploadEnabled;
   wallTitle.value=wall.title || '';
@@ -257,7 +272,7 @@ function applyPosts(incoming) {
   revealMore();
 }
 async function saveSpeed(speed) {
-  if (!canEdit.value || speedSaving.value) return;
+  if (!canEdit.value || speedSaving.value || layoutSaving.value) return;
   const previous = scrollSpeed.value;
   speedSaving.value = true; speedError.value = ''; scrollSpeed.value = speed;
   try {
@@ -270,6 +285,20 @@ async function saveSpeed(speed) {
   } catch (failure) {
     scrollSpeed.value = previous; speedError.value = failure.message || 'Could not save scroll speed.';
   } finally { speedSaving.value = false; }
+}
+async function saveLayout(patch) {
+  if (!canEdit.value || layoutSaving.value || speedSaving.value) return;
+  layoutSaving.value = true; layoutError.value = '';
+  try {
+    const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}/posts`, {
+      method: 'POST', body: { action: 'setLayout', settings: patch, revision: wallRevision.value }, timeout: 10000,
+    });
+    if (response.status !== 200) throw new Error(response.message || 'Could not save panel layout.');
+    layoutSaving.value = false;
+    applySettings(response.data.wall);
+  } catch (failure) {
+    layoutError.value = failure.message || 'Could not save panel layout.';
+  } finally { layoutSaving.value = false; }
 }
 async function loadWall() {
   if (loading || disposed) return;

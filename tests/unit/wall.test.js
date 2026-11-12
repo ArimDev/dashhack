@@ -1,3 +1,4 @@
+import { WALL_LAYOUT_DEFAULTS } from '../../src/shared/wallDisplay.js';
 import { afterEach, describe, expect, test } from 'bun:test';
 import { mkdtempSync, rmSync } from 'node:fs';
 import { tmpdir } from 'node:os';
@@ -28,7 +29,7 @@ describe('Social wall adapted from PR #6',() => {
         const before=publicEvent(c.store.getEvent(c.name)); c.store.close();
         const reopened=new SqliteStore(c.filename); stores.push(reopened);
         expect(publicEvent(reopened.getEvent(c.name))).toEqual(before);
-        expect(new WallStore(reopened).publicFeed(c.name)).toEqual({ wall:{ title:'',enabled:false,publicUploadEnabled:true,windowMinutes:1440,idleCycleSeconds:25,idleWaitSeconds:5,scrollSpeed:40,revision:0 },posts:[],total:0,hasMore:false });
+        expect(new WallStore(reopened).publicFeed(c.name)).toEqual({ wall:{ ...WALL_LAYOUT_DEFAULTS,title:'',enabled:false,publicUploadEnabled:true,windowMinutes:1440,idleCycleSeconds:25,idleWaitSeconds:5,scrollSpeed:40,revision:0 },posts:[],total:0,hasMore:false });
         expect(() => new WallStore(reopened).submit(c.name,{ text:'Hello' })).toThrow('disabled');
         expect((await reopened.checkPassword(c.name,'password123'))._id).toBe(c.id);
         expect(reopened.db.query('PRAGMA integrity_check').get().integrity_check).toBe('ok');
@@ -396,7 +397,8 @@ test('organizers edit community posts without changing media, pins or moderation
  expect(c.wall.media(c.session,c.name,p.id).data).toEqual(media.data);
  expect(()=>c.wall.action(c.session,c.name,edit)).toThrow('changed');
  c.store.db.query("UPDATE wall_posts SET platform='x' WHERE event_id=? AND id=?").run(c.id,p.id);
- expect(()=>c.wall.action(c.session,c.name,{...edit,revision:updated.revision})).toThrow('Only community');
+ c.wall.action(c.session,c.name,{...edit,revision:updated.revision});
+ expect(c.wall.moderationFeed(c.session,c.name).posts[0].platform).toBe('x');
 });
 
 test('formatted pinned announcements can remove and replace photos atomically without changing moderation',async()=>{
@@ -424,7 +426,7 @@ test('schema 12 migration keeps existing wall content, media, sessions and moder
  const before=c.wall.moderationFeed(c.session,c.name).posts;
  c.store.db.exec('ALTER TABLE wall_posts DROP COLUMN rich_text; PRAGMA user_version=12;');c.store.close();
  const reopened=new SqliteStore(c.filename);stores.push(reopened);const wall=new WallStore(reopened);
- expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(13);
+ expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(15);
  expect(wall.moderationFeed(c.session,c.name).posts).toEqual(before);
  expect(wall.media(c.session,c.name,p.id).data).toEqual(media.data);
 });
