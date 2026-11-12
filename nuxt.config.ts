@@ -54,6 +54,7 @@ export default defineNuxtConfig({
 		clientBundle: {
 			icons: [
                 'heroicons:bars-3',
+                'heroicons:home',
                 'heroicons:table-cells',
                 'heroicons:chart-bar',
                 'heroicons:clipboard-document-list',

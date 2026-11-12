@@ -40,7 +40,7 @@ button, a, input, select, textarea, [contenteditable] { touch-action: manipulati
 .icon-button:hover { background-color: var(--color-gray-100); }
 .dark .icon-button:hover { background-color: var(--color-gray-700); }
 .dashboard-shell { height: 100vh; height: 100dvh; }
-.dashboard-header { padding-top: max(.75rem, env(safe-area-inset-top)); }
+.dashboard-header { padding-top: max(.5rem, env(safe-area-inset-top)); padding-bottom: .5rem; }
 .dashboard-content { scrollbar-gutter: stable; scroll-padding-block: 1rem; }
 .mobile-bottom-nav { position: fixed; inset: auto 0 0; z-index: 30; display: grid; grid-template-columns: repeat(5,minmax(0,1fr)); gap: .25rem; border-top: 1px solid var(--color-gray-200); background: var(--color-white); padding: .375rem max(.375rem,env(safe-area-inset-right)) max(.375rem,env(safe-area-inset-bottom)) max(.375rem,env(safe-area-inset-left)); }
 .dark .mobile-bottom-nav { background: var(--color-gray-800); border-color: var(--color-gray-700); }
@@ -76,6 +76,22 @@ button, a, input, select, textarea, [contenteditable] { touch-action: manipulati
     .dialog-footer { padding: .875rem 1rem; }
 }
 @media (min-width: 1024px) { .mobile-bottom-nav { display: none; } }
+@media (min-width: 1024px) {
+    .dashboard-shell .icon-button { min-width: 36px; min-height: 36px; border-radius: .5rem; }
+    .dashboard-header button, .dashboard-header input, .dashboard-header select { min-height: 36px; }
+    .dashboard-shell aside nav a { min-height: 40px; padding-block: .5rem; border-radius: .5rem; }
+    .team-card-header button { min-height: 36px; }
+    .team-card-header .team-toolbar { gap: 0; }
+    .team-anchor footer a { min-height: 36px; padding-block: .375rem; }
+    .team-note-lane button { min-height: 36px; }
+    .team-note-lane .sticky-note select { min-height: 32px; font-size: .875rem; }
+}
+@media (min-width: 1280px) {
+    .dashboard-header { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: 1rem; padding-inline: 1rem; }
+    .dashboard-header .dashboard-heading { grid-column: 1; grid-row: 1; }
+    .dashboard-header #tools { grid-column: 2; grid-row: 1; }
+    .dashboard-header #team-jump { width: 10rem; }
+}
 @media (prefers-reduced-motion: reduce) {
     *, *::before, *::after { scroll-behavior: auto !important; animation-duration: .01ms !important; transition-duration: .01ms !important; }
 }
@@ -85,3 +101,84 @@ button, a, input, select, textarea, [contenteditable] { touch-action: manipulati
 .dialog-backdrop-fullscreen { padding: 0; }
 .dialog-panel.dialog-panel-fullscreen { width: 100vw; height: 100dvh; max-width: none; max-height: none; border-radius: 0; }
 .dialog-panel-fullscreen .dialog-content { display: flex; flex: 1; align-items: center; justify-content: center; }
+
+/* Notes use one scroll surface with a close control that stays in view. */
+.dialog-backdrop-drawer { padding: 0; align-items: stretch; justify-content: flex-end; background: rgb(15 23 42 / .5); backdrop-filter: blur(3px); -webkit-backdrop-filter: blur(3px); }
+.dialog-backdrop-drawer .dialog-panel { position: relative; width: min(64rem, calc(100vw - 15rem)); max-width: none; height: 100dvh; max-height: none; border-radius: 0; padding-left: 24px; }
+.drawer-collapse-rail { position: absolute; inset: 0 auto 0 0; display: flex; align-items: center; justify-content: center; width: 24px; height: 100%; border-right: 1px solid var(--color-gray-200); background: var(--color-gray-50); color: var(--color-gray-600); transition: background-color 150ms, color 150ms; }
+.drawer-collapse-rail:hover { background: var(--color-bluey-50); color: var(--color-bluey-700); }
+.drawer-collapse-rail:focus-visible { outline-offset: -3px; }
+.dark .drawer-collapse-rail { background: var(--color-gray-900); border-color: var(--color-gray-700); color: var(--color-gray-300); }
+.dark .drawer-collapse-rail:hover { background: var(--color-bluey-950); color: var(--color-bluey-200); }
+.dialog-backdrop-drawer .dialog-panel > header { padding: .5rem 1rem; }
+.dialog-backdrop-drawer .dialog-panel > header h1 { font-size: 1rem; }
+.dialog-backdrop-drawer .dialog-content { flex: 1; padding: 0; }
+.dialog-backdrop-drawer .team-notes-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 220px), 1fr)); }
+.dashboard-header { display: grid; grid-template-columns: auto minmax(0, 1fr); column-gap: .5rem; padding-inline: .75rem; }
+.dashboard-header .dashboard-heading { grid-column: 1; grid-row: 1; gap: .25rem; }
+.dashboard-header h2 { line-height: 1.25rem; }
+.dashboard-header #tools { grid-column: 2; grid-row: 1; }
+.dashboard-header input, .dashboard-header select { border-color: transparent; background-color: transparent; }
+.dashboard-header input:hover, .dashboard-header select:hover { background-color: var(--color-gray-50); }
+.dark .dashboard-header input:hover, .dark .dashboard-header select:hover { background-color: var(--color-gray-900); }
+.dashboard-header input[type="search"] { appearance: none; line-height: 1.25rem; padding-block: .5rem; }
+.dashboard-header input::placeholder { color: var(--color-gray-600); }
+.dark .dashboard-header input::placeholder { color: var(--color-gray-400); }
+.dashboard-sidebar { transition: width 180ms ease; }
+.drawer-collapse-rail { background: var(--color-bluey-100); border-color: var(--color-bluey-400); border-radius: 0; color: var(--color-bluey-800); }
+.dark .drawer-collapse-rail { background: var(--color-bluey-900); border-color: var(--color-bluey-600); color: var(--color-bluey-100); }
+.drawer-collapse-rail:hover { background: var(--color-bluey-200); color: var(--color-bluey-950); }
+.dark .drawer-collapse-rail:hover { background: var(--color-bluey-800); color: var(--color-bluey-50); }
+.drawer-collapse-rail:focus-visible { outline: 2px solid var(--color-bluey-500); outline-offset: -3px; }
+.dark .drawer-collapse-rail:focus-visible { outline-color: var(--color-bluey-200); }
+.dashboard-sidebar nav, .dialog-content { scrollbar-width: thin; scrollbar-color: var(--color-bluey-300) transparent; }
+.dark .dashboard-sidebar nav, .dark .dialog-content { scrollbar-color: var(--color-bluey-700) transparent; }
+.dashboard-sidebar nav::-webkit-scrollbar, .dialog-content::-webkit-scrollbar { width: 4px; }
+.dashboard-sidebar nav::-webkit-scrollbar-thumb, .dialog-content::-webkit-scrollbar-thumb { border-radius: 4px; background: var(--color-bluey-300); }
+.dark .dashboard-sidebar nav::-webkit-scrollbar-thumb, .dark .dialog-content::-webkit-scrollbar-thumb { background: var(--color-bluey-700); }
+@media (min-width: 1024px) {
+    .dashboard-header { padding-inline: 1rem; }
+    .dashboard-header input[type="search"] { padding-block: .375rem; }
+}
+@media (max-width: 1023px) {
+    .dialog-backdrop-drawer .dialog-panel { width: 100%; padding-left: 0; }
+    .drawer-collapse-rail { display: none; }
+    .dashboard-header { padding-inline: .5rem; column-gap: .25rem; }
+    .dashboard-header:has(#tools:not(:empty)) h2 { font-size: .875rem; max-width: 5rem; }
+}
+
+/* Mentor Teams only: spacing and surfaces carry the hierarchy. */
+.mentor-team-card { border-radius: 6px; border-left-width: 4px; box-shadow: 0 1px 2px rgb(15 23 42 / .08); }
+.mentor-team-card:hover { box-shadow: 0 1px 2px rgb(15 23 42 / .08); }
+.mentor-team-card .team-card-header { border-radius: 0; padding-bottom: 4px; }
+.mentor-team-card > p, .mentor-team-card > section { border-top-width: 0; }
+.mentor-team-card > footer { border-color: var(--color-gray-200); }
+.dark .mentor-team-card > footer { border-color: var(--color-gray-700); }
+.mentor-team-card .icon-button, .mentor-dashboard .icon-button, .mentor-dashboard aside nav a, .mentor-dashboard .dashboard-identity p, .mentor-dashboard .mobile-bottom-nav a { border-radius: 4px; }
+.mentor-notes .team-note-lane { border-width: 0; border-radius: 4px; background: transparent; }
+.mentor-notes .team-note-lane > header { border-bottom-width: 0; border-radius: 4px; }
+.mentor-notes .team-note-lane > header button { border-width: 0; border-radius: 4px; background: transparent; }
+.mentor-notes .team-note-lane > div { padding-inline: 0; }
+.mentor-notes { background: #edf1f6; }
+.dark .mentor-notes { background: #121c2b; }
+.mentor-notes .sticky-note { border-width: 0; border-radius: 4px; box-shadow: 0 1px 2px rgb(15 23 42 / .06); background-color: color-mix(in srgb, var(--team-color) 6%, white); }
+.dark .mentor-notes .sticky-note { box-shadow: none; background-color: color-mix(in srgb, var(--team-color) 8%, #182333); }
+.mentor-notes .sticky-note[data-priority="critical"] { box-shadow: inset 3px 0 0 #b91c1c; }
+.mentor-notes .sticky-note[data-priority="critical"] > header { background: #fee2e2; color: #7f1d1d; }
+.dark .mentor-notes .sticky-note[data-priority="critical"] > header { background: #7f1d1d; color: #fee2e2; }
+.mentor-notes .sticky-note[data-priority="high"] > header { background: #fef3c7; color: #78350f; }
+.dark .mentor-notes .sticky-note[data-priority="high"] > header { background: #78350f; color: #fef3c7; }
+.mentor-notes .sticky-note[data-priority="medium"] > header { background: var(--color-bluey-50); color: var(--color-bluey-800); }
+.dark .mentor-notes .sticky-note[data-priority="medium"] > header { background: var(--color-bluey-900); color: var(--color-bluey-100); }
+.mentor-notes .sticky-note > header { border-radius: 4px 4px 0 0; }
+.mentor-notes .sticky-note select, .mentor-notes .sticky-note button { border-radius: 3px; }
+.mentor-notes .sticky-note > div.border-t { border-top-width: 0; padding-top: 0; }
+.mentor-notes .lane-completed .sticky-note { background: #f3f4f6; }
+.dark .mentor-notes .lane-completed .sticky-note { background: #1f2937; }
+.mentor-dashboard .dashboard-content { scrollbar-width: thin; scrollbar-color: var(--color-bluey-600) var(--color-bluey-50); }
+.dark .mentor-dashboard .dashboard-content { scrollbar-color: var(--color-bluey-300) var(--color-gray-900); }
+.mentor-dashboard .dashboard-content::-webkit-scrollbar { width: 6px; }
+.mentor-dashboard .dashboard-content::-webkit-scrollbar-track { background: var(--color-bluey-50); }
+.mentor-dashboard .dashboard-content::-webkit-scrollbar-thumb { background: var(--color-bluey-600); border-radius: 3px; }
+.dark .mentor-dashboard .dashboard-content::-webkit-scrollbar-track { background: var(--color-gray-900); }
+.dark .mentor-dashboard .dashboard-content::-webkit-scrollbar-thumb { background: var(--color-bluey-300); }

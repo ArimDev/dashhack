@@ -1,5 +1,9 @@
 # SQLite migration and resource reduction
 
+## Mentor Teams drawer and responsive navigation — 2026-11-12
+
+The reviewed Teams UI now uses a desktop notes drawer / full-screen phone dialog with separate Issues, Notes and Done sections, retained editors and acknowledgement-safe moves. Both note/issue conversions require confirmation and preserve content/attribution/status/priority; Teams sets type and tracking together only for this explicit action. Kanban's independent controls and all server revision/ownership checks remain. Team descriptions/abstracts stay fully visible above Originalita. Navigation/header adapt to screen width, mobile team order follows numbers, and safe visible-page refresh runs every 15 seconds. See [mentor UI behavior and validation](MENTOR_UI.md). No schema, dependency, provider settings or stored-data migration; schema stays 17. Production release and preservation verification are recorded in RAILWAY.md.
+
 ## TODO: recoverable local matrix drafts
 
 Requested 2026-11-12 after Team 22 reported missing answers. Add persistent browser drafts for dashboard and Discord matrix forms, explicit recovery after interruptions, revision-safe restore and clear local/server save feedback. See [investigation and acceptance checklist](MATRIX_SAVE_INCIDENT.md). This is not implemented or deployed yet.

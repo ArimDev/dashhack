@@ -7,6 +7,21 @@
         <AddTeam v-if="openAddTeam" :team="selectedTeam || false" @close="close" />
         <Confirm v-if="openConfirm" subject="Delete Team" message="Are you sure you want to delete team $var?" :team="selectedTeam" @close="close" />
 
+        <Teleport v-if="toolsReady && data.teams.length" to="#tools">
+            <div role="search" aria-label="Team navigation" class="flex min-w-0 w-full items-center gap-1.5">
+                <div class="relative min-w-0 flex-1">
+                    <label for="team-search" class="sr-only">Search teams</label>
+                    <Icon name="heroicons:magnifying-glass" size="18px" class="pointer-events-none absolute left-2 top-1/2 -translate-y-1/2 text-gray-500" />
+                    <input id="team-search" v-model="search" type="search" placeholder="Search" class="min-h-11 w-full min-w-0 rounded-lg border border-gray-200 bg-transparent pl-7 pr-2 text-sm dark:border-gray-600 dark:bg-gray-900" />
+                </div>
+                <label for="team-jump" class="sr-only">Jump to team</label>
+                <select id="team-jump" :value="''" aria-label="Jump to team" @change="jumpToTeam($event)" class="min-h-11 w-20 min-w-0 rounded-lg border border-gray-200 bg-transparent px-2 text-sm dark:border-gray-600 sm:w-40">
+                    <option value="" disabled>Team</option>
+                    <option v-for="team in numberedTeams" :key="team._id" :value="team._id">{{ team.name }}</option>
+                </select>
+                <span role="status" :aria-label="`${visibleIds.size} of ${data.teams.length} teams`" class="hidden shrink-0 text-xs tabular-nums text-gray-500 dark:text-gray-400 sm:inline">{{ visibleIds.size }}/{{ data.teams.length }}</span>
+            </div>
+        </Teleport>
         <div v-if="!!data.teams.length" class="w-full pb-24">
             <Icon style="display: none;" name="heroicons:magnifying-glass-plus-16-solid" />
             <Icon style="display: none;" name="heroicons:magnifying-glass-minus-16-solid" />
@@ -14,33 +29,12 @@
             <Icon style="display: none;" name="heroicons:hand-raised-16-solid" />
             <Icon style="display: none;" name="heroicons:arrow-path-16-solid" />
 
-            <div class="sm:sticky top-0 z-10 mb-5 flex flex-col gap-3 rounded-xl border border-gray-200 bg-white/95 p-3 shadow-sm backdrop-blur dark:border-gray-700 dark:bg-gray-800/95 sm:flex-row sm:items-end">
-                <div class="min-w-0 flex-1">
-                    <label for="team-search" class="mb-1 block text-sm font-semibold text-gray-800 dark:text-gray-200">Search teams</label>
-                    <div class="flex items-center gap-2">
-                        <input id="team-search" v-model="search" type="search" placeholder="Name, description or repository…" class="min-h-11 min-w-0 w-full rounded-lg border border-gray-300 bg-transparent px-3 text-gray-900 dark:border-gray-600 dark:text-gray-100" />
-                        <button v-if="search" @click="search = ''" class="min-h-11 rounded-lg px-3 text-sm text-bluey-600 dark:text-bluey-400">Clear</button>
-                    </div>
-                    <p role="status" class="mt-1 text-xs text-gray-500 dark:text-gray-400">{{ visibleIds.size }} of {{ data.teams.length }} teams</p>
-                </div>
-                <div class="min-w-0 sm:w-64 sm:pb-5">
-                    <label for="team-jump" class="mb-1 block text-sm font-semibold text-gray-800 dark:text-gray-200">Jump to team</label>
-                    <select id="team-jump" :value="''" @change="jumpToTeam($event)" class="min-h-11 w-full rounded-lg border border-gray-300 bg-white px-3 text-gray-900 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-100">
-                        <option value="" disabled>Choose a team…</option>
-                        <option v-for="team in data.teams" :key="team._id" :value="team._id">{{ team.name }}</option>
-                    </select>
-                </div>
-            </div>
-            <div class="mb-4 flex flex-wrap items-center justify-end gap-3">
-                <button type="button" @click="refreshTeams(true)" :disabled="refreshingTeams" class="min-h-11 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold disabled:opacity-50 dark:border-gray-600">
-                    {{ refreshingTeams ? 'Refreshing…' : 'Refresh' }}
-                </button>
-            </div>
             <div v-if="!visibleIds.size" class="py-12 text-center text-gray-500 dark:text-gray-400">No teams match your search.</div>
             <div data-testid="teams-grid" class="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-3">
-                <div v-for="team in data.teams" :key="team._id" v-show="visibleIds.has(team._id)" :id="`team-${team._id}`" tabindex="-1" class="team-anchor min-w-0 rounded-xl focus-visible:outline-2 focus-visible:outline-bluey-500">
+                <div v-for="team in displayTeams" :key="team._id" v-show="visibleIds.has(team._id)" :id="`team-${team._id}`" tabindex="-1" class="team-anchor min-w-0 rounded-xl focus-visible:outline-2 focus-visible:outline-bluey-500">
                     <Team
                         :team="team"
+                        @expand-notes="expandedTeams[team._id] = $event"
                         @edit="open"
                         @delete="confirm"
                         @add-note="addStickyNote"
@@ -52,7 +46,7 @@
             </div>
         </div>
 
-        <button v-if="canEdit" data-testid="add-team-fab" @click="open(false)" aria-label="Add team" class="add-team-fab fixed z-40 bg-bluey-500 hover:bg-bluey-600 text-white shadow-xl hover:shadow-2xl cursor-pointer rounded-full w-14 h-14 flex items-center justify-center transition-all duration-300 hover:scale-110">
+        <button v-if="canEdit && !anyExpanded" data-testid="add-team-fab" @click="open(false)" aria-label="Add team" class="add-team-fab fixed z-40 bg-bluey-500 hover:bg-bluey-600 text-white shadow-xl hover:shadow-2xl cursor-pointer rounded-full w-14 h-14 flex items-center justify-center transition-all duration-300 hover:scale-110">
             <Icon name="heroicons:plus" size="28px" />
         </button>
     </ClientOnly>
@@ -80,7 +74,12 @@ watchEffect(() => {
 const { showToast } = useToast();
 const canEdit = useState('eventCanEdit', () => false);
 
-const search = ref('');
+const search = ref(''), toolsReady = ref(false), desktopTeams = ref(false);
+let teamViewport;
+function syncTeamViewport() { desktopTeams.value = !!teamViewport?.matches; }
+const numberedTeams = computed(() => data.value.teams.map((team, index) => ({team, index, number: Number(/^(\d+)\s*[-–.]\s*/.exec(team.name)?.[1] ?? Infinity)})).sort((a,b) => a.number - b.number || a.index - b.index).map(item => item.team));
+const displayTeams = computed(() => desktopTeams.value ? data.value.teams : numberedTeams.value);
+const expandedTeams = ref({});
 const teamsRoute=useRoute();
 // Accent-insensitive matching also accepts Czech names typed without diacritics.
 const normalizeSearch = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
@@ -91,6 +90,7 @@ const visibleIds = computed(() => {
         return terms.every(term => text.includes(term));
     }).map(team => team._id));
 });
+const anyExpanded = computed(() => data.value.teams.some(team => expandedTeams.value[team._id] && visibleIds.value.has(team._id)));
 async function jumpToTeam(event) {
     const id = event.target.value;
     event.target.value = '';
@@ -172,17 +172,24 @@ async function refreshTeams(manual = false) {
     } finally { if (refreshController === controller) { refreshingTeams.value = false; refreshController = null; } }
 }
 onMounted(() => {
+    teamViewport = window.matchMedia('(min-width: 1024px)');
+    syncTeamViewport();
+    teamViewport.addEventListener('change', syncTeamViewport);
+    nextTick(() => { toolsReady.value = true; });
     openLinkedTeam();
     refreshTimer = setInterval(() => {
-        if (document.visibilityState === 'visible' && document.querySelector('details[open] > [data-testid="startup-matrix"]')) refreshTeams(false);
+        if (document.visibilityState === 'visible') refreshTeams(false);
     }, 15000);
     window.addEventListener('focus', refreshOnFocus);
+    document.addEventListener('visibilitychange', refreshOnFocus);
 });
 function refreshOnFocus() { if (document.visibilityState === 'visible') refreshTeams(false); }
 onBeforeUnmount(() => {
+    teamViewport?.removeEventListener('change', syncTeamViewport);
     clearInterval(refreshTimer);
     refreshController?.abort();
     window.removeEventListener('focus', refreshOnFocus);
+    document.removeEventListener('visibilitychange', refreshOnFocus);
 });
 
 const saveTeamChanges = (teamIndex, successMessage) => {
@@ -266,6 +273,7 @@ const deleteStickyNote = ({ teamName, noteId }) => {
 </script>
 
 <style scoped>
-.team-anchor { scroll-margin-top: 9rem; }
+.team-anchor { scroll-margin-top: 1rem; }
+.team-anchor.notes-expanded-anchor { scroll-margin-top: 1rem; }
 @media (max-width: 639px) { .team-anchor { scroll-margin-top: 1rem; } }
 </style>

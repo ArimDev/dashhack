@@ -68,8 +68,9 @@ test('mobile navigation, keyboard-safe team dialogs, repository picker and note 
     await page.setViewportSize({width:390,height:844});
     const card = page.getByTestId(`team-card-${d.teamName}`);
     await card.getByTestId('toggle-notes-btn').tap();
-    const note=card.getByTestId('note-content');await note.fill('Upraveno z telefonu');
+    const note=page.getByRole('dialog').getByTestId('note-content');await note.fill('Upraveno z telefonu');
     const saved=page.waitForResponse(r=>r.url().includes('/api/team/edit') && r.request().method()==='PUT');await note.blur();expect((await (await saved).json()).status).toBe(200);
+    await page.getByRole('dialog').getByRole('button',{name:'Close dialog'}).tap();
     await page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Kanban',exact:true}).tap();
     const status=page.locator('[data-testid="kanban-column-To Do"]').getByLabel('Note status');
     const moved=page.waitForResponse(r=>r.url().includes('/api/note/edit'));await status.selectOption('In Progress');expect((await (await moved).json()).status).toBe(200);
@@ -88,7 +89,7 @@ test('mobile rich text, mentor registration, matrix save and confirmation remain
     await expect(page.getByText('Mobilní mentorka',{exact:true})).toBeVisible();
     await page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Teams',exact:true}).tap();
     const card=page.getByTestId(`team-card-${d.teamName}`);
-    await card.getByText('Startupová matice',{exact:true}).tap();
+    await card.getByText('Matice',{exact:true}).tap();
     const matrix=page.getByTestId('startup-matrix');
     await matrix.getByRole('button',{name:'Upravit matici'}).tap();
     await matrix.getByRole('textbox',{name:'PROBLÉM',exact:true}).fill('Odpověď uložená z mobilu.');
@@ -129,7 +130,8 @@ test('mobile public wall is manually readable and uploads/moderation fit without
         await page.getByRole('button',{name:'Wall settings and upload link'}).tap();
         await expect(page.getByLabel('Wall enabled',{exact:true})).toBeVisible();await fits(page);
         await visitor.goto(`/app/${d.encoded}/teams`);
-        await visitor.getByRole('button',{name:'Log in',exact:true}).tap();
+        await visitor.getByRole('button',{name:'Open navigation'}).tap();
+        await visitor.getByRole('dialog').getByRole('button',{name:'Log in to edit',exact:true}).tap();
         await visitor.getByRole('dialog').getByPlaceholder('Password',{exact:true}).fill(password);
         await visitor.getByRole('button',{name:'Log In',exact:true}).tap();
         await expect(visitor.getByRole('dialog')).toHaveCount(0);await expect(visitor.getByTestId('add-team-fab')).toBeVisible();
@@ -145,10 +147,11 @@ test('mobile dialogs trap keyboard focus, restore the trigger and preserve dark 
     await page.keyboard.press('Tab');await expect(close).toBeFocused();
     await page.keyboard.press('Escape');await expect(dialog).toHaveCount(0);await expect(trigger).toBeFocused();
     await page.getByRole('button',{name:'More event pages'}).tap();
-    await page.getByRole('button',{name:'Dark mode',exact:true}).tap();
+    await page.getByRole('button',{name:'Switch to dark mode',exact:true}).tap();
     await expect(page.locator('html')).toHaveClass(/dark/);
     await page.keyboard.press('Escape');
-    await page.getByRole('navigation',{name:'Quick navigation'}).getByRole('link',{name:'Mentors',exact:true}).tap();
+    await page.getByRole('button',{name:'More event pages'}).tap();
+    await page.getByRole('dialog').getByRole('link',{name:'Mentors',exact:true}).tap();
     await page.reload();await expect(page.locator('html')).toHaveClass(/dark/);await fits(page);
     await page.goto('/github/callback');await expect(page.getByRole('alert')).toBeVisible();
     const color=await page.evaluate(()=>getComputedStyle(document.body).backgroundColor);
@@ -173,11 +176,14 @@ test('mobile editing state and login follow the displayed event rather than anot
     expect((await(await page.request.post('/api/auth/create',{data:{username:other,password}})).json()).status).toBe(200);
     await page.goto(`/app/${encoded}/teams`);
     await expect(page.getByTestId('add-team-fab')).toHaveCount(0);
-    await page.getByRole('button',{name:'Log in',exact:true}).tap();
+    await page.getByRole('button',{name:'Open navigation'}).tap();
+    await page.getByRole('dialog').getByRole('button',{name:'Log in to edit',exact:true}).tap();
     await page.getByRole('dialog').getByLabel('Password',{exact:true}).fill(password);
     await page.getByRole('button',{name:'Log In',exact:true}).tap();
     await expect(page.getByRole('dialog')).toHaveCount(0);
-    await expect(page.getByRole('button',{name:'Editing',exact:true})).toBeVisible();
+    await page.getByRole('button',{name:'Open navigation'}).tap();
+    await expect(page.getByRole('dialog').getByText('Editing',{exact:true})).toHaveText('Editing');
+    await page.keyboard.press('Escape');
     await expect(page.getByTestId('add-team-fab')).toBeVisible();
 });
 
@@ -195,7 +201,7 @@ test('expanded sharing QR fits phone portrait and landscape',async({page})=>{
     }
 });
 
-test('student team link signs in with GitHub and only confirms the verified account', async ({ page }) => {
+test('student team link signs in with GitHub and only confirms the verified account', async ({ page, baseURL }) => {
     const token='private-team-link-token',state='student_'+'A'.repeat(43);let invitations=0;
     await page.route('**/api/github/join',async route=>{
         const body=route.request().postDataJSON();expect(body.username).toBeUndefined();
@@ -204,7 +210,7 @@ test('student team link signs in with GitHub and only confirms the verified acco
         expect(body.action).toBe('invite');expect(body.claimId).toBe(state);invitations++;
         return route.fulfill({json:{status:200,username:'RealStudent',alreadyHasAccess:false,repositoryUrl:'https://github.com/school/indy-a-vich'}});
     });
-    await page.route('https://github.com/login/oauth/authorize**',route=>route.fulfill({contentType:'text/html',body:'<script>location.replace('+JSON.stringify('http://127.0.0.1:5010/github/callback?state='+state+'&code=test-code')+')</script>'}));
+    await page.route('https://github.com/login/oauth/authorize**',route=>route.fulfill({contentType:'text/html',body:'<script>location.replace('+JSON.stringify(new URL('/github/callback?state='+state+'&code=test-code',baseURL).href)+')</script>'}));
     await page.route('**/api/github/join/callback',async route=>{
         expect(route.request().postDataJSON()).toEqual({state,code:'test-code'});
         return route.fulfill({json:{status:200,claimId:state,username:'RealStudent',team:{name:'Indy a Vích',repository:'school/indy-a-vich'}}});

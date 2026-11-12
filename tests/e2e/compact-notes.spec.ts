@@ -16,7 +16,7 @@ test('Teams saves explicitly once and shows Saved only after the server acknowle
   await page.goto(`/app/${name}/teams`);
   const card = page.getByTestId(`team-card-${team.name}`);
   await card.getByTestId('toggle-notes-btn').click();
-  const note = card.locator('.sticky-note').first(), input = note.getByTestId('note-content'), save = note.getByTestId('save-note-btn');
+  const note = page.getByRole('dialog').locator('.sticky-note').first(), input = note.getByTestId('note-content'), save = note.getByTestId('save-note-btn');
   let release; const gate = new Promise<void>(resolve => { release = resolve; }); let writes = 0;
   await page.route('**/api/team/edit', async route => { writes++; await gate; await route.continue(); });
   await input.fill('Explicitly saved issue'); await save.click();
@@ -25,14 +25,14 @@ test('Teams saves explicitly once and shows Saved only after the server acknowle
   expect(before.teams[0].stickyNotes.find(n => n.id === notes[0].id).content).not.toBe('Explicitly saved issue');
   release(); await expect(save).toHaveText('Saved'); expect(writes).toBe(1);
   await page.reload(); await card.getByTestId('toggle-notes-btn').click();
-  await expect(card.getByTestId('note-content').first()).toHaveValue('Explicitly saved issue');
+  await expect(page.getByRole('dialog').getByTestId('note-content').first()).toHaveValue('Explicitly saved issue');
 });
 
 test('Teams retries a failed note save without losing another note', async ({ page }) => {
   const { name, team, notes } = await setup(page);
   await page.goto(`/app/${name}/teams`);
   const card = page.getByTestId(`team-card-${team.name}`); await card.getByTestId('toggle-notes-btn').click();
-  const note = card.locator('.sticky-note').first(), input = note.getByTestId('note-content'), save = note.getByTestId('save-note-btn');
+  const note = page.getByRole('dialog').locator('.sticky-note').first(), input = note.getByTestId('note-content'), save = note.getByTestId('save-note-btn');
   await expect(input).toHaveValue(notes[0].content);
   const fresh = (await (await page.request.get(`/api/event/${name}`)).json()).data.teams[0];
   await page.request.patch('/api/note/edit', { data: { username: name, teamId: team._id, noteId: notes[1].id, revision: fresh.revision, patch: { content: 'Other note preserved' } } });
@@ -70,13 +70,13 @@ test('compact desktop grids fit more cards while phones retain readable controls
   const card = page.getByTestId(`team-card-${team.name}`); await card.getByTestId('toggle-notes-btn').click();
   await expect(card.getByText('Not provided.', { exact: true })).toHaveCount(0);
   // The assignee row adds a required 44px control; retain a compact desktop bound.
-  const note = card.locator('.sticky-note').first(); expect((await note.boundingBox())!.height).toBeLessThan(320);
-  expect((await note.getByTestId('note-content').boundingBox())!.y).toBeLessThan((await note.getByLabel('Note type').boundingBox())!.y);
+  const note = page.getByRole('dialog').locator('.sticky-note').first(); expect((await note.boundingBox())!.height).toBeLessThan(320);
+  expect((await note.getByTestId('note-content').boundingBox())!.y).toBeLessThan((await note.getByLabel('Note creator').boundingBox())!.y);
   await page.goto(`/app/${name}/kanban`);
   await expect.poll(() => page.locator('.kanban-notes-grid').first().evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(2);
   await page.goto(`/app/${name}/mentors`); await expect(page.getByTestId('mentor-grid').locator('li')).toHaveCount(8);
   await expect.poll(() => page.getByTestId('mentor-grid').evaluate(el => getComputedStyle(el).gridTemplateColumns.split(' ').length)).toBe(4);
   await page.setViewportSize({ width: 390, height: 844 }); await page.goto(`/app/${name}/teams`); await card.getByTestId('toggle-notes-btn').click();
-  const save = card.getByTestId('save-note-btn').first(); expect((await save.boundingBox())!.height).toBeGreaterThanOrEqual(44);
+  const save = page.getByRole('dialog').getByTestId('save-note-btn').first(); expect((await save.boundingBox())!.height).toBeGreaterThanOrEqual(44);
   expect(await page.evaluate(() => document.documentElement.scrollWidth - innerWidth)).toBeLessThanOrEqual(1);
 });

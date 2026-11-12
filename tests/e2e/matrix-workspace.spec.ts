@@ -17,7 +17,7 @@ test('matrix overview, offline HTML, direct links, phone layout and typed deleti
     }
     const path=`/app/${encodeURIComponent(username)}`;await page.goto(path+'/teams');
     await expect(page.getByTestId('startup-matrix')).toHaveCount(0);
-    const card=page.getByTestId('team-card-Partial');await card.getByText('Startupová matice',{exact:true}).click();
+    const card=page.getByTestId('team-card-Partial');await card.getByText('Matice',{exact:true}).click();
     await expect(page).toHaveURL(/\/matice#matrix-/);
     await expect(page.getByText('Hotové: 1',{exact:true})).toBeVisible();await expect(page.getByText('Rozpracované: 1',{exact:true})).toBeVisible();await expect(page.getByText('Nevyplněné: 1',{exact:true})).toBeVisible();
     const matrix=page.getByTestId('matrix-team-Partial');await expect(matrix.getByTestId('matrix-field-problem')).toContainText('Česká odpověď <script>');
