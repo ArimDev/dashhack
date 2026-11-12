@@ -1,5 +1,13 @@
 # DashHack on Railway
 
+## Kanban mentor assignees — 2026-11-12
+
+Source `bebb8cf` is pushed on `feat_alby_design`, deployed as `e986d493-626c-4f7e-b19d-47c3e0fbc621` (**SUCCESS**). Tracked notes in Kanban and Teams have an Assignee selector backed by the event mentor roster, with Unassigned available. Creator attribution is independent. Schema **16** adds nullable notes.assignee_id; both save paths validate event membership and revisions, and older whole-team payloads preserve omitted assignments. No dependency/service/replica/volume change; assignment sends no additional notification. See SQLITE_MIGRATION.md.
+
+Validation: pinned Bun production build/Sharp packaging; **135 unit tests / 1056 assertions**; Chromium verifies assignment/reload, unchanged creator, status moves, Teams text saves, clearing, read-only guests and 44px phone controls. Live Chromium verifies deployed controls with browser-only event fixtures, health, phone/read-only behavior and zero browser errors or production writes. Clean source archive SHA-256: `ad5eb090f0d2389e955cfb6f47d182267437868ba826cc120037492029329db6`.
+
+Consistent private snapshot: `/data/backups/before-assignee-20261112-1794497867734.sqlite`; baseline `/data/backups/assignee-20261112-baseline.json`. Post-deploy schema 16, integrity ok, zero foreign-key violations. All recorded table fingerprints match when comparing the original note columns, except wall_settings.last_poll_at advancing normally; wall settings JSON is unchanged. Both collectors remain ON and Instagram remains at 20 minutes. Existing 15 teams/28 notes/7 mentors, credentials, wall content/media and invitations were preserved. Unrelated local staged student submodules and other local work remain untouched.
+
 ## Post publication dates during approval — 2026-11-12
 
 Source `c649f1c` is pushed on `feat_alby_design` and deployed as `f6da29c9-d83a-49a5-8880-9834a59d85c4` (**SUCCESS**). Every moderation card shows **Posted:** with its original `createdAt`, full browser-local date/time/timezone, semantic datetime and ISO tooltip. This includes pending Instagram/X/community posts and remains readable for hidden/rejected posts and on phones. Approval does not replace the original published timestamp. No server/schema/dependency changes.
