@@ -7,6 +7,7 @@ async function setup(page,name=`Wall ${randomUUID()}`) {
   expect((await (await page.request.post('/api/auth/login',{ data:{ username:name,password } })).json()).status).toBe(200);
   await page.goto(`/app/${encodeURIComponent(name)}/social-wall`);
   await expect(page.getByRole('heading',{ name:'Wall settings' })).toBeVisible();
+  await expect(page.getByText(/Upload storage:/)).toBeVisible();
   return name;
 }
 async function changed(page,action) {

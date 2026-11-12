@@ -1,5 +1,9 @@
 # Social Wall — PR #6 integration
 
+## Compact paragraph spacing — 2026-11-12
+
+WallPostText omits empty/whitespace-only blocks from the rendered view, for every platform, so pinned organizer posts do not reserve blank lines between paragraphs or before their photos. Saved rich text and editor drafts remain unchanged. Formatted paragraphs inherit the same line-height as plain cards; pinned full-text behavior and the existing projector text sizing remain. Production build and two HTTPS Chromium scenarios pass organizer/X spacing equality, a bounded photo gap and retained full formatting/optional-media behavior. The shared browser helper now waits for loaded storage/settings before saving to avoid a stale initial revision race.
+
 ## Bare top-right QR and posting hashtag — 2026-11-12
 
 At the user's request, sharing now uses a transparent top-right link with no card background/border/shadow or visible text; only the QR square is white. It retains gutter-filling desktop size and safe-area-aware 16px top/right spacing. An icon-only phone link preserves upload navigation without requesting a mobile QR. A wrapper hides the phone icon on desktop despite the icon component's own display style. The centered fullscreen QR modal is unchanged. The canonical ATT event's left title rail also displays #atthack, with reserved title height so both fit phones and short landscape; unrelated events have no hardcoded hashtag.

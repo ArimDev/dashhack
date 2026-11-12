@@ -11,5 +11,7 @@
 import { wallTextLinks } from '../../../shared/wallLinks.js';
 import { wallTextBlocks } from '../../../shared/wallText.js';
 const props = defineProps({ text: { type: String, default: '' }, blocks: Array, platform: String, decorative: Boolean });
-const content = computed(() => props.blocks || wallTextBlocks(props.text));
+// The editor may retain empty paragraphs; keep wall cards compact without rewriting the post.
+const content = computed(() => (props.blocks || wallTextBlocks(props.text))
+  .filter(block => block.runs.some(run => run.text.trim().length > 0)));
 </script>

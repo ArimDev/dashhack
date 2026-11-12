@@ -144,7 +144,7 @@ const isBlueCard = computed(() => {
 .wall-panel-copy { padding: var(--panel-padding, 16px); }
 .wall-panel-copy:not(.projector-copy) > .wall-plain-copy,
 .wall-panel-copy:not(.projector-copy) > .wall-formatted-copy { font-size: var(--panel-text-size, 16px); }
-.wall-formatted-copy :deep(.min-h-5) { line-height: 1.6; }
+.wall-formatted-copy :deep(.min-h-5) { line-height: inherit; }
 .wall-formatted-copy.text-base { font-size: 1rem; }
 @media (min-width: 768px) { .wall-formatted-copy { font-size: 1.125rem; } }
 .projector-copy > .wall-plain-copy, .projector-copy > .wall-formatted-copy {
