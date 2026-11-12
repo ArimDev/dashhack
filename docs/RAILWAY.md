@@ -1,5 +1,15 @@
 # DashHack on Railway
 
+## PR #8 collector switches and wall timestamps — 2026-11-12
+
+Merged PR #8 head `017f5304a8577b598446d37c55d44564f0805a5d` into `feat_alby_design` as two-parent merge `bda0de4` (parents `bd70c1e` and `017f530`), preserving both Matej-V commits. Source and integration refinements were pushed normally. GitHub reports the PR closed without its merged flag; the exact PR head is verified as an ancestor of the pushed branch, and no PR reopening/status mutation was performed. Local backup branch: `backup/feat-alby-before-pr8-20261112`.
+
+Deployment `e996e87a-76cc-4e7e-9821-136086e69ad0` reached **SUCCESS**. The source-only archive's SHA-256 is `9ecaa8d5d1509ced28066e281c5e32298d6cf6db0d8696091d27c689f32e2f26`; runtime source matches the tested build. Accessible collector switches/server-confirmed badges replace redundant loaded-state Stop buttons. An unknown/loading-state Stop fallback preserves existing stop guarantees. Header wrapping supports phones. Wall timestamps use browser-local today/Yesterday/older-date labels, roll over at midnight via the existing refresh, and keep long handles from hiding the date. Useful certificate/network errors are retained without persisting arbitrary credential-bearing exception text. See SOCIAL_WALL_PR6.md for integration details.
+
+Validation: pinned Bun 1.3.2 production build/Sharp packaging; 131 unit tests / 991 assertions; nine production HTTPS Chromium scenarios covering switching, load/save stop races, drafts, phone/keyboard accessibility, midnight rollover, photo focus/two-column tiles, compact copy and 24-hour/two-tab sessions. Live health and all four public timestamps pass; deployed collector components/badges were inspected using browser-only responses, with zero browser errors and no production writes/provider test calls.
+
+On-volume snapshot: `/data/backups/before-pr8-20261112-1794480695258.sqlite`; baseline `/data/backups/pr8-20261112-baseline.json`. Post-deploy schema **15**, integrity **ok**, and all recorded table fingerprints match exactly (sessions excluded). Instagram remains ON and X OFF. No data restoration/reseed, schema/dependency/runtime/service/replica/volume change; one web replica and the existing 5000 MB volume are retained.
+
 ## Compact organizer-post spacing — 2026-11-12
 
 Source `0d2c960` was committed/pushed and deployed as `f2a4dbb8-8fb6-4702-b78c-327c15240e13` (**SUCCESS**). Wall rendering skips empty/whitespace-only paragraph blocks and formatted copy inherits standard card line-height. Organizer posts therefore match X spacing without rewriting stored rich text; full text/formatting and projector sizing remain. Clean pinned-Bun build and two production HTTPS Chromium scenarios pass. The existing browser setup helper now waits for loaded settings before revision-checked saves, fixing an initial-load test race.
