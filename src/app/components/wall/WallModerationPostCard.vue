@@ -2,6 +2,10 @@
   <article :data-testid="`wall-post-${post.id}`"
     class="relative rounded-3xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900"
   >
+    <p class="flex min-w-0 flex-wrap items-baseline gap-x-1 px-2 pt-2 text-xs leading-relaxed text-slate-600 dark:text-slate-400">
+      <span class="font-semibold">Posted:</span>
+      <time :datetime="post.createdAt" :title="post.createdAt" class="min-w-0 break-words">{{ localDateTime(post.createdAt) }}</time>
+    </p>
     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between p-2">
       <div class="relative isolate min-w-0 flex-1 overflow-hidden rounded-2xl">
         <div class="mb-2 flex flex-wrap items-center gap-2">
@@ -154,6 +158,7 @@
 <script setup>
 import Badge from "../ui/Badge.vue";
 import { wallPlatformMeta } from "../../utils/wallPlatforms";
+import { localDateTime } from "../../utils/localDateTime.js";
 
 defineProps({
   post: { type: /** @type {import('vue').PropType<import('../../../shared/wallPost').WallPost>} */ (Object), required: true },
