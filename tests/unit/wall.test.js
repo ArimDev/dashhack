@@ -367,3 +367,33 @@ test('organizers edit community posts without changing media, pins or moderation
  c.store.db.query("UPDATE wall_posts SET platform='x' WHERE event_id=? AND id=?").run(c.id,p.id);
  expect(()=>c.wall.action(c.session,c.name,{...edit,revision:updated.revision})).toThrow('Only community');
 });
+
+test('formatted pinned announcements can remove and replace photos atomically without changing moderation',async()=>{
+ const c=await setup();let p=c.wall.submit(c.name,{text:'Old announcement',authorName:'Organizers'},media);
+ p=action(c,p,'approve');p=action(c,p,'pin');
+ const richText=[{type:'paragraph',runs:[{text:'Schedule',bold:true}]},{type:'bullet',runs:[{text:'Bring your laptop',italic:true}]}];
+ const edit={action:'edit',postId:p.id,revision:p.revision,authorName:'Organizers',text:'ignored',richText,removeImage:true};
+ expect(()=>c.wall.action(c.session,c.name,{...edit,richText:[{type:'html',runs:[]}]})).toThrow('formatting');
+ expect(()=>c.wall.action(c.session,c.name,{...edit,richText:[{type:'paragraph',runs:[{text:'a'.repeat(5001)}]}]})).toThrow('5000');
+ expect(()=>c.wall.action(c.session,c.name,{...edit,richText:[],text:''})).toThrow('required');
+ expect(c.wall.media(c.session,c.name,p.id).data).toEqual(media.data);
+ c.wall.action(c.session,c.name,edit);
+ const saved=c.wall.publicFeed(c.name).posts[0];
+ expect(saved.text).toBe('Schedule\nBring your laptop');expect(saved.richText[0].runs[0].bold).toBe(true);expect(saved.richText[1].runs[0].italic).toBe(true);
+ expect(saved.imageUrl).toBe('');expect(saved.pinned).toBe(true);expect(saved.status).toBe('approved');
+ expect(c.wall.storageUsage(c.id).eventBytes).toBe(0);
+ expect(()=>c.wall.action(c.session,c.name,edit,media)).toThrow('changed');
+ c.wall.action(c.session,c.name,{...edit,revision:saved.revision,removeImage:false},media);
+ expect(c.wall.publicFeed(c.name).posts[0].imageUrl).toContain('/media/');
+ expect(c.wall.media(c.session,c.name,p.id).data).toEqual(media.data);
+});
+
+test('schema 12 migration keeps existing wall content, media, sessions and moderation',async()=>{
+ const c=await setup();let p=c.wall.submit(c.name,{text:'Existing post'},media);p=action(c,p,'approve');p=action(c,p,'pin');
+ const before=c.wall.moderationFeed(c.session,c.name).posts;
+ c.store.db.exec('ALTER TABLE wall_posts DROP COLUMN rich_text; PRAGMA user_version=12;');c.store.close();
+ const reopened=new SqliteStore(c.filename);stores.push(reopened);const wall=new WallStore(reopened);
+ expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(13);
+ expect(wall.moderationFeed(c.session,c.name).posts).toEqual(before);
+ expect(wall.media(c.session,c.name,p.id).data).toEqual(media.data);
+});

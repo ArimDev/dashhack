@@ -17,7 +17,10 @@ const sharpRequire = createRequire(join(sharpRoot, 'package.json'));
 const libc = process.platform === 'linux' && sharpRequire('detect-libc').familySync() === 'musl' ? 'linuxmusl' : process.platform;
 const platform = `${libc}-${process.arch}`;
 const target = resolve('src/.output/server/node_modules');
-for (const name of ['sharp', 'detect-libc', '@img/colour', `@img/sharp-${platform}`, `@img/sharp-libvips-${platform}`]) {
+// Windows native packages already contain libvips alongside sharp.node.
+const packages = ['sharp', 'detect-libc', '@img/colour', `@img/sharp-${platform}`];
+if (process.platform !== 'win32') packages.push(`@img/sharp-libvips-${platform}`);
+for (const name of packages) {
     const entry = sharpRequire.resolve(name === `@img/sharp-libvips-${platform}` ? `${name}/package`
         : name === `@img/sharp-${platform}` ? `${name}/sharp.node` : name);
     const root = packageRoot(name, entry);

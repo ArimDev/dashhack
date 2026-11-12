@@ -468,6 +468,72 @@ test('pinned event placeholders can be edited without losing their pin',async({p
  await page.request.post(endpoint,{data:{action:'hide',postId:post.id,revision:latest.revision}});
  await dialog.getByRole('button',{name:'Save post',exact:true}).click();
  await expect(dialog.getByRole('alert')).toContainText('changed');
- await expect(dialog.getByLabel('Post text',{exact:true})).toHaveValue('Keep this draft');
+ await expect(dialog.getByRole('textbox',{name:'Post text',exact:true})).toHaveText('Keep this draft');
  await dialog.getByRole('button',{name:'Cancel',exact:true}).click();
+});
+
+test('pinned announcements support optional photos and formatted full text',async({page,browser})=>{
+ const name=await setup(page),encoded=encodeURIComponent(name),endpoint=`/api/wall/${encoded}/posts`;
+ await changed(page,()=>page.getByLabel('Wall enabled',{exact:true}).check());
+ const post=(await(await page.request.post(`/api/wall/${encoded}`,{multipart:{authorName:'Organizers',text:'Announcement',file:{name:'photo.png',mimeType:'image/png',buffer:png}}})).json()).data;
+ for(const [action,revision] of [['approve',0],['pin',1]])expect((await(await page.request.post(endpoint,{data:{action,postId:post.id,revision}})).json()).status).toBe(200);
+ await page.reload();const card=page.getByTestId('wall-post-'+post.id);
+ await card.getByRole('button',{name:'Edit post',exact:true}).click();
+ const dialog=page.getByRole('dialog',{name:'Edit post'}),editor=dialog.getByRole('textbox',{name:'Post text',exact:true});
+ await editor.fill('Schedule');await editor.selectText();await dialog.getByRole('button',{name:'Post text: Bold',exact:true}).click();
+ await editor.press('End');await editor.press('Enter');
+ await dialog.getByRole('button',{name:'Post text: Bold',exact:true}).click();
+ await dialog.getByRole('button',{name:'Post text: Bullets',exact:true}).click();
+ await dialog.getByRole('button',{name:'Post text: Italic',exact:true}).click();
+ const detail='Bring your laptop and charger. '.repeat(45);await editor.pressSequentially(detail);
+ await dialog.getByRole('button',{name:'Remove image',exact:true}).click();
+ await changed(page,()=>dialog.getByRole('button',{name:'Save post',exact:true}).click());await expect(dialog).toHaveCount(0);
+ const saved=(await(await page.request.get(endpoint)).json()).data.posts[0];
+ expect(saved.imageUrl).toBe('');expect(saved.pinned).toBe(true);expect(saved.richText.some(block=>block.type==='bullet')).toBe(true);
+ expect(saved.richText.some(block=>block.runs.some(run=>run.bold))).toBe(true);expect(saved.richText.some(block=>block.runs.some(run=>run.italic))).toBe(true);
+ const guest=await browser.newContext({viewport:{width:1920,height:1080}});try{
+  const wall=await guest.newPage();await wall.goto(`/${encoded}/wall`);
+  const publicCard=wall.locator(`[data-wall-post-id="${post.id}"]`).first();
+  await expect(publicCard).toContainText(detail.trim());await expect(publicCard.locator('img')).toHaveCount(0);
+  await expect(publicCard.getByRole('button',{name:'Read full post'})).toHaveCount(0);
+  await expect(publicCard.locator('.font-bold').filter({hasText:'Schedule'})).toBeVisible();
+  expect((await publicCard.boundingBox()).width).toBeGreaterThan(1500);
+  const copy=publicCard.locator('.wall-formatted-copy');
+  expect(await copy.evaluate(element=>parseFloat(getComputedStyle(element).fontSize))).toBeGreaterThanOrEqual(20);
+  expect(await copy.evaluate(element=>element.scrollHeight<=element.clientHeight+1)).toBe(true);
+  await wall.setViewportSize({width:390,height:844});
+  expect(await publicCard.evaluate(element=>element.scrollWidth<=element.clientWidth+1)).toBe(true);
+ }finally{await guest.close();}
+ await card.getByRole('button',{name:'Edit post',exact:true}).click();
+ await dialog.getByLabel('Photo (optional)',{exact:true}).setInputFiles({name:'replacement.png',mimeType:'image/png',buffer:png});
+ await expect(dialog.getByAltText('Post photo preview')).toBeVisible();
+ await changed(page,()=>dialog.getByRole('button',{name:'Save post',exact:true}).click());
+ await expect(dialog).toHaveCount(0);await expect(card.locator('img')).toBeVisible();
+});
+
+test('X cards and hashtags are clickable while plain HTML stays escaped',async({page,context})=>{
+ const name=await setup(page),encoded=encodeURIComponent(name),endpoint=`/api/wall/${encoded}/posts`;
+ await changed(page,()=>page.getByLabel('Wall enabled',{exact:true}).check());
+ const post=(await(await page.request.post(`/api/wall/${encoded}`,{data:{text:'Fixture'}})).json()).data;
+ await page.request.post(endpoint,{data:{action:'approve',postId:post.id,revision:0}});
+ const source='https://x.com/Jemmotar/status/2120603599218569529';
+ await page.route(`**/api/wall/${encoded}*`,async route=>{
+  const response=await route.fetch(),body=await response.json();
+  if(body.data?.posts)body.data.posts=body.data.posts.map(p=>({...p,platform:'x',authorName:'Jemmotar',sourceUrl:source,text:'Hello #atthack https://example.org/info <script>alert(1)</script>'}));
+  await route.fulfill({response,json:body});
+ });
+ await context.route('https://x.com/**',route=>route.fulfill({contentType:'text/plain',body:'External X page fixture'}));
+ await page.goto(`/${encoded}/wall`);
+ const card=page.locator(`[data-wall-copy="1"] [data-wall-post-id="${post.id}"]`);
+ const hashtag=card.getByRole('link',{name:'#atthack',exact:true});
+ await expect(hashtag).toHaveAttribute('href','https://x.com/hashtag/atthack');
+ await expect(hashtag).toHaveCSS('text-decoration-line','underline');
+ await expect(card.getByRole('link',{name:'https://example.org/info',exact:true})).toHaveAttribute('href','https://example.org/info');
+ await expect(card.locator('script')).toHaveCount(0);await expect(card).toContainText('<script>alert(1)</script>');
+ await page.locator('[data-wall-viewport]').dispatchEvent('pointermove');
+ let popupPromise=page.waitForEvent('popup');await hashtag.click();let popup=await popupPromise;await popup.waitForURL('https://x.com/hashtag/atthack');await popup.close();
+ await page.locator('[data-wall-viewport]').dispatchEvent('pointermove');
+ popupPromise=page.waitForEvent('popup');await card.click({position:{x:20,y:20}});popup=await popupPromise;await popup.waitForURL(source);await popup.close();
+ const copies=page.locator('[data-wall-copy="2"]');
+ if(await copies.count())await expect(copies.getByRole('link',{name:'#atthack',exact:true,includeHidden:true})).toHaveAttribute('tabindex','-1');
 });

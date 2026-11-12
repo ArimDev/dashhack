@@ -573,3 +573,28 @@ Private consistent snapshot `/data/backups/before-remove-team16-1794332590455.sq
 ## Real team Discord channel mappings — 2026-11-10
 
 Linked all fifteen numbered teams to their new team-NN channels in the active Teams category through the organizer settings API (revision 5, enabled). See DISCORD.md for exact IDs and the private-channel access caveat. Team/notes/invitation/wall hashes are preserved; integrity passes. Private consistent backup: `/data/backups/before-link-team-channels-1794346593548.sqlite`. No deployment or infrastructure change.
+
+## Additional event hostname — 2026-11-11
+
+Added `https://att-hackathon-2026.up.railway.app` at the user's request as a second Railway service domain, ID `35d699fc-d0bf-44e9-b032-8e1c5745a227`, targeting port 1020. HTTPS landing page returned 200 and `/api/health` returned `{"status":"ok"}`. The existing `dashhack-production.up.railway.app` domain remains active and healthy. No redeployment, database changes or runtime variable changes were needed.
+
+GitHub App base URL and registered OAuth callback remain on the existing hostname. Use that hostname for GitHub connection/student invitation flows until callbacks and browser cookie handling have been migrated and verified; OAuth initiated from the new hostname has not been validated.
+
+## Optional organizer photos and formatted announcements — 2026-11-11
+
+Deployment `00254b4b-8ffa-454a-8a4c-dad044212731` reached SUCCESS from a clean source-only upload of the local feature working tree. Organizer Edit post now supports bold/italic/bullets and optional photo removal/replacement. Pinned text-only cards show complete, larger text. See WALL_UPLOADS.md for schema 13 and validation/storage behavior. No existing announcement was edited or image removed automatically.
+
+Validation: 120 unit tests / 881 assertions; two focused Chromium scenarios covering existing draft/conflict behavior and formatting, optional media, full guest-visible text and photo replacement; production build including native Sharp packaging. Windows setup now includes Node.js and Chromium; the native packaging helper handles bundled Windows libvips while preserving Linux packaging.
+
+Pre-deploy on-volume snapshot: `/data/backups/before-rich-wall-20261111-1794431972872.sqlite`. Post-deploy schema 13, integrity ok, zero foreign-key violations; exact content fingerprints preserved across events, teams, notes, mentors, GitHub connections, wall settings, posts and media (excluding only the newly added empty rich_text column). Preserved counts: 4 events, 15 teams, 3 notes, 1 mentor, 1 GitHub connection, 2 wall-settings rows, 3 posts, 2 media attachments. New-host HTTPS health and live event login/editor controls verified; editor canceled without saving. Git changes remain local/uncommitted.
+
+
+Projector follow-up 2026-11-11: deployment 284d69c6-4225-4ffd-8b05-e02abb5a67f4 SUCCESS. Pinned image/video-free announcements span the feed width and use responsive 32/28/24/20 px type based on text/line length; full content remains visible without truncation. Build and two Chromium announcement scenarios pass, including 1920x1080 and 390px layouts. Live HTTPS health passes; browser-only long-text fixture verified the deployed card at 1688px wide, 24px type and no clipping. No production content was changed; existing organizer photo remains until explicitly removed in Edit post. No schema/API change in this follow-up.
+
+## Clickable social cards and hashtag links — 2026-11-12
+
+Deployment `60fb7918-bc9c-4165-a20a-064e10248d19` SUCCESS. Existing renderer previously treated post text as plain text and only linked the source footer. WallPostText now safely tokenizes URLs and Unicode hashtags while retaining structured bold/italic/bullets. Source footer stretches over the card; inline links, reader button and video controls remain independently interactive. Loop-copy anchors remain outside keyboard tab order. No X requests, provider scripts, schema changes or post mutations were needed.
+
+Validation: link-token unit test (6 assertions), production build/native packaging, direct Chromium checks against isolated built app for hashtag/source popups, URL links, escaped HTML and full-post reader. The existing live Jemmotar X card `2120603599218569529` and #atthack navigation both verified. External X navigation was intercepted only in the verification browser; no production state changed. The broader Windows Playwright runs encountered dev-server restart/login timeouts and production HTTP secure-cookie fixture failures, so those runs are not claimed passing; direct built-app and live checks supplied navigation evidence.
+
+Source finalization — 2026-11-12: complete unit suite passes (121 tests, 887 assertions). Production build and direct isolated/live Chromium navigation checks passed as recorded above. The deployed wall editor, full-width projector announcements, link renderer, Windows build/test portability fixes and deployment notes are being committed together on feat_alby_design. No provider polling, production data edits or additional deployment is required for this source finalization.

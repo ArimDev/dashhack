@@ -30,7 +30,7 @@ describe('SQLite persistence', () => {
         const before=Object.fromEntries(names.map(n=>[n,store.db.query('SELECT * FROM '+n).all()]));
         store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; PRAGMA user_version=7;');store.close();
         const upgraded=new SqliteStore(filename);stores.push(upgraded);
-        expect(upgraded.db.query('PRAGMA user_version').get().user_version).toBe(12);
+        expect(upgraded.db.query('PRAGMA user_version').get().user_version).toBe(13);
         for(const n of names)expect(upgraded.db.query('SELECT * FROM '+n).all()).toEqual(before[n]);
         expect(upgraded.db.query('SELECT COUNT(*) n FROM team_invite_links').get().n).toBe(0);
         expect(upgraded.db.query('PRAGMA integrity_check').get().integrity_check).toBe('ok');
@@ -189,7 +189,7 @@ describe('SQLite persistence', () => {
         store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; DROP TABLE team_invite_audit; DROP TABLE team_invite_flows; DROP TABLE team_invite_links; DROP TABLE wall_media; DROP TABLE wall_posts; DROP TABLE wall_settings; DROP TABLE github_oauth_flows; DROP TABLE github_connections; ALTER TABLE teams DROP COLUMN matrix_mentor_id; ALTER TABLE teams DROP COLUMN startup_matrix; ALTER TABLE teams DROP COLUMN originality; ALTER TABLE teams DROP COLUMN project_abstract; ALTER TABLE notes DROP COLUMN in_kanban; ALTER TABLE notes DROP COLUMN creator_id; ALTER TABLE notes DROP COLUMN type; DROP TABLE mentors; PRAGMA user_version = 1;');
         store.close();
         const upgraded = new SqliteStore(filename); stores.push(upgraded);
-        expect(upgraded.db.query('PRAGMA user_version').get().user_version).toBe(12);
+        expect(upgraded.db.query('PRAGMA user_version').get().user_version).toBe(13);
         expect(upgraded.getEvent('event').teams[0].stickyNotes[0]).toMatchObject({ ...note, type: 'mentor_note', creatorId: null, inKanban: true });
         expect(upgraded.getEvent('event').mentors).toEqual([]);
         expect((await upgraded.checkPassword('event', 'password123')).event).toBe('event');

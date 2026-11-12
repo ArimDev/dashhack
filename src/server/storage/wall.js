@@ -2,6 +2,7 @@ import { randomUUID } from 'node:crypto';
 import { StorageError } from './sqlite.js';
 import { statfsSync } from 'node:fs';
 import { dirname } from 'node:path';
+import { validateWallText, wallTextPlain } from '../../shared/wallText.js';
 import { MAX_UPLOAD_BYTES, WALL_MEDIA_BUDGET, EVENT_MEDIA_BUDGET, VOLUME_RESERVE, MAX_DATABASE_BYTES } from '../../shared/wallUploads.js';
 
 export { MAX_UPLOAD_BYTES } from '../../shared/wallUploads.js';
@@ -85,7 +86,8 @@ function normalize(row) {
     return { id: row.id, platform: row.platform, authorName: row.author_name, handle: row.handle, text: row.text,
         imageUrl: row.image_url, videoUrl: row.video_url, sourceUrl: row.source_url, status: row.status,
         approved: row.status === 'approved', hidden: !!row.hidden, pinned: !!row.pinned,
-        revision: row.revision, createdAt: row.created_at };
+        revision: row.revision, createdAt: row.created_at,
+        ...(row.rich_text && row.rich_text !== '[]' ? { richText: JSON.parse(row.rich_text) } : {}) };
 }
 export class WallStore {
     constructor(store, { freeBytes, totalMediaLimit = WALL_MEDIA_BUDGET, eventMediaLimit = EVENT_MEDIA_BUDGET, databaseLimit = MAX_DATABASE_BYTES } = {}) {
@@ -225,7 +227,7 @@ export class WallStore {
             return normalize(this.db.query('SELECT * FROM wall_posts WHERE event_id=? AND id=?').get(eventId,id));
         })();
     }
-    action(session, name, input) {
+    action(session, name, input, media = null) {
         const id = this.store.authorize(session,name);
         // Stopping is idempotent and independent of the caller's stale settings revision.
         // This path can only turn collection off; enabling still requires a matching revision.
@@ -243,10 +245,25 @@ export class WallStore {
             if (input.action === 'edit') {
                 if (post.platform !== 'manual') fail('Only community posts can be edited.');
                 if (typeof input.text !== 'string' || typeof input.authorName !== 'string') fail('Author and text are required.');
-                const text = string(input.text,5000), author = string(input.authorName,80);
-                if (!text && !post.image_url && !post.video_url) fail('Post description or image is required.');
-                this.db.query('UPDATE wall_posts SET text=?,author_name=?,revision=revision+1 WHERE event_id=? AND id=?')
-                    .run(text,author,id,post.id);
+                let richText = [];
+                if (input.richText !== undefined) {
+                    try { richText = validateWallText(input.richText); } catch (error) { fail(error.message); }
+                }
+                const text = string(input.richText === undefined ? input.text : wallTextPlain(richText),5000), author = string(input.authorName,80);
+                if (input.removeImage !== undefined && typeof input.removeImage !== 'boolean') fail('Invalid image option');
+                if (media && input.removeImage) fail('Choose either a replacement photo or removal');
+                let imageUrl = post.image_url, videoUrl = post.video_url;
+                if (media) {
+                    validateMedia(media.data, media.mime);
+                    // Check full incoming size conservatively before replacing the old attachment.
+                    this.assertUploadCapacity(id, media.data.length);
+                    imageUrl = `/api/wall/${id}/media/${post.id}`; videoUrl = '';
+                } else if (input.removeImage) { imageUrl = ''; videoUrl = ''; }
+                if (!text && !imageUrl && !videoUrl) fail('Post description or image is required.');
+                if (media || input.removeImage) this.db.query('DELETE FROM wall_media WHERE event_id=? AND post_id=?').run(id,post.id);
+                if (media) this.db.query('INSERT INTO wall_media(event_id,post_id,mime,data) VALUES(?,?,?,?)').run(id,post.id,media.mime,media.data);
+                this.db.query('UPDATE wall_posts SET text=?,rich_text=?,author_name=?,image_url=?,video_url=?,revision=revision+1 WHERE event_id=? AND id=?')
+                    .run(text,JSON.stringify(richText),author,imageUrl,videoUrl,id,post.id);
                 return;
             }
             switch (input.action) {

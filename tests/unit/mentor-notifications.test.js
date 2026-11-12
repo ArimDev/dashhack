@@ -1,5 +1,7 @@
 import {test,expect,afterEach} from 'bun:test';
 import {mkdtempSync,rmSync} from 'node:fs';
+import {tmpdir} from 'node:os';
+import {join} from 'node:path';
 import {SqliteStore} from '../../src/server/storage/sqlite.js';
 import {DiscordStore} from '../../src/server/storage/discord.js';
 import {discordInteraction} from '../../src/server/services/discord.js';
@@ -42,7 +44,7 @@ test('missing credentials do no network work; metadata failures are bounded and 
  const d=await setup(),n=d.discord.help(d.payload(),'Help');d.store.db.query('DELETE FROM notes WHERE id=?').run(n.noteId);await d.notifier.tick();expect(d.rows()[0].state).toBe('failed');expect(d.calls.filter(c=>c.options.method==='POST')).toHaveLength(0);
 });
 test('schema 9 upgrade preserves content and existing sessions without replaying historical requests',async()=>{
- const dir=mkdtempSync('/tmp/dashhack-notification-migration-');dirs.push(dir);const c=await setup(dir+'/app.sqlite');c.discord.help(c.payload(),'Existing help');const before=c.store.getEvent('Event');c.store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE discord_notifications; PRAGMA user_version=9;');c.store.close();const reopened=new SqliteStore(dir+'/app.sqlite',{now:()=>1800000000000});stores.push(reopened);expect(reopened.getEvent('Event')).toEqual(before);expect(reopened.getSession(c.session).eventId).toBe(c.eventId);expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(12);expect(reopened.db.query('SELECT COUNT(*) n FROM discord_notifications').get().n).toBe(0);
+ const dir=mkdtempSync(join(tmpdir(),'dashhack-notification-migration-'));dirs.push(dir);const c=await setup(dir+'/app.sqlite');c.discord.help(c.payload(),'Existing help');const before=c.store.getEvent('Event');c.store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE discord_notifications; PRAGMA user_version=9;');c.store.close();const reopened=new SqliteStore(dir+'/app.sqlite',{now:()=>1800000000000});stores.push(reopened);expect(reopened.getEvent('Event')).toEqual(before);expect(reopened.getSession(c.session).eventId).toBe(c.eventId);expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(13);expect(reopened.db.query('SELECT COUNT(*) n FROM discord_notifications').get().n).toBe(0);
 });
 test('long Unicode/Markdown fields stay inside Discord limits, links contain no login secrets and team colors are retained',()=>{
  const row={note_id:'note',event_name:'ATT Hackathon Junior 2026',team_name:'😀*'.repeat(100),team_color:'#1565c0',priority:'medium',status:'To Do',content:'**@everyone**😀'.repeat(500),author:'<@123> Student',created_at:1800000000000};const message=mentorMessage(row,'https://dashhack.test');expect(message.embeds[0].title.length).toBeLessThanOrEqual(256);expect(message.embeds[0].description.length).toBeLessThanOrEqual(1501);expect(message.embeds[0].color).toBe(0x1565c0);expect(message.embeds[0].url).toContain('/ATT%20Hackathon%20Junior%202026/kanban?note=note');expect(message.embeds[0].url).not.toContain('token');
@@ -107,7 +109,7 @@ test('card updates retry safely with bounded backoff, survive restart, preserve 
 });
 
 test('schema 10 upgrade preserves delivered message bindings and does not create replacement announcements',async()=>{
- const dir=mkdtempSync('/tmp/dashhack-status-migration-');dirs.push(dir);const c=await setup(dir+'/app.sqlite');const note=c.discord.help(c.payload(),'Existing request');await c.notifier.tick();const before=c.store.getEvent('Event');
+ const dir=mkdtempSync(join(tmpdir(),'dashhack-status-migration-'));dirs.push(dir);const c=await setup(dir+'/app.sqlite');const note=c.discord.help(c.payload(),'Existing request');await c.notifier.tick();const before=c.store.getEvent('Event');
  for(const column of ['channel_id','sync_hash','sync_target','sync_attempts','sync_after','move_state'])c.store.db.exec(`ALTER TABLE discord_notifications DROP COLUMN ${column}`);
  c.store.db.exec('DROP TABLE discord_message_cleanup; PRAGMA user_version=10');c.store.close();const reopened=new SqliteStore(dir+'/app.sqlite',{now:()=>1800000000000});stores.push(reopened);
  expect(reopened.getEvent('Event')).toEqual(before);expect(reopened.getSession(c.session).eventId).toBe(c.eventId);
@@ -179,7 +181,7 @@ test('a new status during the copy remains dirty; disabled Discord never copies 
  const d=await threadSetup();d.patchStatus('Done');d.store.db.query('UPDATE discord_settings SET enabled=0').run();await d.notifier.tick();expect(d.calls).toHaveLength(0);
 });
 test('schema 11 upgrade preserves sent message IDs, sessions, matrix and notes without moving any card during migration',async()=>{
- const dir=mkdtempSync('/tmp/dashhack-done-migration-');dirs.push(dir);const c=await setup(dir+'/app.sqlite');c.discord.help(c.payload(),'Existing');await c.notifier.tick();const before=c.store.getEvent('Event');
+ const dir=mkdtempSync(join(tmpdir(),'dashhack-done-migration-'));dirs.push(dir);const c=await setup(dir+'/app.sqlite');c.discord.help(c.payload(),'Existing');await c.notifier.tick();const before=c.store.getEvent('Event');
  c.store.db.exec('DROP TABLE discord_message_cleanup; ALTER TABLE discord_notifications DROP COLUMN move_state; PRAGMA user_version=11;');c.store.close();const reopened=new SqliteStore(dir+'/app.sqlite',{now:()=>1800000000000});stores.push(reopened);expect(reopened.getEvent('Event')).toEqual(before);expect(reopened.getSession(c.session).eventId).toBe(c.eventId);expect(reopened.db.query('SELECT message_id,move_state FROM discord_notifications').get()).toEqual({message_id:'723456789012345678',move_state:''});expect(reopened.db.query('SELECT COUNT(*) n FROM discord_message_cleanup').get().n).toBe(0);
 });
 

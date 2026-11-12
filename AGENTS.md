@@ -194,3 +194,6 @@ The existing user-provided Discord channel 1569708054633775166 was kept and unma
 ## Active real-team Discord mappings
 
 On 2026-11-10 all fifteen real numbered teams were explicitly mapped to the new team-NN channels under category 1285716341050839091. Production settings revision 5, enabled. Exact IDs and checks are in docs/DISCORD.md. Archived channels and x-team-16 are unmapped. Existing private channel overwrites deny bot channel reads; signed slash interactions/private replies do not read chat messages. Preserve privacy and do not grant broad roles/Administrator to fix command visibility. Verify student Use Application Commands/app integration permissions if commands are hidden. No student invocation was impersonated or real-team test request created.
+
+
+Wall announcement editing: schema 13 adds validated structured rich_text (bold/italic/bullets); see docs/WALL_UPLOADS.md. Organizer Edit post supports optional photo removal/replacement using bounded existing media processing. Pinned text-only cards show complete, larger text. Preserve revisions/pins/moderation, escaped rendering and existing content. Windows image builds bundle libvips from the native Sharp package; no separate win32 libvips package exists.

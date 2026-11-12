@@ -118,7 +118,7 @@ export class SqliteStore {
             PRAGMA mmap_size = 0;
         `);
         const version = this.db.query('PRAGMA user_version').get().user_version;
-        if (version > 12) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
+        if (version > 13) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
         if (version === 0) this.db.transaction(() => {
             this.db.exec(`
                 CREATE TABLE events (
@@ -305,6 +305,13 @@ export class SqliteStore {
             );
             CREATE INDEX discord_cleanup_queue ON discord_message_cleanup(next_attempt_at);
             PRAGMA user_version = 12;`);
+        })();
+        if (version < 13) this.db.transaction(() => {
+            // Column check also supports migration fixtures that reset only older subsystems.
+            if (!this.db.query('PRAGMA table_info(wall_posts)').all().some(column => column.name === 'rich_text')) {
+                this.db.exec("ALTER TABLE wall_posts ADD COLUMN rich_text TEXT NOT NULL DEFAULT '[]'");
+            }
+            this.db.exec('PRAGMA user_version = 13');
         })();
     }
 

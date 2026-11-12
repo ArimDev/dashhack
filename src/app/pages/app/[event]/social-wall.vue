@@ -88,20 +88,31 @@
         <label class="block text-sm">Author
           <input v-model="editingPost.authorName" maxlength="80" :disabled="busy" class="mt-1 min-h-11 w-full rounded-xl border bg-white px-3 dark:border-slate-600 dark:bg-slate-900" />
         </label>
-        <label class="block text-sm">Post text
-          <textarea v-model="editingPost.text" maxlength="5000" rows="7" :disabled="busy" class="mt-1 w-full rounded-xl border bg-white p-3 dark:border-slate-600 dark:bg-slate-900" />
-        </label>
+        <fieldset :disabled="busy || preparingImage" :inert="busy || preparingImage" class="space-y-3">
+          <legend class="mb-1 text-sm">Post text</legend>
+          <ProjectAbstract v-model="editingPost.richText" label="Post text" />
+          <p class="text-xs text-slate-500">{{ wallTextPlain(editingPost.richText).length }} / 5000 characters. Pinned posts without a photo show their full text.</p>
+          <label class="block text-sm">Photo (optional)
+            <input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif" class="mt-1 block w-full text-sm" @change="selectEditImage" />
+          </label>
+          <img v-if="editPreview || (!editingPost.removeImage && editingPost.imageUrl)" :src="editPreview || editingPost.imageUrl" alt="Post photo preview" class="max-h-52 w-full rounded-xl object-contain" />
+          <button v-if="editFile || (!editingPost.removeImage && (editingPost.imageUrl || editingPost.videoUrl))" type="button" class="min-h-11 rounded-xl border px-4 text-sm" @click="removeEditImage">Remove image</button>
+          <button v-if="editingPost.removeImage && (editingPost.imageUrl || editingPost.videoUrl)" type="button" class="min-h-11 rounded-xl border px-4 text-sm" @click="editingPost.removeImage = false">Keep original image</button>
+          <p v-if="preparingImage" role="status">Preparing photo…</p>
+        </fieldset>
         <p v-if="error" role="alert" class="text-sm text-red-600 dark:text-red-400">{{ error }}</p>
       </form>
       <template #footer>
         <button type="button" :disabled="busy" class="min-h-11 rounded-xl border px-4" @click="editingPost = null">Cancel</button>
-        <button type="submit" form="edit-wall-post" :disabled="busy" class="min-h-11 rounded-xl bg-bluey-600 px-4 text-white">Save post</button>
+        <button type="submit" form="edit-wall-post" :disabled="busy || preparingImage" class="min-h-11 rounded-xl bg-bluey-600 px-4 text-white">Save post</button>
       </template>
     </DialogShell>
   </div>
 </template>
 
 <script setup>
+import { wallTextBlocks, wallTextPlain } from '../../../../shared/wallText.js';
+import { prepareWallPhoto } from '../../../utils/prepareWallPhoto.js';
 definePageMeta({ layout: 'dashboard', middleware: ['routes'] });
 const currentEvent = useState('currentEvent');
 const wallSettingsOpen = ref(false);
@@ -114,8 +125,30 @@ const openMenuId = ref(null), activeTab = ref('all'), sortOrder = ref('newest');
 const search=ref(''),perPage=ref(20),page=ref(1),pagination=ref({pageCount:1,totalMatched:0}),fetching=ref(false);
 let searchTimer,readController,syncingPage=false;
 const busy = ref(false), error = ref(''), editingPost = ref(null);
-function startEdit(post) { if (canEdit.value && !busy.value) { error.value = ''; editingPost.value = { ...post }; openMenuId.value = null; } }
-async function savePost() { const draft = editingPost.value; if (draft && await change({ action:'edit', postId:draft.id, revision:draft.revision, authorName:draft.authorName, text:draft.text })) editingPost.value = null; }
+const editFile = shallowRef(null), editPreview = ref(''), preparingImage = ref(false);
+function clearEditFile() { if (editPreview.value) URL.revokeObjectURL(editPreview.value); editPreview.value = ''; editFile.value = null; }
+watch(editingPost, () => clearEditFile());
+onBeforeUnmount(clearEditFile);
+function startEdit(post) { if (canEdit.value && !busy.value) { error.value = ''; editingPost.value = { ...post, richText: JSON.parse(JSON.stringify(post.richText || wallTextBlocks(post.text))), removeImage: false }; openMenuId.value = null; } }
+async function selectEditImage(event) {
+  const file = event.target.files?.[0], draft = editingPost.value;
+  if (!file || busy.value || preparingImage.value) return;
+  preparingImage.value = true; error.value = '';
+  try {
+    const prepared = await prepareWallPhoto(file);
+    if (editingPost.value !== draft) return;
+    clearEditFile(); editFile.value = prepared; editPreview.value = URL.createObjectURL(prepared); draft.removeImage = false;
+  } catch (failure) { error.value = failure.message; }
+  finally { preparingImage.value = false; event.target.value = ''; }
+}
+function removeEditImage() { clearEditFile(); editingPost.value.removeImage = true; }
+async function savePost() {
+  const draft = editingPost.value;
+  if (!draft || preparingImage.value) return;
+  const text = wallTextPlain(draft.richText);
+  if (text.length > 5000) { error.value = 'Post text must be at most 5000 characters.'; return; }
+  if (await change({ action:'edit', postId:draft.id, revision:draft.revision, authorName:draft.authorName, text, richText:draft.richText, removeImage:draft.removeImage }, editFile.value)) editingPost.value = null;
+}
 const uploadQrUrl = computed(() => import.meta.client ? `${window.location.origin}/${encodeURIComponent(currentEvent.value)}/wall/upload` : '');
 const tabLabel = { all: 'All', pending: 'Pending', approved: 'Approved', rejected: 'Rejected', pinned: 'Pinned' };
 const view=()=>({page:page.value,perPage:perPage.value,search:search.value,status:activeTab.value,sort:sortOrder.value});
@@ -140,11 +173,13 @@ async function loadSocialWall() {
 function queueLoad(){clearTimeout(searchTimer);searchTimer=setTimeout(loadSocialWall,250);}
 watch([search,activeTab,sortOrder,perPage],()=>{syncingPage=true;page.value=1;syncingPage=false;openMenuId.value=null;queueLoad();},{flush:'sync'});
 watch(page,()=>{if(!syncingPage){openMenuId.value=null;queueLoad();}},{flush:'sync'});
-async function change(payload) {
+async function change(payload, file = null) {
   if (!canEdit.value || busy.value) return;
   readController?.abort();clearTimeout(searchTimer);busy.value = true; error.value = ''; openMenuId.value = null;
   try {
-    const response = await $fetch(`/api/wall/${encodeURIComponent(currentEvent.value)}/posts`, { method: 'POST', body: { ...payload, view: view() } });
+    let body = { ...payload, view: view() };
+    if (file) { const form = new FormData(); form.append('metadata', JSON.stringify(body)); form.append('file', file); body = form; }
+    const response = await $fetch(`/api/wall/${encodeURIComponent(currentEvent.value)}/posts`, { method: 'POST', body });
     if (response.status !== 200) {
       if (response.status === 409) {
         const fresh = await $fetch(`/api/wall/${encodeURIComponent(currentEvent.value)}/posts`, { query: view() });

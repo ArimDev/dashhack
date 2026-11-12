@@ -24,7 +24,7 @@ export function checkWallUploadRate(event) {
     try { return uploads.enter(client, network); }
     catch (error) { if (error.status === 429) setHeader(event, 'Retry-After', '60'); throw error; }
 }
-export async function readWallSubmission(event) {
+export async function readWallSubmission(event, { editing = false } = {}) {
     const max = MAX_UPLOAD_BYTES + 32768;
     const multipart = (getHeader(event, 'content-type') || '').startsWith('multipart/form-data');
     const json = (getHeader(event, 'content-type') || '').startsWith('application/json');
@@ -42,6 +42,13 @@ export async function readWallSubmission(event) {
         catch { throw new StorageError(400, 'Invalid upload form'); }
         for (const [key, value] of form) {
             if (typeof value === 'string') {
+                if (editing && key === 'metadata') {
+                    if (Object.keys(input).length || value.length > 65536) throw new StorageError(400, 'Invalid post edit');
+                    try { input = JSON.parse(value); } catch { throw new StorageError(400, 'Invalid post edit'); }
+                    if (!input || typeof input !== 'object' || Array.isArray(input) || input.action !== 'edit') throw new StorageError(400, 'Invalid post edit');
+                    continue;
+                }
+                if (editing) throw new StorageError(400, 'Invalid post edit field');
                 if (!['authorName', 'text'].includes(key) || Object.hasOwn(input, key) || value.length > 5000) throw new StorageError(400, 'Invalid wall field');
                 input[key] = value;
             } else {

@@ -3,7 +3,7 @@
     class="relative rounded-3xl border border-slate-200 bg-white p-2 shadow-sm dark:border-slate-700 dark:bg-slate-900"
   >
     <div class="flex flex-col gap-4 md:flex-row md:items-start md:justify-between p-2">
-      <div class="relative min-w-0 flex-1 overflow-hidden rounded-2xl">
+      <div class="relative isolate min-w-0 flex-1 overflow-hidden rounded-2xl">
         <div class="mb-2 flex flex-wrap items-center gap-2">
           <Badge variant="slate" size="xs" upper>
             <Icon
@@ -21,9 +21,7 @@
           </Badge>
         </div>
 
-        <p class="whitespace-pre-wrap text-sm leading-relaxed text-slate-700 dark:text-slate-200 px-2">
-          {{ post.text }}
-        </p>
+        <WallPostText :blocks="post.richText?.length ? post.richText : undefined" :text="post.text" :platform="post.platform" class="text-sm leading-relaxed text-slate-700 dark:text-slate-200 px-2" />
         <div
           v-if="post.imageUrl && !post.videoUrl"
           class="mt-3 overflow-hidden rounded-2xl border border-slate-200 dark:border-slate-700"

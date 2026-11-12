@@ -53,6 +53,14 @@
             :data-wall-copy="copy"
             class="grid grid-cols-1 items-start gap-4 sm:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4 pb-4"
           >
+            <WallPostCard
+              v-for="post in textAnnouncements"
+              :key="`${copy}-announcement-${post.id}`"
+              :post="post"
+              :decorative="copy > 1"
+              class="col-span-full"
+              projector-announcement
+            />
             <div v-for="(column, columnIndex) in postColumns" :key="columnIndex" class="min-w-0">
               <WallPostCard
                 v-for="post in column"
@@ -110,9 +118,11 @@ const eventName = computed(() => route.params.event || "event");
 const posts = ref([]), renderedCount = ref(12), totalPosts = ref(0);
 const renderedPosts = computed(() => posts.value.slice(0, renderedCount.value));
 const columnCount = ref(1);
+const isTextAnnouncement = post => post.pinned && !post.imageUrl && !post.videoUrl;
+const textAnnouncements = computed(() => renderedPosts.value.filter(isTextAnnouncement));
 const postColumns = computed(() => {
   const columns = Array.from({ length: columnCount.value }, () => []);
-  renderedPosts.value.forEach((post, index) => columns[index % columns.length].push(post));
+  renderedPosts.value.filter(post => !isTextAnnouncement(post)).forEach((post, index) => columns[index % columns.length].push(post));
   return columns;
 });
 function updateColumnCount() { columnCount.value = innerWidth >= 1536 ? 4 : innerWidth >= 1280 ? 3 : innerWidth >= 640 ? 2 : 1; }

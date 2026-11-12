@@ -7,6 +7,7 @@ export interface WallPost {
     authorName: string;
     handle: string;
     text: string;
+    richText?: { type: 'paragraph' | 'bullet'; runs: { text: string; bold: boolean; italic: boolean }[] }[];
     imageUrl: string;
     videoUrl: string;
     sourceUrl: string;
