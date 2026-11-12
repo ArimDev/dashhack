@@ -1,5 +1,7 @@
 # Social Wall — PR #6 integration
 
+Deployment update: the picture-dragging/wide-tile follow-up below is now committed and pushed as `5963411`, deployed successfully as `900da65b-8fdf-476e-9f52-c4e8fe3626f5`. Live health/rendering and exact content preservation pass; Instagram ON / X OFF retained. See RAILWAY.md.
+
 ## Picture dragging and wide tiles — local follow-up, 2026-11-12
 
 Photo framing now uses an on-picture focus marker instead of sliders: click/drag with pointer capture, tap on touchscreens, or use arrows (Shift for ten-point steps). Coordinates clamp to 0–100; capture release/cancel ends the gesture, and original-ratio images need no focal adjustment. Moderator Edit post also offers one-/two-column tile width, including posts without photos. The existing media_layout JSON accepts optional span 1/2; older records retain one-column behavior without a migration. Wide cards clamp to available columns, including one on phones; pinned text announcements retain full-wall width.

@@ -1,5 +1,11 @@
 # DashHack on Railway
 
+## Draggable photo focus and wide tiles — 2026-11-12
+
+Source `5963411` was committed and pushed to `origin/feat_alby_design`, including all preceding local wall changes. Deployment `900da65b-8fdf-476e-9f52-c4e8fe3626f5` reached **SUCCESS** with its database-aware healthcheck. Photo focus uses direct pointer dragging/touch tapping and keyboard arrows; Edit post supports one-/two-column tiles, clamped to one on phones. No schema/runtime/dependency/infrastructure changes; schema remains 15. Clean source archive SHA-256: `b9e7cd5b97493ebc287528aad7b94b34b303849e1acfcb9ce5837cf60b02b039`; runtime source matched the tested clean production build before upload.
+
+On-volume snapshot: `/data/backups/before-wall-drag-20261112-1794475616549.sqlite`; fingerprint baseline `/data/backups/wall-drag-20261112-baseline.json`. Post-deploy integrity is **ok** and every recorded table fingerprint matches exactly (sessions excluded). Instagram remains ON and X OFF, as requested. No production content/settings writes or provider tests were performed. Local validation: frozen install/build with Bun 1.3.2 including Sharp; 28 targeted unit tests / 305 assertions; production HTTPS Chromium scenarios for actual drag, touch tap, keyboard focus, saved width, responsive fallback and existing mosaic. Live Chromium verifies health and two-column/phone rendering with browser-only fixtures and zero browser errors.
+
 ## Configurable wall deployment — 2026-11-12
 
 Deployment [`cc253c65-d0d4-4aaf-bfaa-0f4b5e3a5850`](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d/service/9960307b-3bd3-41a9-ade4-67a2ca421745?id=cc253c65-d0d4-4aaf-bfaa-0f4b5e3a5850) reached **SUCCESS** from source commit `95c8dc4`. It includes configurable mosaic columns/spacing/padding/corners/text size, natural photo/video proportions, moderator editing of all three post sources, photo framing/focal-point preview, per-post article shortening/character limits (100 default; pinned organizer posts default to full text), and browser-local X/Instagram Last attempt timestamps. Schema 14/15 add optional presentation columns only. No dependency, runtime, service, replica, volume, password, seed or restore change.
