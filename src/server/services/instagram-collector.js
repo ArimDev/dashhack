@@ -129,8 +129,16 @@ export class InstagramCollector {
             const last = await (await this.apify('/runs/last', {}, { allowMissing: true }))?.json();
             if (!this.active(event.id)) return { imported: 0 };
             if (!ACTIVE_RUN.includes(last?.data?.status)) {
-                await this.apify('/runs?waitForFinish=60', { method: 'POST' });
+                const started = await (await this.apify('/runs?waitForFinish=60', { method: 'POST' })).json();
                 if (!this.active(event.id)) return { imported: 0 };
+                const status = started?.data?.status;
+                if (![...ACTIVE_RUN, 'SUCCEEDED'].includes(status)) {
+                    const error = new Error(['FAILED', 'TIMED-OUT', 'ABORTED'].includes(status)
+                        ? `Apify Instagram task ended with ${status}. Existing posts are preserved; automatic retries will back off.`
+                        : 'Apify returned an invalid run response.');
+                    error.providerFailure = true;
+                    throw error;
+                }
             }
             const params = new URLSearchParams({ status: 'SUCCEEDED', clean: 'true', limit: '50' });
             const response = await this.apify(`/runs/last/dataset/items?${params}`);

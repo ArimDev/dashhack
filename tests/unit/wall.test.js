@@ -203,6 +203,50 @@ describe('Optional Apify Instagram collector', () => {
         expect(c.wall.publicFeed(c.name).posts[0].approved).toBe(true);
         expect(c.wall.submit(c.name, { text: 'Public upload', platform: 'instagram' }).status).toBe('pending');
     });
+    test('failed task runs preserve posts and back off instead of reporting an older dataset as success', async () => {
+        let now = Date.now(); const c = await enabled({ now: () => now });
+        const existing = c.wall.submit(c.name, { id: 'instagram-EXISTING', platform: 'instagram', text: 'Keep this post' }, null, { collected: true });
+        const logs = [], warnings = [], calls = [];
+        const collector = new InstagramCollector(c.store, 'private-key', {
+            logger: { info: (...args) => logs.push(args), warn: (...args) => warnings.push(args) },
+            request: async (url, options) => {
+                calls.push(url);
+                if (new URL(url).pathname.endsWith('/runs/last')) return Response.json({ data: { status: 'SUCCEEDED' } });
+                if (options.method === 'POST') return Response.json({ data: { status: 'FAILED', statusMessage: 'private-key in provider diagnostic' } }, { status: 201 });
+                return Response.json(payload); // An older successful dataset must never conceal the failed new run.
+            },
+        });
+        await collector.tick();
+        expect(calls).toHaveLength(2);
+        expect(c.wall.config(c.id)).toMatchObject({ instagramFailureCount: 1, instagramEnabled: true });
+        expect(c.wall.config(c.id).instagramLastPollError).toContain('FAILED');
+        expect(Date.parse(c.wall.config(c.id).instagramNextPollAt) - now).toBe(15 * 60000);
+        expect(c.wall.moderationFeed(c.session, c.name).posts).toEqual([existing]);
+        expect(logs.some(entry => entry[0].endsWith('Fetch succeeded'))).toBe(false);
+        expect(JSON.stringify(warnings)).not.toContain('private-key');
+        now += 5 * 60000; await collector.tick(); expect(calls).toHaveLength(2);
+        now += 10 * 60000; await collector.tick(); expect(calls).toHaveLength(4);
+        expect(c.wall.config(c.id).instagramFailureCount).toBe(2);
+        expect(Date.parse(c.wall.config(c.id).instagramNextPollAt) - now).toBe(30 * 60000);
+    });
+    test('aborted, timed-out and malformed task results fail without exposing provider content', async () => {
+        const c = await enabled(), warnings = [];
+        for (const status of ['ABORTED', 'TIMED-OUT', 'private-key', undefined]) {
+            let calls = 0;
+            const collector = new InstagramCollector(c.store, 'private-key', {
+                logger: { info: () => {}, warn: (...args) => warnings.push(args) },
+                request: async (url, options) => {
+                    calls++;
+                    return Response.json({ data: { status: options.method === 'POST' ? status : 'SUCCEEDED', statusMessage: 'private-key' } });
+                },
+            });
+            const result = await collector.syncEvent(c.name);
+            expect(result.imported).toBe(0); expect(result.error).toBeTruthy(); expect(calls).toBe(2);
+            expect(result.error).not.toContain('private-key');
+        }
+        expect(c.wall.moderationFeed(c.session, c.name).posts).toHaveLength(0);
+        expect(JSON.stringify(warnings)).not.toContain('private-key');
+    });
     test('carousel covers and unsafe or unavailable photos are skipped until a later poll', async () => {
         const c = await enabled(); let cdnUp = false;
         const items = [
