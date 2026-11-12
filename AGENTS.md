@@ -4,6 +4,8 @@ Read [docs/SQLITE_MIGRATION.md](docs/SQLITE_MIGRATION.md) for the current implem
 
 ## Current baseline
 
+- Startupové matice now live at `/app/[event]/matice` in sidebar/mobile navigation, with all-team completion counts, empty/partial/complete labels, filters and lazy editors. Team cards have a direct matrix link instead of embedded editors. Preserve draft/conflict/refresh protections. HTML exports open offline in browsers and print to PDF; XLSX remains available. Team deletion is separated by a divider and requires the exact typed team name plus explicit permanent-delete confirmation. Source `5f1667c`, deployment `e456251e-f31e-4f25-b51f-9735770a5d7c` SUCCESS; schema remains 16. See docs/SQLITE_MIGRATION.md and docs/RAILWAY.md.
+
 - Kanban/Teams tracked notes now have optional `assigneeId` from the event's mentor roster, independent of `creatorId`. Schema **16** adds nullable `notes.assignee_id`; source `bebb8cf`, deployment `e986d493-626c-4f7e-b19d-47c3e0fbc621` SUCCESS. Both write paths check event membership/revisions, and whole-team saves that omit assignment retain it. Public views are read-only; assignment creates no individual authentication or extra notification. See docs/SQLITE_MIGRATION.md and docs/RAILWAY.md. Do not run schema-15-only releases against the upgraded database.
 
 - Moderation cards show **Posted:** with the original post `createdAt` in full browser-local date/time/timezone, including pending/hidden/rejected posts; keep it visible before approval and do not replace it with collection/approval time. Source `c649f1c`, deployment `f6da29c9-d83a-49a5-8880-9834a59d85c4` SUCCESS. See docs/RAILWAY.md.

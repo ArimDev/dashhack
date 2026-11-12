@@ -8,6 +8,8 @@ Per-team and all-team HTML downloads are self-contained UTF-8 browser documents 
 
 Team and shared icon controls have larger, higher-contrast glyphs and 44px targets. Team deletion is separated from Edit by a divider, warns that notes/project/matrix are permanently removed, requires the exact team name and blocks duplicate submissions while busy. Server authorization remains unchanged; the typed-name safeguard is a UI confirmation, not a new permission system.
 
+The matrix workspace/UI follow-up above passes 137 unit tests / 1074 assertions and seven focused production HTTPS Chromium scenarios. Its production deployment and consistent snapshot verification are recorded in RAILWAY.md.
+
 ## Kanban assignees — 2026-11-12
 
 Schema 16 adds nullable `notes.assignee_id` referencing the existing event mentor roster. Existing notes start unassigned; creator attribution remains independent. Tracked notes expose an Assignee selector in Kanban and Teams, including Unassigned, using the existing acknowledged note-save flow. Public views show the assignment read-only. No individual account or notification is created by assigning a mentor.
