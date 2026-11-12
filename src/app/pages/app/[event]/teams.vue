@@ -35,7 +35,6 @@
                 <button type="button" @click="refreshTeams(true)" :disabled="refreshingTeams" class="min-h-11 rounded-lg border border-gray-300 px-3 py-2 text-sm font-semibold disabled:opacity-50 dark:border-gray-600">
                     {{ refreshingTeams ? 'Refreshing…' : 'Refresh' }}
                 </button>
-                <MatrixExport :teams="data.teams" :event-name="currentEvent" :mentors="data.mentors || []" label="Export všech matic (.xlsx)" />
             </div>
             <div v-if="!visibleIds.size" class="py-12 text-center text-gray-500 dark:text-gray-400">No teams match your search.</div>
             <div data-testid="teams-grid" class="grid grid-cols-1 items-start gap-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">

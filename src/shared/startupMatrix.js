@@ -15,6 +15,13 @@ export function matrixQuestion(field) {
     return [{ type: 'paragraph', runs: [{ text: field.prompt, bold: false, italic: false }] }];
 }
 
+export function matrixCompletedCount(team) {
+    return STARTUP_MATRIX_FIELDS.filter(field => {
+        const text = matrixAnswerText(team.startupMatrix?.[field.key] || []).trim();
+        return text && text !== field.prompt;
+    }).length;
+}
+
 export const MATRIX_ANSWER_LIMIT = 600;
 export const MATRIX_PRINT_LINE_LIMIT = 18;
 export function matrixAnswerText(blocks = []) {

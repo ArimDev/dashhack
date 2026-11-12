@@ -49,7 +49,7 @@
 </template>
 
 <script setup>
-import { STARTUP_MATRIX_FIELDS, matrixQuestion, matrixAnswerError, matrixAnswerText, MATRIX_ANSWER_LIMIT } from '~~/shared/startupMatrix.js';
+import { STARTUP_MATRIX_FIELDS, matrixQuestion, matrixCompletedCount, matrixAnswerError, matrixAnswerText, MATRIX_ANSWER_LIMIT } from '~~/shared/startupMatrix.js';
 const props = defineProps({ team: { type: Object, required: true } });
 const eventData = useState('eventData');
 const currentEvent = useState('currentEvent');
@@ -58,7 +58,7 @@ const editing = ref(false), saving = ref(false), conflict = ref(false);
 const draft = ref({}), mentorId = ref(''), error = ref(''), feedback = ref('');
 let revision, base;
 const invalid = computed(() => STARTUP_MATRIX_FIELDS.some(field => matrixAnswerError(draft.value[field.key] || [])));
-const completed = computed(() => STARTUP_MATRIX_FIELDS.filter(field => props.team.startupMatrix?.[field.key]?.some(block => block.runs.some(run => run.text.trim()))).length);
+const completed = computed(() => matrixCompletedCount(props.team));
 const mentorName = computed(() => eventData.value.mentors?.find(mentor => mentor.id === props.team.matrixMentorId)?.name);
 
 function startEditing() {

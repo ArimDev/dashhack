@@ -34,6 +34,11 @@ button, a, input, select, textarea, [contenteditable] { touch-action: manipulati
 :where(form, fieldset, .grid > *) { min-width: 0; }
 :where(p, h1, h2, h3, li, code) { overflow-wrap: anywhere; }
 @layer components { .icon-button { display: inline-flex; align-items: center; justify-content: center; min-width: 44px; min-height: 44px; border-radius: .75rem; } }
+.icon-button .iconify { min-width: 22px; min-height: 22px; }
+.icon-button.text-gray-500 { color: var(--color-gray-700); }
+.dark .icon-button.text-gray-500 { color: var(--color-gray-200); }
+.icon-button:hover { background-color: var(--color-gray-100); }
+.dark .icon-button:hover { background-color: var(--color-gray-700); }
 .dashboard-shell { height: 100vh; height: 100dvh; }
 .dashboard-header { padding-top: max(.75rem, env(safe-area-inset-top)); }
 .dashboard-content { scrollbar-gutter: stable; scroll-padding-block: 1rem; }

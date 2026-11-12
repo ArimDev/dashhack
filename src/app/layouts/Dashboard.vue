@@ -104,6 +104,7 @@ const route = useRoute();
 const navigation = [
     { path: 'teams', label: 'Teams', icon: 'heroicons:user-group' },
     { path: 'kanban', label: 'Kanban', icon: 'heroicons:view-columns' },
+    { path: 'matice', label: 'Matice', icon: 'heroicons:table-cells' },
     { path: 'social-wall', label: 'Social Wall', icon: 'heroicons:photo' },
     { path: 'mentors', label: 'Mentors', icon: 'heroicons:academic-cap' },
     { path: 'log', label: 'Log', icon: 'heroicons:document-text' },

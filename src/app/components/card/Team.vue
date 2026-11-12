@@ -35,8 +35,9 @@
                         <Icon name="heroicons:pencil-square" size="16px" />
                     </button>
 
-                    <button v-if="canEdit" aria-label="Delete team" @click="emit('delete', team)" class="icon-button p-1.5 text-gray-500 hover:text-red-500 transition-colors">
-                        <Icon name="heroicons:trash" size="16px" />
+                    <div v-if="canEdit" class="mx-1 h-7 w-px bg-gray-300 dark:bg-gray-600" role="separator"></div>
+                    <button v-if="canEdit" aria-label="Delete team" title="Delete team" @click="emit('delete', team)" class="icon-button p-1.5 text-red-700 dark:text-red-300 hover:bg-red-50 dark:hover:bg-red-950 transition-colors">
+                        <Icon name="heroicons:trash" size="22px" />
                     </button>
                 </div>
             </div>
@@ -52,10 +53,11 @@
                 </details>
             </div>
 
-            <details @toggle="matrixToggled" class="border-t border-gray-100 dark:border-gray-700 px-3 py-2">
-                <summary class="cursor-pointer text-sm font-semibold text-gray-800 dark:text-gray-200">Startupová matice</summary>
-                <StartupMatrix v-if="matrixLoaded" :team="team" />
-            </details>
+            <NuxtLink :to="`/app/${encodeURIComponent(eventName)}/matice#matrix-${team._id}`"
+                class="flex min-h-11 flex-wrap items-center gap-2 border-t border-gray-200 px-3 py-2 text-sm font-semibold text-bluey-700 hover:bg-bluey-50 dark:border-gray-700 dark:text-bluey-200 dark:hover:bg-gray-700">
+                <Icon name="heroicons:table-cells" size="24px" /><span>Startupová matice</span>
+                <span class="ml-auto rounded-md px-2 py-1 text-xs" :class="completed === 10 ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : 'bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200'">{{ completed === 10 ? 'Hotová' : completed ? 'Rozpracovaná' : 'Nevyplněná' }} · {{ completed }}/10</span>
+            </NuxtLink>
 
             <div v-if="showGraph" class="border-t border-gray-100 dark:border-gray-700/50 p-2 bg-gray-50 dark:bg-gray-900/30">
                  <div class="h-48 w-full flex items-center justify-center">
@@ -123,6 +125,7 @@
 </template>
 
 <script setup>
+import {matrixCompletedCount} from '~~/shared/startupMatrix.js';
 const Apexchart = defineAsyncComponent(() => import("vue3-apexcharts"));
 const emit = defineEmits(["edit", "delete", "add-note", "update-note", "delete-note", "refresh"]);
 const props = defineProps({
@@ -130,12 +133,7 @@ const props = defineProps({
 });
 
 const showGraph = ref(false);
-const matrixLoaded = ref(false);
-function matrixToggled(event) {
-    if (!event.target.open) return;
-    matrixLoaded.value = true;
-    emit('refresh');
-}
+const completed = computed(() => matrixCompletedCount(props.team));
 const eventData = useState('eventData');
 const canEdit = useState('eventCanEdit', () => false);
 const showNotes = ref(false);
@@ -220,9 +218,10 @@ async function loadChartData() {
 
 <style>
 .team-notes-grid { grid-template-columns: repeat(auto-fit, minmax(min(100%, 260px), 1fr)); }
-@media (min-width: 1024px) and (pointer: fine) {
-    .team-toolbar .icon-button { min-width: 30px; min-height: 30px; padding: 4px; }
-}
+.team-toolbar .icon-button { min-width: 44px; min-height: 44px; }
+.team-toolbar .iconify { width: 22px !important; height: 22px !important; }
+.team-toolbar .text-gray-500 { color: var(--color-gray-700); }
+.dark .team-toolbar .text-gray-500 { color: var(--color-gray-200); }
 .apexcharts-tooltip {
     background: #1f2937 !important;
     border-color: #374151 !important;

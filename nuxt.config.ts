@@ -54,6 +54,9 @@ export default defineNuxtConfig({
 		clientBundle: {
 			icons: [
                 'heroicons:bars-3',
+                'heroicons:table-cells',
+                'heroicons:chevron-up',
+                'heroicons:chevron-down',
                 'heroicons:user-group',
                 'heroicons:academic-cap',
                 'heroicons:view-columns',

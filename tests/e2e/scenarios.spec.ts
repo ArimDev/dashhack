@@ -109,7 +109,7 @@ test('startup matrix offers ten default questions and persists partial formatted
   expect((await mentorResponse.json()).status).toBe(200);
   const card = await addTeam(page, 'Startup team');
   await card.getByText('Startupová matice', { exact: true }).click();
-  const matrix = card.getByTestId('startup-matrix');
+  const matrix = page.getByTestId('startup-matrix');
   await expect(matrix.getByText('Vyplněno 0/10 odpovědí.', { exact: true })).toBeVisible();
   await expect(matrix.getByTestId('matrix-field-problem')).toContainText('Jaký problém váš produkt řeší? Budou za to chtít zákazníci platit?');
   await expect(matrix.getByRole('heading', { name: 'KLIENTI', exact: true })).toBeVisible();
@@ -126,6 +126,7 @@ test('startup matrix offers ten default questions and persists partial formatted
   await matrix.getByRole('button', { name: 'Uložit matici' }).click();
   await expect(matrix.getByRole('status')).toHaveText('Startupová matice uložena.');
   await expect(matrix.getByTestId('matrix-field-problem').locator('.font-bold').last()).toHaveText('Students cannot easily find accessible study rooms.');
+  await page.goto(`/app/${eventName}/teams`);
   await card.getByTestId('toggle-notes-btn').click();
   await saved(page, () => card.getByTestId('add-note-btn').click());
   await page.reload();
@@ -160,9 +161,9 @@ test('startup matrix is public read-only and rejects unauthenticated saves', asy
 
 test('startup matrix preserves drafts on collapse and stale saves, then reloads explicitly', async ({ page }) => {
   const card = await addTeam(page, 'Concurrent startup');
-  const summary = card.getByText('Startupová matice', { exact: true });
-  await summary.click();
-  const matrix = card.getByTestId('startup-matrix');
+  await card.getByText('Startupová matice', { exact: true }).click();
+  const summary = page.getByTestId('matrix-team-Concurrent startup').getByRole('button', { name: /Concurrent startup/ });
+  const matrix = page.getByTestId('startup-matrix');
   await matrix.getByRole('button', { name: 'Upravit matici' }).click();
   const problem = matrix.getByRole('textbox', { name: 'PROBLÉM', exact: true });
   await problem.fill('My unsaved mentor draft');
@@ -652,7 +653,7 @@ test('startup matrix downloads the supplied Excel template per team and with all
  const first=event.teams.find(team=>team.name==='Export <matrix>');
  expect((await(await page.request.patch('/api/team/matrix',{data:{username:eventName,teamId:first._id,revision:first.revision,answers:{problem:[{type:'paragraph',runs:[{text:'Česká odpověď <img src=x onerror=alert(1)>',bold:true}]}]}}})).json()).status).toBe(200);await page.reload();
  const card=page.getByTestId('team-card-Export <matrix>');await card.getByText('Startupová matice',{exact:true}).click();
- const matrix=card.getByTestId('startup-matrix'),download=page.waitForEvent('download');
+ const matrix=page.getByTestId('startup-matrix'),download=page.waitForEvent('download');
  await matrix.getByRole('button',{name:'Exportovat matici (.xlsx)',exact:true}).click();
  const one=await download;expect(one.suggestedFilename()).toMatch(/\.xlsx$/);const single=workbookEntries(await readFile(await one.path()));
  expect(single.get('xl/workbook.xml').toString()).toContain('Export &lt;matrix&gt;');expect(single.has('xl/worksheets/sheet2.xml')).toBe(false);
@@ -669,7 +670,7 @@ test('matrix opens with fresh external answers and refresh never replaces an act
  const event=(await(await page.request.get(`/api/event/${eventName}`)).json()).data,team=event.teams[0];
  const answer=text=>[{type:'paragraph',runs:[{text,bold:false,italic:false}]}];
  const external=await(await page.request.patch('/api/team/matrix',{data:{username:eventName,teamId:team._id,revision:team.revision,answers:{problem:answer('Odpověď týmu z jiného okna')}}})).json();expect(external.status).toBe(200);
- await card.getByText('Startupová matice',{exact:true}).click();const matrix=card.getByTestId('startup-matrix');
+ await card.getByText('Startupová matice',{exact:true}).click();const matrix=page.getByTestId('startup-matrix');
  await expect(matrix.getByTestId('matrix-field-problem')).toContainText('Odpověď týmu z jiného okna');
  await matrix.getByRole('button',{name:'Upravit matici'}).click();await matrix.getByRole('textbox',{name:'PROBLÉM',exact:true}).fill('Můj rozepsaný koncept');
  const changed=await(await page.request.patch('/api/team/matrix',{data:{username:eventName,teamId:team._id,revision:external.revision,answers:{solution:answer('Nové řešení od týmu')}}})).json();expect(changed.status).toBe(200);

@@ -1,5 +1,13 @@
 # SQLite migration and resource reduction
 
+## Dedicated matrix workspace and browser export — 2026-11-12
+
+`/app/[event]/matice` is available from the dashboard sidebar/mobile navigation. Team cards link directly to their matrix instead of mounting matrix editors. The workspace lists every team with completed answer counts (10/10 is complete), explicit empty/partial/complete labels and colors, search and status filters. Default questions and whitespace do not count as completed answers. Editors mount lazily and remain mounted across collapse/filtering to preserve drafts; route/browser exit warns before discarding an editor. Refresh/poll/focus reads cannot replace an active draft or a newer local save. Existing revision-checked matrix writes and public read-only access remain.
+
+Per-team and all-team HTML downloads are self-contained UTF-8 browser documents with escaped names, questions, rich-text answers and mentor attribution. They need no Excel, network or scripts and support browser printing/Save as PDF. Existing XLSX export stays available on the matrix page. No schema/dependency/service change.
+
+Team and shared icon controls have larger, higher-contrast glyphs and 44px targets. Team deletion is separated from Edit by a divider, warns that notes/project/matrix are permanently removed, requires the exact team name and blocks duplicate submissions while busy. Server authorization remains unchanged; the typed-name safeguard is a UI confirmation, not a new permission system.
+
 ## Kanban assignees — 2026-11-12
 
 Schema 16 adds nullable `notes.assignee_id` referencing the existing event mentor roster. Existing notes start unassigned; creator attribution remains independent. Tracked notes expose an Assignee selector in Kanban and Teams, including Unassigned, using the existing acknowledged note-save flow. Public views show the assignment read-only. No individual account or notification is created by assigning a mentor.
