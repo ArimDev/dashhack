@@ -70,13 +70,13 @@
       <a
         v-if="post.sourceUrl"
         :href="post.sourceUrl"
+        :aria-label="post.platform === 'x' ? 'Open original post on X' : post.platform === 'instagram' ? 'Open original post on Instagram' : 'View original post'"
         :tabindex="decorative ? -1 : undefined"
         target="_blank"
         rel="noopener noreferrer"
-        class="mt-3 inline-flex items-center gap-1 text-xs font-semibold text-cyan-600 hover:text-cyan-700 dark:text-cyan-300 dark:hover:text-cyan-200 after:absolute after:inset-0 after:z-10 after:rounded-3xl focus-visible:after:ring-2 focus-visible:after:ring-cyan-500"
-        :class="isBlueCard ? 'hover:text-slate-200 text-white' : ''"
+        class="absolute inset-0 z-10 rounded-3xl focus-visible:outline-2 focus-visible:outline-offset-[-3px] focus-visible:outline-cyan-500"
       >
-        {{ post.platform === 'x' ? 'Open on X' : post.platform === 'instagram' ? 'Open on Instagram' : 'View original' }} <Icon name="heroicons:arrow-top-right-on-square" size="14px" />
+        <span class="sr-only">{{ post.platform === 'x' ? 'Open original post on X' : post.platform === 'instagram' ? 'Open original post on Instagram' : 'View original post' }}</span>
       </a>
     </div>
   </article>

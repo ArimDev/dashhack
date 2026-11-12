@@ -129,7 +129,9 @@ export class WallStore {
             xLastPollAt: row?.last_poll_at ? new Date(row.last_poll_at).toISOString() : null,
             xLastPollError: row?.last_poll_error || '',
             instagramLastPollAt: settings.instagramLastPollAt || null,
-            instagramLastPollError: settings.instagramLastPollError || '' };
+            instagramLastPollError: settings.instagramLastPollError || '',
+            instagramNextPollAt: settings.instagramNextPollAt || null,
+            instagramLastRequestId: settings.instagramLastRequestId || '' };
     }
     updateSettings(session, name, patch, revision) {
         const id = this.store.authorize(session, name), validated = validateSettings(patch);

@@ -1,5 +1,30 @@
 import { WallStore } from '../storage/wall.js';
 
+async function captapiFailure(response) {
+    // Never retain the raw provider body: it can contain URLs or credentials.
+    const payload = await response.json().catch(() => null);
+    const details = payload?.error;
+    const hints = [details?.reason, details?.code, details?.message, typeof details === 'string' ? details : '', payload?.code];
+    const loginWall = hints.some(value => typeof value === 'string' && /login[_ -]wall/i.test(value));
+    let message;
+    if (loginWall) message = `Captapi cannot fetch Instagram because Instagram requires login from its scraper (login_wall, HTTP ${response.status}). Existing posts are preserved.`;
+    else if (response.status === 429) message = 'Captapi rate limit; retrying after at least 15 minutes.';
+    else if (response.status === 401 || response.status === 403) message = `Captapi rejected API access (HTTP ${response.status}). Check the provider key and permissions.`;
+    else if (response.status === 402) message = 'Captapi has insufficient credits. Check the provider account.';
+    else if (response.status === 404) message = 'Captapi could not find this Instagram hashtag (HTTP 404). Check the saved hashtag.';
+    else if (response.status >= 500) message = `Captapi is temporarily unable to fetch Instagram (HTTP ${response.status}). Existing posts are preserved; automatic retries will back off.`;
+    else message = `Captapi rejected the Instagram request (HTTP ${response.status}). Check the saved hashtag and provider configuration.`;
+    const error = new Error(message);
+    error.providerFailure = true;
+    error.permanent = [400,401,402,403,404,422].includes(response.status) || details?.retryable === false;
+    error.persistent = details?.persistent === true;
+    const requestId = response.headers.get('x-captapi-request-id') || payload?.requestId;
+    error.requestId = typeof requestId === 'string' && /^[a-f\d-]{16,64}$/i.test(requestId) ? requestId : '';
+    const retryAfter = response.headers.get('retry-after');
+    error.retryAfterMs = /^\d+$/.test(retryAfter || '') ? Number(retryAfter) * 1000 : Math.max(0, Date.parse(retryAfter) - Date.now()) || 0;
+    return error;
+}
+
 function mediaUrl(value) {
     if (typeof value !== 'string' || value.length > 2000) return '';
     try {
@@ -59,9 +84,7 @@ export class InstagramCollector {
                     headers: { Authorization: `Bearer ${this.key}`, Accept: 'application/json' },
                     redirect: 'error', signal: AbortSignal.timeout(95000),
                 });
-                if (!response.ok) throw new Error(response.status === 429
-                    ? 'Captapi rate limit; retrying after at least 15 minutes.'
-                    : `Captapi request failed (${response.status}). Check API access, credits and hashtags.`);
+                if (!response.ok) throw await captapiFailure(response);
                 const payload = await response.json();
                 if (payload.success !== true || !Array.isArray(payload.data?.results)) throw new Error('Captapi returned an invalid search response.');
                 const results = payload.data.results.slice(0, 50);
@@ -84,15 +107,27 @@ export class InstagramCollector {
             this.record(event.id, '');
             return { imported };
         } catch (error) {
-            const reason = error.message?.startsWith('Captapi ') ? error.message : 'Instagram collection failed. Check API access or available wall storage.';
-            this.logger.warn('[Instagram collector] Fetch failed', { eventId: event.id, hashtag: activeHashtag, imported, error: reason });
-            this.record(event.id, reason);
+            const reason = (error.providerFailure || error.message === 'Captapi returned an invalid search response.') ? error.message
+                : ['TimeoutError','AbortError'].includes(error.name) ? 'Captapi Instagram request timed out. Automatic retries will back off.'
+                : 'Instagram collection failed. Check API access or available wall storage.';
+            const retry = this.record(event.id, reason, error);
+            this.logger.warn('[Instagram collector] Fetch failed', { eventId: event.id, hashtag: activeHashtag, imported,
+                error: reason, requestId: retry.requestId, nextPollAt: retry.nextPollAt });
             return { imported, error: reason };
         } finally { this.running.delete(event.id); }
     }
-    record(id, error) {
-        this.store.db.query(`UPDATE wall_settings SET settings=json_set(settings,'$.instagramLastPollAt',?,'$.instagramLastPollError',?) WHERE event_id=?`)
-            .run(this.store.timestamp(), error, id);
+    record(id, error, details = {}) {
+        const current = this.wall.config(id);
+        const failures = error ? Math.min(10, (Number(current.instagramFailureCount) || 0) + 1) : 0;
+        const backoffMinutes = error ? Math.max(current.instagramPollIntervalMinutes,
+            details.permanent || details.persistent ? 60 : Math.min(60, 15 * 2 ** (failures - 1))) : 0;
+        const retryMs = Math.min(24 * 3600000, Math.max(backoffMinutes * 60000, Number(details.retryAfterMs) || 0));
+        const nextPollAt = error ? new Date(this.store.now() + retryMs).toISOString() : null;
+        const requestId = details.requestId || '';
+        this.store.db.query(`UPDATE wall_settings SET settings=json_set(settings,'$.instagramLastPollAt',?,'$.instagramLastPollError',?,
+            '$.instagramFailureCount',?,'$.instagramNextPollAt',?,'$.instagramLastRequestId',?) WHERE event_id=?`)
+            .run(this.store.timestamp(), error, failures, nextPollAt, requestId, id);
+        return { nextPollAt, requestId };
     }
     async tick() {
         if (!this.key) return;
@@ -100,6 +135,7 @@ export class InstagramCollector {
             WHERE json_extract(settings,'$.enabled')=1 AND json_extract(settings,'$.instagramEnabled')=1`).all();
         for (const row of rows) {
             const wall = this.wall.config(row.id);
+            if (Date.parse(wall.instagramNextPollAt) > this.store.now()) continue;
             const delay = Math.max(wall.instagramPollIntervalMinutes, wall.instagramLastPollError?.includes('rate limit') ? 15 : 0) * 60000;
             if (!wall.instagramLastPollAt || this.store.now() - Date.parse(wall.instagramLastPollAt) >= delay) await this.syncEvent(row.name);
         }

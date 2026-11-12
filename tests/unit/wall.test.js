@@ -253,6 +253,37 @@ describe('Optional Captapi Instagram collector', () => {
         release(Response.json(payload)); expect((await first).imported).toBe(0); expect(calls).toBe(1);
         await collector.tick(); expect(calls).toBe(1);
     });
+    test('Instagram login-wall errors have safe diagnostics and persisted backoff across restart', async () => {
+        let now = Date.now(), calls = 0;
+        const c = await enabled({ now: () => now }), warnings = [];
+        const request = async () => { calls++; return Response.json({ success:false,error:{code:'UPSTREAM_UNAVAILABLE',reason:'login_wall',message:'login_wall private-key'} },
+            {status:502,headers:{'x-captapi-request-id':'28d0bb8d-2c54-4bcf-a55e-d820af7d021a'}}); };
+        const logger = {info:()=>{},warn:(...args)=>warnings.push(args)};
+        const collector = new InstagramCollector(c.store,'private-key',{request,logger});
+        await collector.tick();
+        let wall = c.wall.config(c.id);
+        expect(wall.instagramLastPollError).toContain('login_wall');expect(wall.instagramLastPollError).not.toContain('credits');
+        expect(wall.instagramLastRequestId).toBe('28d0bb8d-2c54-4bcf-a55e-d820af7d021a');
+        expect(Date.parse(wall.instagramNextPollAt)-now).toBe(15*60000);
+        const restarted = new InstagramCollector(c.store,'private-key',{request,logger});
+        now+=5*60000;await restarted.tick();expect(calls).toBe(1);
+        now+=10*60000;await restarted.tick();expect(calls).toBe(2);
+        wall=c.wall.config(c.id);expect(Date.parse(wall.instagramNextPollAt)-now).toBe(30*60000);
+        expect(JSON.stringify(warnings)).not.toContain('private-key');expect(wall.instagramEnabled).toBe(true);
+        expect(wall.instagramQueryHashtags).toEqual(['#hackathon','#Hackathon']);
+    });
+    test('Instagram respects Retry-After and clears failure diagnostics after a successful scheduled retry',async()=>{
+        let now=Date.now(),calls=0;const c=await enabled({now:()=>now});
+        const collector=new InstagramCollector(c.store,'key',{logger:{info:()=>{},warn:()=>{}},request:async()=>{
+            calls++;return calls===1?new Response('not JSON; private response',{status:503,headers:{'Retry-After':'1200'}}):Response.json(payload);
+        }});
+        await collector.tick();expect(c.wall.config(c.id).instagramLastPollError).toContain('HTTP 503');
+        expect(Date.parse(c.wall.config(c.id).instagramNextPollAt)-now).toBe(20*60000);
+        now+=19*60000;await collector.tick();expect(calls).toBe(1);
+        now+=60000;await collector.tick();expect(calls).toBe(2);
+        expect(c.wall.config(c.id)).toMatchObject({instagramLastPollError:'',instagramNextPollAt:null,instagramFailureCount:0});
+        expect(c.wall.moderationFeed(c.session,c.name).posts).toHaveLength(1);
+    });
 });
 
 describe('Optional in-process X collector',() => {

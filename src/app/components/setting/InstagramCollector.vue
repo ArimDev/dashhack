@@ -15,9 +15,11 @@
     <fieldset :disabled="!loaded" class="space-y-4">
       <p class="text-sm">{{ configured ? 'Captapi API key configured.' : 'Captapi API key is not configured. Ask the event host to set NUXT_CAPTAPI_API_KEY.' }}</p>
       <p role="status" class="text-sm">{{ !loaded ? 'Checking polling status...' : savedEnabled ? `Automatic Instagram polling is on: every ${savedInterval} minutes while the wall is enabled.` : 'Instagram polling is paused. Existing posts remain on the wall.' }}</p>
-      <p class="text-xs">Each poll requests fresh results and costs 2 Captapi credits per hashtag. An in-flight request may finish after stopping.</p>
+      <p class="text-xs">Each successful search with results costs 2 Captapi credits per hashtag. Failed or empty searches are not charged. An in-flight request may finish after stopping.</p>
       <p v-if="lastPoll" class="text-xs">Last attempt: {{ lastPoll }}</p>
       <p v-if="pollError" role="status" class="text-sm text-amber-700">{{ pollError }}</p>
+      <p v-if="pollError && nextPoll && savedEnabled" class="text-xs">Next automatic attempt no earlier than {{ nextPoll }}.</p>
+      <p v-if="pollError && requestId" class="text-xs break-all">Captapi support request ID: {{ requestId }}</p>
       <label class="block text-sm">
         Polling interval (minutes)
         <input v-model.number="intervalMinutes" type="number" min="1" max="180" @input="success = false" class="mt-1 min-h-11 w-full rounded-lg border border-gray-300 p-3 dark:border-gray-600" />
@@ -42,6 +44,7 @@ const eventName = useState('currentEvent');
 const enabled = ref(false), savedEnabled = ref(false), configured = ref(false), loaded = ref(false);
 const hashtags = ref(''), intervalMinutes = ref(5), savedInterval = ref(5);
 const revision = ref(0), lastPoll = ref(null), pollError = ref('');
+const nextPoll = ref(null), requestId = ref('');
 const saving = ref(false), pausing = ref(false), pauseConfirmed = ref(false), pauseError = ref('');
 const error = ref(''), success = ref(false);
 let operationVersion = 0;
@@ -49,6 +52,7 @@ function metadata(wall) {
   revision.value = wall.revision; savedEnabled.value = enabled.value = wall.instagramEnabled;
   savedInterval.value = wall.instagramPollIntervalMinutes;
   lastPoll.value = wall.instagramLastPollAt; pollError.value = wall.instagramLastPollError;
+  nextPoll.value = wall.instagramNextPollAt; requestId.value = wall.instagramLastRequestId || '';
 }
 function apply(wall) {
   metadata(wall);
