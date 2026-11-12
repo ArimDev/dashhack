@@ -26,5 +26,5 @@ export default apiHandler(async event => {
     }
     else if (event.method !== 'GET') return { status: 405, message: 'Method Not Allowed' };
     return { status: 200, data: { ...wall.moderationFeed(session,name,view), xConfigured: !!useRuntimeConfig().xBearerToken,
-        instagramConfigured: !!process.env.NUXT_CAPTAPI_API_KEY } };
+        instagramConfigured: !!process.env.NUXT_APIFY_API_KEY } };
 });

@@ -3,7 +3,7 @@ import { InstagramCollector } from '../services/instagram-collector.js';
 
 export default defineNitroPlugin(nitro => {
     const token = useRuntimeConfig().xBearerToken;
-    const key = process.env.NUXT_CAPTAPI_API_KEY;
+    const key = process.env.NUXT_APIFY_API_KEY;
     console.info('[Social collectors] Configuration', { xConfigured: !!token, instagramConfigured: !!key,
         schedulerEnabled: !!(token || key), intervalSeconds: 60 });
     if (!token && !key) return;

@@ -15,23 +15,17 @@
     <p v-if="pauseError" role="alert" class="mb-3 text-sm text-red-600">{{ pauseError }}</p>
     <p role="status" class="mb-3 text-sm">{{ !loaded ? 'Checking polling status...' : savedEnabled ? `Automatic Instagram polling is on: every ${savedInterval} minutes while the wall is enabled.` : 'Instagram polling is paused. Existing posts remain on the wall.' }}</p>
     <fieldset :disabled="!loaded" class="space-y-4">
-      <p class="text-sm">{{ configured ? 'Captapi API key configured.' : 'Captapi API key is not configured. Ask the event host to set NUXT_CAPTAPI_API_KEY.' }}</p>
-      <p class="text-xs">Each successful search with results costs 2 Captapi credits per hashtag. Failed or empty searches are not charged. An in-flight request may finish after stopping.</p>
+      <p class="text-sm">{{ configured ? 'Apify API key configured.' : 'Apify API key is not configured. Ask the event host to set NUXT_APIFY_API_KEY.' }}</p>
+      <p class="text-xs">Each poll starts the Apify Instagram task (unless a run is still in progress) and stores new photos on the wall. One run of 10 posts costs about $0.03, so shorter intervals cost more. Hashtag and post count are set in the Apify task.</p>
       <p v-if="lastPoll" class="text-xs">Last attempt: <time :datetime="lastPoll" :title="lastPoll">{{ localDateTime(lastPoll) }}</time></p>
       <p v-if="pollError" role="status" class="text-sm text-amber-700">{{ pollError }}</p>
       <p v-if="pollError && nextPoll && savedEnabled" class="text-xs">Next automatic attempt no earlier than {{ nextPoll }}.</p>
-      <p v-if="pollError && requestId" class="text-xs break-all">Captapi support request ID: {{ requestId }}</p>
       <label class="block text-sm">
         Polling interval (minutes)
         <input v-model.number="intervalMinutes" type="number" min="1" max="180" @input="success = false" class="mt-1 min-h-11 w-full rounded-lg border border-gray-300 p-3 dark:border-gray-600" />
       </label>
-      <label class="block text-sm">
-        Hashtags to query
-        <textarea v-model="hashtags" rows="3" @input="success = false" placeholder="Example only: #yourhackathon" class="mt-1 w-full rounded-lg border border-gray-300 p-3 dark:border-gray-600 placeholder:text-slate-400 placeholder:font-normal placeholder:italic placeholder:opacity-75 dark:placeholder:text-slate-500"></textarea>
-      </label>
-      <p class="mb-3 text-xs text-slate-500">Separate hashtags with spaces, commas or new lines.</p>
       <div class="flex flex-wrap gap-2">
-        <button type="submit" :disabled="saving || pausing" class="min-h-11 rounded-lg bg-bluey-500 px-4 font-semibold text-white disabled:opacity-50">{{ saving ? 'Saving...' : 'Save Queries' }}</button>
+        <button type="submit" :disabled="saving || pausing" class="min-h-11 rounded-lg bg-bluey-500 px-4 font-semibold text-white disabled:opacity-50">{{ saving ? 'Saving...' : 'Save interval' }}</button>
         <button type="button" :disabled="saving || pausing" @click="load" class="min-h-11 rounded-lg border px-4">Reload saved settings</button>
       </div>
       <p v-if="error" role="alert" class="text-sm text-red-600">{{ error }}</p>
@@ -44,9 +38,9 @@
 import { localDateTime } from '../../utils/localDateTime.js';
 const eventName = useState('currentEvent');
 const enabled = ref(false), savedEnabled = ref(false), configured = ref(false), loaded = ref(false);
-const hashtags = ref(''), intervalMinutes = ref(5), savedInterval = ref(5);
+const hashtags = ref(''), intervalMinutes = ref(20), savedInterval = ref(20);
 const revision = ref(0), lastPoll = ref(null), pollError = ref('');
-const nextPoll = ref(null), requestId = ref('');
+const nextPoll = ref(null);
 const saving = ref(false), pausing = ref(false), pauseError = ref('');
 const error = ref(''), success = ref(false);
 let operationVersion = 0;
@@ -54,7 +48,7 @@ function metadata(wall) {
   revision.value = wall.revision; savedEnabled.value = enabled.value = wall.instagramEnabled;
   savedInterval.value = wall.instagramPollIntervalMinutes;
   lastPoll.value = wall.instagramLastPollAt; pollError.value = wall.instagramLastPollError;
-  nextPoll.value = wall.instagramNextPollAt; requestId.value = wall.instagramLastRequestId || '';
+  nextPoll.value = wall.instagramNextPollAt;
 }
 function apply(wall) {
   metadata(wall);
