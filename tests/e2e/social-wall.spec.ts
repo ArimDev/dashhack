@@ -152,7 +152,7 @@ test('moderation search and pagination request bounded pages and explain filters
   await expect(page.locator('#blocked-authors-hint')).toContainText('Commas or new lines');
 });
 
-test('projector wall centers the sharing QR without widening the feed', async ({ page }) => {
+test('projector wall shows a bare top-right QR without widening the feed', async ({ page }) => {
   const name = await setup(page), encoded = encodeURIComponent(name);
   await changed(page, () => page.getByLabel('Wall enabled', { exact: true }).check());
   const config=(await(await page.request.get(`/api/wall/${encoded}/posts`)).json()).data.wall;
@@ -173,9 +173,13 @@ test('projector wall centers the sharing QR without widening the feed', async ({
     const qrBox = await qr.boundingBox(), feed = await page.locator('[data-wall-viewport]').boundingBox(), cogBox = await cog.boundingBox();
     expect(qrBox.x).toBeGreaterThan(viewport.width > 2200 ? feed.x + feed.width : viewport.width * 0.8);
     const sharingBox = await page.getByTestId('wall-sharing-qr').boundingBox();
-    expect(Math.abs(sharingBox.y + sharingBox.height / 2 - viewport.height / 2)).toBeLessThan(2);
+    expect(Math.abs(sharingBox.y - 16)).toBeLessThan(2);
+    await expect(page.getByTestId('wall-sharing-qr')).toHaveCSS('background-color', 'rgba(0, 0, 0, 0)');
+    await expect(page.getByTestId('wall-sharing-qr')).toHaveCSS('box-shadow', 'none');
+    await expect(page.getByTestId('wall-sharing-qr')).toHaveCSS('border-top-width', '0px');
+    await expect(qr).toHaveCSS('background-color', 'rgb(255, 255, 255)');
     if (viewport.width > 2200) {
-      // The sharing card fills the actual empty gutter with 16px on each side.
+      // The QR square fills the actual empty gutter with 16px on each side.
       expect(Math.abs(sharingBox.x - (feed.x + feed.width + 16))).toBeLessThan(2);
       expect(Math.abs(viewport.width - sharingBox.x - sharingBox.width - 16)).toBeLessThan(2);
       expect(sharingBox.width).toBeGreaterThan(300);
@@ -184,7 +188,7 @@ test('projector wall centers the sharing QR without widening the feed', async ({
     }
     expect(sharingBox.y).toBeGreaterThanOrEqual(0);
     expect(sharingBox.y + sharingBox.height).toBeLessThanOrEqual(viewport.height);
-    expect(qrBox.width).toBe(sharingBox.width - 26);
+    expect(qrBox.width).toBe(sharingBox.width);
     expect(feed.width).toBe(Math.min(1800, viewport.width));
     expect(qrBox.width).toBeGreaterThanOrEqual(160);
     expect(viewport.width-qrBox.x-qrBox.width).toBeGreaterThanOrEqual(16);

@@ -103,7 +103,7 @@ Use the Railway skill/MCP and explicit DashHack IDs. Never act on the sibling sc
 
 ## Wall QR placement and layout
 
-Keep the public wall's 1800px feed cap and existing one/two/three/four-column breakpoints. The vertically centered sharing card fills the available right gutter beside the capped feed, with 16px padding at both edges. It falls back to 186px on narrower desktops and caps its width by viewport height to remain visible on short monitors; the square QR fills its content width. Do not keep it at a fixed 186px when a wider gutter exists. The left vertical event header retains its size. The user approved the centered, viewport-sized full-screen QR modal; preserve it. Do not widen the feed or add ultrawide columns in response to QR sizing requests. The upload-page header remains centered.
+Keep the public wall's 1800px feed cap and existing one/two/three/four-column breakpoints. Latest user request (2026-11-12) places a bare sharing QR at the top right: transparent wrapper, no card/border/shadow or visible label, white only behind the QR square. Retain gutter-filling width, 16px safe-area-aware top/right spacing, a 186px narrower-desktop fallback and a viewport-height cap. Phones retain an accessible icon-only upload link. The left vertical event header retains its title size and shows #atthack for the canonical ATT event only. This supersedes the earlier vertically centered sharing-card presentation. The user-approved centered, viewport-sized full-screen QR modal stays unchanged. Do not widen the feed or add ultrawide columns in response to QR sizing requests. The upload-page header remains centered.
 
 
 ## Event wall cleanup and placeholder editing

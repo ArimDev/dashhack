@@ -16,6 +16,7 @@
     >
       <PublicWallHeader
         :event-name="displayTitle"
+        :hashtag="eventName === EVENT_URI_NAME ? '#atthack' : ''"
         :wall-status="wallStatus"
         :uploads-enabled="uploadsEnabled"
         :show-sharing-qr="showQr && uploadsEnabled && wallStatus === 'available'"
@@ -119,6 +120,7 @@ import WallPostCard from "../../../components/wall/PostCard.vue";
 import PublicWallHeader from "../../../components/wall/PublicWallHeader.vue";
 import PublicWallState from "../../../components/wall/PublicWallState.vue";
 import { WALL_LAYOUT_DEFAULTS } from '../../../../shared/wallDisplay.js';
+import { EVENT_URI_NAME } from '../../../../shared/eventRoutes.js';
 import { SESSION_CHANGE_KEY } from '../../../utils/sessionSync.js';
 
 const route = useRoute();

@@ -1,5 +1,11 @@
 # Social Wall — PR #6 integration
 
+## Bare top-right QR and posting hashtag — 2026-11-12
+
+At the user's request, sharing now uses a transparent top-right link with no card background/border/shadow or visible text; only the QR square is white. It retains gutter-filling desktop size and safe-area-aware 16px top/right spacing. An icon-only phone link preserves upload navigation without requesting a mobile QR. A wrapper hides the phone icon on desktop despite the icon component's own display style. The centered fullscreen QR modal is unchanged. The canonical ATT event's left title rail also displays #atthack, with reserved title height so both fit phones and short landscape; unrelated events have no hardcoded hashtag.
+
+Validation: clean Bun 1.3.2 production build with native image packaging; three production HTTPS Chromium scenarios cover five desktop/projector sizes, transparent wrapper/white square, fullscreen behavior, mobile upload access, hashtag bounds at desktop/phone/short landscape and exclusion on unrelated events. No database/settings/schema change.
+
 Deployment update: the picture-dragging/wide-tile follow-up below is now committed and pushed as `5963411`, deployed successfully as `900da65b-8fdf-476e-9f52-c4e8fe3626f5`. Live health/rendering and exact content preservation pass; Instagram ON / X OFF retained. See RAILWAY.md.
 
 ## Picture dragging and wide tiles — local follow-up, 2026-11-12
