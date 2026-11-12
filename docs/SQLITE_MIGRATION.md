@@ -42,6 +42,14 @@ Schema version 2 adds one small event-scoped `mentors` table plus note `type` an
 
 Mentors add their name using the existing shared event login. Creator selection is attribution, not authentication or a separate help-request assignee. Help requests retain the existing To Do / In Progress / Done workflow; mentor observations remain supported alongside them, with a type filter on Kanban. No new dependencies or services are introduced.
 
+### TODO: individual mentor access (requested 2026-11-12)
+
+- [ ] Add individual mentor sign-in tied to their event-scoped mentor identity and displayed name. Consider password, OAuth or personal QR access; the method is still to be decided.
+- [ ] Use the signed-in mentor identity to attribute their notes automatically.
+- [ ] If personal QR access is chosen, bind the access link to the mentor identity and support expiry and revocation.
+
+This is a future improvement; the shared event login and manual creator selection remain the current implementation.
+
 Validated with 13 storage tests (70 assertions), 15 browser scenarios, a production build and production-browser checks for mentor registration and persisted note attribution. The storage suite includes upgrading a populated version 1 database, preserving credentials and notes, cross-event rejection, duplicate names and both note save paths.
 
 ## Optional Kanban tracking follow-up
