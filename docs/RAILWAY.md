@@ -1,5 +1,13 @@
 # DashHack on Railway
 
+## 24-hour sessions and cross-tab wall login — 2026-11-12
+
+Source `2ba71df` was committed and pushed to `origin/feat_alby_design`. Deployment `a3873031-5419-4619-b924-e20f5eb91cce` reached **SUCCESS**. New event sessions and both cookies use the same 24-hour lifetime; old sessions/cookies keep their existing deadlines until a fresh login. Login/logout/password/rename actions notify other same-origin tabs with a credential-free local-storage hint. Walls recheck matching-event permission on that hint, focus and pageshow, queueing a recheck if an earlier feed request is still running. Auth-dependent event responses and wall reads use no-store. Different hostnames still have separate cookies; this fix addresses the user's confirmed same-domain/two-tab workflow.
+
+Pre-deploy snapshot: `/data/backups/before-wall-session-20261112-1794476336836.sqlite`; baseline `/data/backups/wall-session-20261112-baseline.json`. Post-deploy schema 15/integrity ok; all recorded table fingerprints match exactly (sessions excluded). Instagram remains ON, X OFF. No stored content/settings, schema, dependency, runtime or infrastructure change. Source-only archive SHA-256: `6e91585866264e93f30cbe664a3bd9f74696895366b918768d1db2aa9c6748cc`; packaged runtime source matches the tested production build.
+
+Validation: production build with pinned Bun 1.3.2/Sharp packaging; 127 unit tests / 974 assertions; production HTTPS Chromium tests cover a guest wall tab followed by login in another tab, immediate cogwheel access, 24-hour cookie expiry, restored browser storage, cross-tab logout and matching-event permission denial. Live verification confirms the deployed server/cookie lifetime constant is shared at 24 hours, both hostnames return no-store and guest denial, and the public wall renders without browser errors. Refresh existing tabs and log in once after deployment to receive the longer-lived cookie.
+
 ## Draggable photo focus and wide tiles — 2026-11-12
 
 Source `5963411` was committed and pushed to `origin/feat_alby_design`, including all preceding local wall changes. Deployment `900da65b-8fdf-476e-9f52-c4e8fe3626f5` reached **SUCCESS** with its database-aware healthcheck. Photo focus uses direct pointer dragging/touch tapping and keyboard arrows; Edit post supports one-/two-column tiles, clamped to one on phones. No schema/runtime/dependency/infrastructure changes; schema remains 15. Clean source archive SHA-256: `b9e7cd5b97493ebc287528aad7b94b34b303849e1acfcb9ce5837cf60b02b039`; runtime source matched the tested clean production build before upload.
