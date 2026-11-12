@@ -1,7 +1,7 @@
 import { test, expect } from '@playwright/test';
 import { randomUUID } from 'node:crypto';
 
-test('moderator edits caption and framing before approval without replacing the photo', async ({ page }) => {
+test('moderator drags photo focus and saves a two-column tile that fits phones', async ({ page, browser }) => {
   const name = `Framing-${randomUUID()}`, password = 'password123';
   await page.request.post('/api/auth/create', { data: { username: name, password } });
   await page.request.post('/api/auth/login', { data: { username: name, password } });
@@ -14,14 +14,20 @@ test('moderator edits caption and framing before approval without replacing the 
   const dialog = page.getByRole('dialog', { name: 'Edit post' });
   await dialog.getByRole('textbox', { name: 'Post text', exact: true }).fill('Edited caption');
   await dialog.getByLabel('Photo ratio').selectOption('1/1');
-  await dialog.getByLabel('Horizontal photo focus').fill('25');
-  await dialog.getByLabel('Vertical photo focus').fill('80');
+  await dialog.getByLabel('Tile width').selectOption('2');
+  const focus = dialog.getByRole('button', { name: 'Photo focal point' });
+  await focus.scrollIntoViewIfNeeded();
+  const box = (await focus.boundingBox())!;
+  await page.mouse.move(box.x + box.width / 2, box.y + box.height / 2);
+  await page.mouse.down();
+  await page.mouse.move(box.x + box.width * .25, box.y + box.height * .8, { steps: 8 });
+  await page.mouse.up();
   await expect(dialog.getByAltText('Post photo preview')).toHaveCSS('object-position', '25% 80%');
   await dialog.getByRole('button', { name: 'Save post', exact: true }).click();
   await expect(dialog).toHaveCount(0);
   const data = (await (await page.request.get(`/api/wall/${name}/posts`)).json()).data;
   const saved = data.posts.find(p => p.id === post.id);
-  expect(saved.mediaLayout).toEqual({ ratio: '1/1', focusX: 25, focusY: 80 });
+  expect(saved.mediaLayout).toEqual({ ratio: '1/1', focusX: 25, focusY: 80, span: 2 });
   expect(saved.imageUrl).toBe(imageUrl);
   expect(saved.status).toBe('pending');
   await page.request.post(`/api/wall/${name}/posts`, { data: { action: 'approve', postId: saved.id, revision: saved.revision } });
@@ -30,4 +36,23 @@ test('moderator edits caption and framing before approval without replacing the 
   await expect(page.locator('[data-wall-copy="1"] article')).toContainText('Edited caption');
   await expect(page.locator('[data-wall-copy="1"] img')).toHaveCSS('object-position', '25% 80%');
   await expect(page.locator('[data-read-post]')).toHaveCount(0);
+  await expect(page.locator('[data-wall-copy="1"] article').locator('..')).toHaveCSS('grid-column-start', 'span 2');
+  await page.setViewportSize({ width: 390, height: 844 });
+  await expect(page.locator('[data-wall-copy="1"] article').locator('..')).toHaveCSS('grid-column-start', 'span 1');
+  const touchContext = await browser.newContext({ storageState: await page.context().storageState(), ignoreHTTPSErrors: true, hasTouch: true, viewport: { width: 390, height: 844 } });
+  try {
+    const touchPage = await touchContext.newPage();
+    await touchPage.goto(`/app/${name}/social-wall`);
+    await touchPage.getByRole('button', { name: 'Edit post', exact: true }).click();
+    const touchFocus = touchPage.getByRole('button', { name: 'Photo focal point' });
+    await touchFocus.scrollIntoViewIfNeeded();
+    const touchBox = (await touchFocus.boundingBox())!;
+    await touchPage.touchscreen.tap(touchBox.x + touchBox.width * .75, touchBox.y + touchBox.height * .2);
+    const preview = touchPage.getByAltText('Post photo preview');
+    await expect(preview).toHaveCSS('object-position', '75% 20%');
+    await touchFocus.press('ArrowRight');
+    await touchFocus.press('Shift+ArrowDown');
+    await expect(preview).toHaveCSS('object-position', '76% 30%');
+    await touchPage.getByRole('button', { name: 'Cancel', exact: true }).click();
+  } finally { await touchContext.close(); }
 });

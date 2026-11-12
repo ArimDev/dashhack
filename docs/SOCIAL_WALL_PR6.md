@@ -1,5 +1,11 @@
 # Social Wall — PR #6 integration
 
+## Picture dragging and wide tiles — local follow-up, 2026-11-12
+
+Photo framing now uses an on-picture focus marker instead of sliders: click/drag with pointer capture, tap on touchscreens, or use arrows (Shift for ten-point steps). Coordinates clamp to 0–100; capture release/cancel ends the gesture, and original-ratio images need no focal adjustment. Moderator Edit post also offers one-/two-column tile width, including posts without photos. The existing media_layout JSON accepts optional span 1/2; older records retain one-column behavior without a migration. Wide cards clamp to available columns, including one on phones; pinned text announcements retain full-wall width.
+
+Validation: clean frozen install and production build with Bun 1.3.2/Sharp packaging; 28 targeted persistence tests / 305 assertions; production HTTPS Chromium scenarios pass real drag persistence, touch tapping, keyboard focus adjustment, two-column saved width, phone fallback and existing packed-layout behavior. A CSS test assertion was corrected to inspect grid-column-start for the span shorthand. Changes are local and not deployed.
+
 Deployment validation update (2026-11-12): a clean source copy builds successfully with production-pinned Bun 1.3.2, including Sharp packaging. Local HTTPS production smoke and eight focused Chromium scenarios pass (reader, parked pointer, speed, pinned edits/formatting, student moderation, two-panel layout and phone wall). The default-reader test was corrected to disable animation before Playwright's stability-checked click. The complete unit suite passes on Windows Bun 1.4.4: 126 tests / 964 assertions. Bun 1.3.2's Windows test cleanup locks and streaming-test hang prevent claiming a full pinned-runtime suite pass; no runtime/dependency upgrade is included. This supersedes earlier local build/browser limitations below. Collector timestamps use the browser's locale/timezone with the original ISO value retained in the time element's title/datetime attributes.
 
 ## Per-post article preview (latest local follow-up, 2026-11-12)

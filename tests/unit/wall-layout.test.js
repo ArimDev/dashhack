@@ -3,6 +3,14 @@ import { SqliteStore } from '../../src/server/storage/sqlite.js';
 import { WallStore } from '../../src/server/storage/wall.js';
 import { WALL_LAYOUT_FIELDS } from '../../src/shared/wallDisplay.js';
 import { wallTextDisplay, validateWallTextDisplay } from '../../src/shared/wallTextDisplay.js';
+import { validateWallMediaLayout } from '../../src/shared/wallMediaLayout.js';
+
+test('tile width accepts one or two columns and retains legacy framing', () => {
+    const legacy = { ratio: 'original', focusX: 50, focusY: 50 };
+    expect(validateWallMediaLayout(legacy)).toEqual(legacy);
+    expect(validateWallMediaLayout({ ...legacy, span: 2 })).toEqual({ ...legacy, span: 2 });
+    for (const span of [0, 3, '2', 1.5, null, true]) expect(() => validateWallMediaLayout({ ...legacy, span })).toThrow('Invalid tile width');
+});
 
 test('article previews default to 100 except pinned organizers; explicit choices override defaults', () => {
     expect(wallTextDisplay({ platform: 'x', pinned: true })).toEqual({ enabled: true, limit: 100 });
@@ -22,7 +30,7 @@ test('social and student posts retain framing, media and approval through edits;
         for (const platform of ['manual', 'x', 'instagram']) {
             const post = wall.submit(name, { text: 'Original', authorName: 'Student', imageUrl: 'https://example.com/photo.jpg' });
             store.db.query('UPDATE wall_posts SET platform=? WHERE event_id=? AND id=?').run(platform, id, post.id);
-            const framing = { ratio: '3/4', focusX: 25, focusY: 80 };
+            const framing = { ratio: '3/4', focusX: 25, focusY: 80, span: 2 };
             const edit = { action: 'edit', postId: post.id, revision: 0, text: 'Edited caption', authorName: 'Student', mediaLayout: framing, textDisplay: { enabled: false, limit: 250 } };
             wall.action(session, name, edit);
             let saved = wall.moderationFeed(session, name).posts.find(p => p.id === post.id);

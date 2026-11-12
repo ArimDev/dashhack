@@ -65,7 +65,7 @@
               @read="openPost"
               projector-announcement
             />
-            <div v-for="post in mosaicPosts" :key="post.id" class="min-w-0" :style="postRowStyle(post)">
+            <div v-for="post in mosaicPosts" :key="post.id" class="min-w-0" :style="{ ...postRowStyle(post), gridColumn: `span ${Math.min(effectiveColumns, post.mediaLayout?.span || 1)}` }">
               <WallPostCard
                 :key="`${copy}-${post.id}`"
                 :post="post"
@@ -128,8 +128,9 @@ const renderedPosts = computed(() => posts.value.slice(0, renderedCount.value));
 const columnCount = ref(1);
 const layout = reactive({ ...WALL_LAYOUT_DEFAULTS });
 const layoutSaving = ref(false), layoutError = ref('');
+const effectiveColumns = computed(() => columnCount.value === 1 ? 1 : layout.panelColumns || columnCount.value);
 const mosaicStyle = computed(() => ({
-  gridTemplateColumns: `repeat(${columnCount.value === 1 ? 1 : layout.panelColumns || columnCount.value}, minmax(0, 1fr))`,
+  gridTemplateColumns: `repeat(${effectiveColumns.value}, minmax(0, 1fr))`,
   columnGap: `${layout.panelGap}px`,
   '--panel-gap': `${layout.panelGap}px`,
   '--panel-padding': `${layout.panelPadding}px`,

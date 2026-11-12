@@ -99,6 +99,13 @@
             <input v-model.number="editingPost.textDisplay.limit" type="number" min="1" max="5000" required class="mt-1 min-h-11 w-full rounded-xl border bg-white px-3 dark:bg-slate-900" />
           </label>
           <p class="text-xs text-slate-500">Default: 100 characters. Pinned organizer posts show full text unless you enable shortening.</p>
+          <label class="block text-sm">Tile width
+            <select v-model.number="editingPost.mediaLayout.span" class="mt-1 min-h-11 w-full rounded-xl border bg-white px-3 dark:bg-slate-900">
+              <option :value="1">One column</option>
+              <option :value="2">Two columns</option>
+            </select>
+          </label>
+          <p class="text-xs text-slate-500">Wide tiles fit one column on phones. Pinned text announcements fill the wall width.</p>
           <label class="block text-sm">Photo (optional)
             <input type="file" accept="image/jpeg,image/png,image/webp,image/avif,image/heic,image/heif" class="mt-1 block w-full text-sm" @change="selectEditImage" />
           </label>
