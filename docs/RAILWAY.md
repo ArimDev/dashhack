@@ -1,5 +1,11 @@
 # DashHack on Railway
 
+## Compact organizer-post spacing — 2026-11-12
+
+Source `0d2c960` was committed/pushed and deployed as `f2a4dbb8-8fb6-4702-b78c-327c15240e13` (**SUCCESS**). Wall rendering skips empty/whitespace-only paragraph blocks and formatted copy inherits standard card line-height. Organizer posts therefore match X spacing without rewriting stored rich text; full text/formatting and projector sizing remain. Clean pinned-Bun build and two production HTTPS Chromium scenarios pass. The existing browser setup helper now waits for loaded settings before revision-checked saves, fixing an initial-load test race.
+
+Live verification: original pinned post retains all five stored blocks, renders two nonempty paragraphs, and has a 16px gap before its photo; health ok and zero browser errors. All recorded database table fingerprints match the snapshot exactly (sessions excluded), schema remains 15/integrity ok, Instagram ON and X OFF. Snapshot `/data/backups/before-wall-spacing-20261112-1794478229692.sqlite`; source-only archive SHA-256 `74956650d8d518f1b7e793e51a8045ebdd9307d54e0646002a7b4e31b8779210`. No stored content/settings/schema/infrastructure changes.
+
 ## Bare top-right QR and #atthack — 2026-11-12
 
 Source `d85344f` was committed/pushed and deployed as `f6cd69ca-30aa-4d4d-bde8-ba61c92c94c1` (**SUCCESS**). The sharing link has a transparent surround with no card, shadow, border or visible label; only its square QR is white. It sits 16px from the safe-area-aware top/right edges and retains gutter-filling desktop sizing. Phones retain an icon-only upload link. The canonical ATT event's title rail now displays #atthack without changing unrelated events. The centered fullscreen QR remains unchanged.
