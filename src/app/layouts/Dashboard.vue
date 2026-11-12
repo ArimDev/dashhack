@@ -108,7 +108,7 @@ const navigation = [
     { path: 'github-metrics', label: 'GitHub metrics', icon: 'heroicons:chart-bar' },
     { path: 'social-wall', label: 'Social Wall', icon: 'heroicons:photo' },
     { path: 'mentors', label: 'Mentors', icon: 'heroicons:academic-cap' },
-    { path: 'worknotes', label: 'Worknotes', icon: 'heroicons:clipboard-document-list' },
+    { path: 'history', label: 'History', icon: 'heroicons:clipboard-document-list' },
     { path: 'settings', label: 'Settings', icon: 'heroicons:cog-6-tooth' },
 ];
 watch(() => route.fullPath, () => { mobileMenu.value = false; });

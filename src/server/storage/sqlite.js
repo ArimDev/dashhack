@@ -359,15 +359,13 @@ export class SqliteStore {
         limit=Number(limit);if(!Number.isInteger(limit)||limit<1||limit>100)throw new StorageError(400,'Invalid history limit');
         const rows=this.db.query(`SELECT id,team_id AS teamId,team_name AS teamName,entity_id AS entityId,kind,actor,source,details,created_at AS createdAt
             FROM activity_log WHERE event_id=? AND (?='' OR team_id=?) AND id<? ORDER BY id DESC LIMIT ?`).all(eventId,teamId,teamId,cursor,limit+1);
-        return {entries:rows.slice(0,limit).map(row=>({...row,details:JSON.parse(row.details)})),hasMore:rows.length>limit};
-    }
-    addWorknote(sessionId,name,input) {
-        const eventId=this.authorize(sessionId,name),content=text(input.content,'worknote',5000,true).trim();
-        return this.db.transaction(()=>{
-            const team=input.teamId?this.findTeam(eventId,input):null;
-            this.recordActivity(eventId,{teamId:team?.id,teamName:team?.name,kind:'worknote.added',details:{content}});
-            this.touch(eventId);
-        })();
+        const notes=before===undefined?this.db.query(`SELECT n.id,n.content,n.type,n.status,n.priority,n.in_kanban AS inKanban,
+            t.id AS teamId,t.name AS teamName,m.name AS creatorName,a.name AS assigneeName,h.createdAt
+            FROM notes n JOIN teams t ON t.id=n.team_id
+            LEFT JOIN mentors m ON m.id=n.creator_id LEFT JOIN mentors a ON a.id=n.assignee_id
+            LEFT JOIN (SELECT entity_id,MIN(created_at) AS createdAt FROM activity_log WHERE event_id=? AND kind='note.created' GROUP BY entity_id) h ON h.entity_id=n.id
+            WHERE t.event_id=? AND (?='' OR t.id=?) ORDER BY t.position,t.id,n.position,n.id`).all(eventId,eventId,teamId,teamId).map(note=>({...note,inKanban:!!note.inKanban})):undefined;
+        return {entries:rows.slice(0,limit).map(row=>({...row,details:JSON.parse(row.details)})),hasMore:rows.length>limit,...(notes?{notes}:{})};
     }
     recordNoteChanges(eventId,team,before,after,actor) {
         const old=new Map(before.map(note=>[note.id,note])),next=new Map(after.map(note=>[note.id,note]));

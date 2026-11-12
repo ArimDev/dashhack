@@ -84,8 +84,8 @@
                 <Icon name="heroicons:table-cells" size="24px" /><span>Startupová matice</span>
                 <span class="ml-auto rounded-md px-2 py-1 text-xs" :class="completed === 10 ? 'bg-emerald-50 text-emerald-800 dark:bg-emerald-950 dark:text-emerald-200' : 'bg-amber-50 text-amber-900 dark:bg-amber-950 dark:text-amber-200'">{{ completed === 10 ? 'Hotová' : completed ? 'Rozpracovaná' : 'Nevyplněná' }} · {{ completed }}/10</span>
             </NuxtLink>
-            <NuxtLink :to="`/app/${encodeURIComponent(eventName)}/worknotes?team=${team._id}`" class="flex min-h-11 items-center gap-2 border-t border-gray-200 px-3 py-2 text-sm font-semibold text-bluey-700 hover:bg-bluey-50 dark:border-gray-700 dark:text-bluey-200 dark:hover:bg-gray-700">
-                <Icon name="heroicons:clipboard-document-list" size="24px" /><span>Worknotes &amp; history</span>
+            <NuxtLink :to="`/app/${encodeURIComponent(eventName)}/history?team=${team._id}`" class="flex min-h-11 items-center gap-2 border-t border-gray-200 px-3 py-2 text-sm font-semibold text-bluey-700 hover:bg-bluey-50 dark:border-gray-700 dark:text-bluey-200 dark:hover:bg-gray-700">
+                <Icon name="heroicons:clipboard-document-list" size="24px" /><span>History</span>
             </NuxtLink>
 
             </footer>

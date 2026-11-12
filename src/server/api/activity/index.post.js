@@ -1,5 +1,3 @@
-export default apiHandler(async event=>{
-    const body=await readBody(event);
-    getStore().addWorknote(getCookie(event,'session'),body.event,body);
-    return {status:200};
+export default apiHandler(()=>{
+    return {status:405,message:'History is read-only. Changes are recorded automatically.'};
 });

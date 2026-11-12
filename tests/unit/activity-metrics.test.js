@@ -25,15 +25,26 @@ test('history records atomic changes from both note paths, suppresses no-ops and
     expect(()=>c.store.activity(null,'Event',{})).toThrow('expired');
     const other=await c.store.createEvent('Other','password123');expect(()=>c.store.activity(c.store.createSession(other),'Event',{})).toThrow('permission');
 });
-test('worknotes and matrix/event history persist, paginate and never record credentials',async()=>{
-    const c=await fixture();c.store.addWorknote(c.session,'Event',{teamId:c.teamId,content:'Decision <b>plain text</b>'});
+test('matrix/event history persists, paginates and never records credentials',async()=>{
+    const c=await fixture();
     c.store.editStartupMatrix(c.session,'Event',{teamId:c.teamId,revision:0,answers:{problem:[{type:'paragraph',runs:[{text:'An answer'}]}]}});
     await c.store.updateSetting(c.session,'Event','githubToken','PRIVATE-TOKEN');
-    const all=c.store.activity(c.session,'Event',{limit:100});expect(all.entries.some(e=>e.kind==='matrix.updated')).toBe(true);expect(all.entries.some(e=>e.details.content==='Decision <b>plain text</b>')).toBe(true);expect(JSON.stringify(all)).not.toContain('PRIVATE-TOKEN');expect(JSON.stringify(all)).not.toContain(c.session);
+    const all=c.store.activity(c.session,'Event',{limit:100});expect(all.entries.some(e=>e.kind==='matrix.updated')).toBe(true);expect(JSON.stringify(all)).not.toContain('PRIVATE-TOKEN');expect(JSON.stringify(all)).not.toContain(c.session);
     const first=c.store.activity(c.session,'Event',{limit:2});expect(first.hasMore).toBe(true);const second=c.store.activity(c.session,'Event',{limit:2,before:first.entries.at(-1).id});expect(second.entries.every(e=>e.id<first.entries.at(-1).id)).toBe(true);
-    expect(()=>c.store.addWorknote(c.session,'Event',{teamId:'foreign',content:'No'})).toThrow('not found');expect(()=>c.store.addWorknote(c.session,'Event',{content:' '.repeat(5)})).toThrow();
     const oldSession=c.session;await c.store.updateSetting(c.session,'Event','password','replacement-password','password123');expect(()=>c.store.activity(oldSession,'Event',{})).toThrow('expired');
     const fresh=c.store.createSession(c.id);expect(JSON.stringify(c.store.activity(fresh,'Event',{}))).not.toContain('replacement-password');
+});
+test('history includes all current notes, scopes team filters and only supplies recorded creation times',async()=>{
+    const c=await fixture();
+    c.store.editTeam(c.session,'Event',{...c.input,teamId:c.teamId,revision:0,stickyNotes:[{id:'plain',content:'Existing plain note',inKanban:false},{id:'tracked',content:'Help request',type:'help_request',inKanban:true}]});
+    const second=c.store.addTeam(c.session,'Event',{teamName:'Second',teamColor:'#3081e0'});
+    c.store.editTeam(c.session,'Event',{teamId:second,teamName:'Second',teamColor:'#3081e0',revision:0,stickyNotes:[{id:'other',content:'Other team'}]});
+    expect(c.store.activity(c.session,'Event',{}).notes).toHaveLength(3);
+    const result=c.store.activity(c.session,'Event',{teamId:c.teamId});expect(result.notes).toHaveLength(2);expect(result.notes[0]).toMatchObject({id:'plain',inKanban:false,createdAt:'2026-11-12T12:30:00.000Z'});
+    c.store.db.query("DELETE FROM activity_log WHERE entity_id='plain' AND kind='note.created'").run();expect(c.store.activity(c.session,'Event',{}).notes.find(n=>n.id==='plain').createdAt).toBeNull();
+    expect(c.store.activity(c.session,'Event',{before:result.entries.at(-1).id}).notes).toBeUndefined();
+    expect(c.store.activity(c.session,'Event',{teamId:'foreign'}).notes).toEqual([]);
+    expect(c.store.addWorknote).toBeUndefined();
 });
 test('schema 16 migration preserves populated data and sessions without inventing old history',async()=>{
     const dir=mkdtempSync(join(tmpdir(),'dashhack-history-'));dirs.push(dir);const path=join(dir,'app.sqlite'),c=await fixture(path);
@@ -42,7 +53,7 @@ test('schema 16 migration preserves populated data and sessions without inventin
 });
 test('event history retention is bounded and independent between events',async()=>{
     const c=await fixture(),other=await c.store.createEvent('Other','password123');
-    for(let i=0;i<10005;i++)c.store.recordActivity(c.id,{kind:'worknote.added',details:{content:'Entry '+i}});
+    for(let i=0;i<10005;i++)c.store.recordActivity(c.id,{kind:'note.updated',details:{content:'Entry '+i}});
     expect(c.store.db.query('SELECT COUNT(*) n FROM activity_log WHERE event_id=?').get(c.id).n).toBe(10000);
     expect(c.store.db.query('SELECT COUNT(*) n FROM activity_log WHERE event_id=?').get(other).n).toBe(1);
     expect(c.store.activity(c.session,'Event',{}).entries[0].details.content).toBe('Entry 10004');
