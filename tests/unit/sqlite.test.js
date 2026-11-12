@@ -247,6 +247,10 @@ describe('SQLite persistence', () => {
         expect(() => store.addTeam(a.session, 'b', team)).toThrow('permission');
         expect(() => store.addTeam(undefined, 'a', team)).toThrow('expired');
         time += 3600000;
+        expect(store.getSession(a.session).eventId).toBe(a.id);
+        time += 23 * 3600000 - 1;
+        expect(store.getSession(a.session).eventId).toBe(a.id);
+        time += 1;
         expect(store.getSession(a.session)).toBeNull();
         expect(() => store.addTeam(a.session, 'a', team)).toThrow('expired');
     });

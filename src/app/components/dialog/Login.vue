@@ -13,6 +13,7 @@
     </DialogShell>
 </template>
 <script setup>
+import { notifySessionChange } from '../../utils/sessionSync.js';
 const { showToast } = useToast();
 const formId = useId();
 const emit = defineEmits(["close"]);
@@ -45,6 +46,7 @@ async function login() {
         showToast("Failed to log in!", data?.message);
     } else {
         refreshCookie('sessionExists');
+        notifySessionChange();
         const response = await $fetch(`/api/event/${encodeURIComponent(route.params.event)}`);
         eventCanEdit.value = !!response.canEdit;
         if (response.data) eventData.value = response.data;

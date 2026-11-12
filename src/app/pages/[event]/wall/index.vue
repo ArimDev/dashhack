@@ -119,6 +119,7 @@ import WallPostCard from "../../../components/wall/PostCard.vue";
 import PublicWallHeader from "../../../components/wall/PublicWallHeader.vue";
 import PublicWallState from "../../../components/wall/PublicWallState.vue";
 import { WALL_LAYOUT_DEFAULTS } from '../../../../shared/wallDisplay.js';
+import { SESSION_CHANGE_KEY } from '../../../utils/sessionSync.js';
 
 const route = useRoute();
 const colorMode = useColorMode();
@@ -242,7 +243,13 @@ function measureFeed() {
   }
 }
 
-let disposed = false, loadController, revealHandle = 0, revealUsesIdle = false;
+let disposed = false, loadController, revealHandle = 0, revealUsesIdle = false, refreshSessionPending = false;
+function refreshWallSession() {
+  if (document.hidden || disposed) return;
+  if (loading) refreshSessionPending = true;
+  else loadWall();
+}
+function sessionChanged(event) { if (event.key === SESSION_CHANGE_KEY) refreshWallSession(); }
 function revealMore() {
   if (revealHandle || disposed || document.hidden || renderedCount.value >= posts.value.length) return;
   const reveal = () => {
@@ -308,6 +315,7 @@ async function loadWall() {
   const initial = !posts.value.length;
   try {
     const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}`, {
+      credentials: 'same-origin', cache: 'no-store',
       ...(initial ? { query: { limit: 12 } } : {}), timeout: 8000, signal: loadController.signal,
     });
     if (disposed) return;
@@ -325,6 +333,7 @@ async function loadWall() {
       if (disposed) return;
       const offset = response.data.posts.length;
       const rest = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}`, {
+        credentials: 'same-origin', cache: 'no-store',
         query: { offset, limit: 200 - offset }, timeout: 8000, signal: loadController.signal,
       });
       if (disposed || rest?.status !== 200 || !rest.data?.wall) return;
@@ -337,7 +346,10 @@ async function loadWall() {
   } catch (error) {
     if (!disposed && !posts.value.length) { canEdit.value = false; wallStatus.value = 'error'; }
     // A failed background refresh must not replace a running wall with a loading/error screen.
-  } finally { loading = false; }
+  } finally {
+    loading = false;
+    if (refreshSessionPending && !disposed) { refreshSessionPending = false; refreshWallSession(); }
+  }
 }
 
 let refreshInterval, animationFrame = 0, previousFrame = 0;
@@ -368,6 +380,9 @@ onMounted(() => {
   updateQr();
   document.addEventListener('fullscreenchange', syncFullscreenState);
   document.addEventListener('visibilitychange', visibilityChanged);
+  window.addEventListener('focus', refreshWallSession);
+  window.addEventListener('pageshow', refreshWallSession);
+  window.addEventListener('storage', sessionChanged);
   loadWall();
   refreshInterval = setInterval(() => { if (!document.hidden) loadWall(); }, 12000);
   feedResizeObserver = new ResizeObserver(measureFeed);
@@ -387,6 +402,9 @@ onBeforeUnmount(() => {
   window.removeEventListener('resize', updateColumnCount);
   document.removeEventListener('fullscreenchange', syncFullscreenState);
   document.removeEventListener('visibilitychange', visibilityChanged);
+  window.removeEventListener('focus', refreshWallSession);
+  window.removeEventListener('pageshow', refreshWallSession);
+  window.removeEventListener('storage', sessionChanged);
 });
 
 watch(

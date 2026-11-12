@@ -11,6 +11,7 @@
     </DialogShell>
 </template>
 <script setup>
+import { notifySessionChange } from '../../utils/sessionSync.js';
 const { showToast } = useToast();
 const emit = defineEmits(["close"]);
 const props = defineProps({
@@ -66,6 +67,7 @@ async function confirmed() {
             showToast("Failed to log out!", data?.message);
         } else {
             if (data.status === 204) console.log(data);
+            notifySessionChange();
             emit('close', true);
         }
     }

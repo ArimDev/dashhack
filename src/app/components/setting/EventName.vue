@@ -19,6 +19,7 @@
 </template>
 
 <script setup>
+import { notifySessionChange } from '../../utils/sessionSync.js';
 const route = useRoute();
 const value = ref(route.params.event);
 const error = ref(false);
@@ -37,6 +38,7 @@ async function autosave() {
 	if (data.status !== 200) return error.value = data.message + "!";
 
 	success.value = true;
+	notifySessionChange();
 	return await navigateTo({ path: `/app/${encodeURIComponent(value.value)}/settings`});
 }
 </script>

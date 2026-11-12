@@ -1,6 +1,7 @@
 import { publicEvent } from '../../storage/sqlite.js';
 
 export default apiHandler((event) => {
+    setHeader(event, 'Cache-Control', 'no-store');
     const data = getStore().getEvent(getRouterParam(event, 'event', { decode: true }));
     if (!data) return { status: 404, message: 'Event not found' };
     const session = getStore().getSession(getCookie(event, 'session'));

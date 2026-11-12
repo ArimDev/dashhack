@@ -14,6 +14,7 @@
     </form>
 </template>
 <script setup>
+import { notifySessionChange } from '../../utils/sessionSync.js';
 const route = useRoute();
 const oldPassword = ref(''), newPassword = ref(''), saving = ref(false), success = ref(false), error = ref('');
 async function save() {
@@ -26,6 +27,7 @@ async function save() {
         if (response.status !== 200) throw new Error(response.message || 'Could not update password.');
         oldPassword.value = ''; newPassword.value = ''; success.value = true;
         refreshCookie('sessionExists');
+        notifySessionChange();
     } catch (failure) { error.value = failure.message || 'Could not update password.'; }
     finally { saving.value = false; }
 }

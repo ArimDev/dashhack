@@ -37,6 +37,7 @@
 </template>
 
 <script setup>
+import { notifySessionChange } from '../utils/sessionSync.js';
 definePageMeta({
 	layout: 'landing',
 });
@@ -128,6 +129,8 @@ async function open(event) {
 			if (!data || data.status !== 200) {
 				console.warn("Failed to log in:", data);
 			} else {
+				notifySessionChange();
+				refreshCookie('sessionExists');
 				return await navigateTo(`/app/${encodeURIComponent(credentials.value.user)}`);
 			}
 		}
@@ -147,6 +150,8 @@ async function open(event) {
 					return submitRed.value = true;
 				}
 			} else {
+				notifySessionChange();
+				refreshCookie('sessionExists');
 				return await navigateTo(`/app/${encodeURIComponent(credentials.value.user)}`);
 			}
 		}

@@ -9,6 +9,8 @@ export class StorageError extends Error {
     constructor(status, message) { super(message); this.status = status; }
 }
 
+export const SESSION_TTL_SECONDS = 24 * 60 * 60;
+
 function text(value, label, max = 1000, required = false) {
     if (value === undefined && !required) return '';
     if (typeof value !== 'string' || value.length > max || (required && !value.trim())) {
@@ -379,7 +381,7 @@ export class SqliteStore {
     createSession(eventId) {
         this.db.query('DELETE FROM sessions WHERE expires_at <= ?').run(this.now());
         const id = randomUUID();
-        this.db.query('INSERT INTO sessions (id, event_id, expires_at) VALUES (?, ?, ?)').run(id, eventId, this.now() + 3600000);
+        this.db.query('INSERT INTO sessions (id, event_id, expires_at) VALUES (?, ?, ?)').run(id, eventId, this.now() + SESSION_TTL_SECONDS * 1000);
         return id;
     }
 

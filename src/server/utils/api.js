@@ -1,4 +1,4 @@
-import { StorageError } from '../storage/sqlite.js';
+import { StorageError, SESSION_TTL_SECONDS } from '../storage/sqlite.js';
 
 // Preserve the existing JSON-status contract used by the UI.
 export function apiHandler(handler) {
@@ -12,7 +12,7 @@ export function apiHandler(handler) {
 }
 
 export function setSessionCookies(event, id) {
-    const options = { secure: !import.meta.dev, sameSite: 'strict', maxAge: 3600, path: '/' };
+    const options = { secure: !import.meta.dev, sameSite: 'strict', maxAge: SESSION_TTL_SECONDS, path: '/' };
     setCookie(event, 'session', id, { ...options, httpOnly: true });
     setCookie(event, 'sessionExists', 'true', { ...options, httpOnly: false });
 }
