@@ -1,20 +1,20 @@
 <template>
   <form @submit.prevent="saveQueries" class="rounded-lg shadow-md bg-white text-black dark:bg-gray-800 dark:text-white p-5">
-    <div class="mb-4 flex flex-wrap items-center justify-between gap-3">
-      <h1 class="text-xl font-bold">Instagram social collector</h1>
-      <label class="inline-flex cursor-pointer items-center gap-2">
-        <input v-model="enabled" type="checkbox" :disabled="pausing || (!savedEnabled && (!loaded || saving || !configured))" @change="enabled ? save({ instagramEnabled: true }) : stop()" class="h-4 w-4" />
-        Automatic Instagram polling
-      </label>
+    <div class="mb-4 flex items-center justify-between gap-3">
+      <h1 class="min-w-0 break-words text-xl font-bold">Instagram collector</h1>
+      <div class="flex shrink-0 items-center gap-2">
+        <Badge :variant="!loaded ? 'amber' : savedEnabled ? 'cyan' : 'slate'" size="md" role="status" aria-live="polite">
+          {{ !loaded ? 'Checking...' : savedEnabled ? 'Polling ON' : 'Polling OFF' }}
+        </Badge>
+        <UiSwitch v-model="enabled" :disabled="pausing || (!enabled && (!loaded || saving || !configured))" @update:model-value="togglePolling">
+          <span class="sr-only">Automatic Instagram polling</span>
+        </UiSwitch>
+      </div>
     </div>
-    <button type="button" :disabled="pausing" @click="stop" class="mb-3 min-h-11 rounded-lg border border-red-400 px-4 font-semibold text-red-700 dark:text-red-300 disabled:opacity-50">
-      {{ pausing ? 'Stopping Instagram polling...' : 'Stop Instagram polling' }}
-    </button>
     <p v-if="pauseError" role="alert" class="mb-3 text-sm text-red-600">{{ pauseError }}</p>
-    <p v-if="pauseConfirmed" role="status" class="mb-3 text-sm font-semibold">Instagram polling is OFF, confirmed by the server.</p>
+    <p role="status" class="mb-3 text-sm">{{ !loaded ? 'Checking polling status...' : savedEnabled ? `Automatic Instagram polling is on: every ${savedInterval} minutes while the wall is enabled.` : 'Instagram polling is paused. Existing posts remain on the wall.' }}</p>
     <fieldset :disabled="!loaded" class="space-y-4">
       <p class="text-sm">{{ configured ? 'Captapi API key configured.' : 'Captapi API key is not configured. Ask the event host to set NUXT_CAPTAPI_API_KEY.' }}</p>
-      <p role="status" class="text-sm">{{ !loaded ? 'Checking polling status...' : savedEnabled ? `Automatic Instagram polling is on: every ${savedInterval} minutes while the wall is enabled.` : 'Instagram polling is paused. Existing posts remain on the wall.' }}</p>
       <p class="text-xs">Each successful search with results costs 2 Captapi credits per hashtag. Failed or empty searches are not charged. An in-flight request may finish after stopping.</p>
       <p v-if="lastPoll" class="text-xs">Last attempt: <time :datetime="lastPoll" :title="lastPoll">{{ localDateTime(lastPoll) }}</time></p>
       <p v-if="pollError" role="status" class="text-sm text-amber-700">{{ pollError }}</p>
@@ -30,7 +30,7 @@
       </label>
       <p class="mb-3 text-xs text-slate-500">Separate hashtags with spaces, commas or new lines.</p>
       <div class="flex flex-wrap gap-2">
-        <button type="submit" :disabled="saving || pausing" class="min-h-11 rounded-lg bg-bluey-500 px-4 font-semibold text-white disabled:opacity-50">{{ saving ? 'Saving...' : 'Save Instagram queries' }}</button>
+        <button type="submit" :disabled="saving || pausing" class="min-h-11 rounded-lg bg-bluey-500 px-4 font-semibold text-white disabled:opacity-50">{{ saving ? 'Saving...' : 'Save Queries' }}</button>
         <button type="button" :disabled="saving || pausing" @click="load" class="min-h-11 rounded-lg border px-4">Reload saved settings</button>
       </div>
       <p v-if="error" role="alert" class="text-sm text-red-600">{{ error }}</p>
@@ -46,7 +46,7 @@ const enabled = ref(false), savedEnabled = ref(false), configured = ref(false), 
 const hashtags = ref(''), intervalMinutes = ref(5), savedInterval = ref(5);
 const revision = ref(0), lastPoll = ref(null), pollError = ref('');
 const nextPoll = ref(null), requestId = ref('');
-const saving = ref(false), pausing = ref(false), pauseConfirmed = ref(false), pauseError = ref('');
+const saving = ref(false), pausing = ref(false), pauseError = ref('');
 const error = ref(''), success = ref(false);
 let operationVersion = 0;
 function metadata(wall) {
@@ -75,7 +75,7 @@ async function request(body) {
 async function load() {
   if (saving.value || pausing.value) return;
   const version = operationVersion;
-  saving.value = true; error.value = ''; success.value = false; pauseConfirmed.value = false;
+  saving.value = true; error.value = ''; success.value = false;
   try {
     const data = await request();
     if (version !== operationVersion) return;
@@ -86,7 +86,7 @@ async function load() {
 async function save(patch) {
   if (saving.value || pausing.value || !loaded.value) return;
   const version = operationVersion;
-  saving.value = true; error.value = ''; success.value = false; pauseConfirmed.value = false;
+  saving.value = true; error.value = ''; success.value = false;
   try {
     const data = await request({ action: 'updateSettings', revision: revision.value, settings: patch });
     if (version !== operationVersion) return;
@@ -98,15 +98,16 @@ async function save(patch) {
 async function stop() {
   if (pausing.value) return;
   ++operationVersion;
-  pausing.value = true; pauseError.value = ''; pauseConfirmed.value = false;
+  pausing.value = true; pauseError.value = '';
   try {
     const data = await request({ action: 'pauseInstagram' });
     if (data.wall.instagramEnabled !== false) throw new Error('Server did not confirm the pause.');
     if (!loaded.value) { apply(data.wall); configured.value = data.instagramConfigured; loaded.value = true; }
-    metadata(data.wall); pauseConfirmed.value = true;
+    metadata(data.wall);
   } catch (failure) { pauseError.value = `Could not confirm that Instagram polling stopped. ${failure.message || 'Retry or log in again.'}`; }
   finally { enabled.value = savedEnabled.value; pausing.value = false; }
 }
 function saveQueries() { return save(queryPatch()); }
+function togglePolling(value) { return value ? save({ instagramEnabled: true }) : stop(); }
 onMounted(load);
 </script>

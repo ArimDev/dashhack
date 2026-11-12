@@ -107,9 +107,7 @@ export class InstagramCollector {
             this.record(event.id, '');
             return { imported };
         } catch (error) {
-            const reason = (error.providerFailure || error.message === 'Captapi returned an invalid search response.') ? error.message
-                : ['TimeoutError','AbortError'].includes(error.name) ? 'Captapi Instagram request timed out. Automatic retries will back off.'
-                : 'Instagram collection failed. Check API access or available wall storage.';
+            const reason = error.message;
             const retry = this.record(event.id, reason, error);
             this.logger.warn('[Instagram collector] Fetch failed', { eventId: event.id, hashtag: activeHashtag, imported,
                 error: reason, requestId: retry.requestId, nextPollAt: retry.nextPollAt });

@@ -14,28 +14,45 @@ async function changed(page,action) {
   await action(); expect((await (await response).json()).status).toBe(200);
 }
 
+async function expectSwitchPosition(toggle, checked) {
+  await expect(toggle).toBeChecked({ checked });
+  await expect.poll(() => toggle.evaluate(input => {
+    const track = input.nextElementSibling;
+    const offset = track.firstElementChild.getBoundingClientRect().left - track.getBoundingClientRect().left;
+    return offset > track.clientWidth / 3;
+  })).toBe(checked);
+}
+
 test('Instagram collector saves hashtag drafts, preserves conflicts and stops without API credits', async ({ page }) => {
   const name = await setup(page), encoded = encodeURIComponent(name);
   await page.goto(`/app/${encoded}/settings`);
-  const form = page.locator('form').filter({ has: page.getByRole('heading', { name: 'Instagram social collector' }) });
+  const form = page.locator('form').filter({ has: page.getByRole('heading', { name: 'Instagram collector', exact: true }) });
   await expect(form.getByRole('status').filter({ hasText: 'Instagram polling is paused.' })).toBeVisible();
+  await expect(form.getByText('Polling OFF', { exact: true })).toBeVisible();
   await form.getByLabel('Hashtags to query').fill('#hackathon, junior2026\n#hackathon');
   await form.getByLabel('Polling interval (minutes)').fill('12');
-  await changed(page, () => form.getByRole('button', { name: 'Save Instagram queries' }).click());
+  await changed(page, () => form.getByRole('button', { name: 'Save Queries', exact: true }).click());
   let data = (await (await page.request.get(`/api/wall/${encoded}/posts`)).json()).data;
   expect(data.wall.instagramEnabled).toBe(false);
   expect(data.wall.instagramQueryHashtags).toEqual(['#hackathon', '#junior2026']);
   expect(data.wall.instagramModerationMode).toBeUndefined();
   expect(data.wall.xEnabled).toBe(false); expect(data.wall.moderationMode).toBe('manual');
+  expect((await (await page.request.post(`/api/wall/${encoded}/posts`, { data: { action: 'updateSettings', revision: data.wall.revision, settings: { instagramEnabled: true } } })).json()).status).toBe(200);
+  data = (await (await page.request.get(`/api/wall/${encoded}/posts`)).json()).data;
   await page.reload(); await expect(form.getByLabel('Hashtags to query')).toHaveValue('#hackathon, #junior2026');
+  const toggle = form.getByRole('switch', { name: 'Automatic Instagram polling' });
+  await expectSwitchPosition(toggle, true);
+  await expect(form.getByText('Polling ON', { exact: true })).toBeVisible();
+  await expect(form.getByRole('button', { name: 'Stop Instagram polling', exact: true })).toHaveCount(0);
   await page.request.post(`/api/wall/${encoded}/posts`, { data: { action: 'updateSettings', revision: data.wall.revision, settings: { windowMinutes: 1800 } } });
   await form.getByLabel('Hashtags to query').fill('#unsaved');
   const conflict = page.waitForResponse(response => response.url().includes('/posts') && response.request().method() === 'POST');
-  await form.getByRole('button', { name: 'Save Instagram queries' }).click();
+  await form.getByRole('button', { name: 'Save Queries', exact: true }).click();
   expect((await (await conflict).json()).status).toBe(409);
   await expect(form.getByRole('alert')).toContainText('Your draft is kept');
-  await changed(page, () => form.getByRole('button', { name: 'Stop Instagram polling', exact: true }).click());
-  await expect(form.getByRole('status').filter({ hasText: 'OFF, confirmed by the server' })).toBeVisible();
+  await changed(page, () => toggle.locator('..').click());
+  await expectSwitchPosition(toggle, false);
+  await expect(form.getByText('Polling OFF', { exact: true })).toBeVisible();
   await expect(form.getByLabel('Hashtags to query')).toHaveValue('#unsaved');
   data = (await (await page.request.get(`/api/wall/${encoded}/posts`)).json()).data;
   expect(data.wall.instagramQueryHashtags).toEqual(['#hackathon', '#junior2026']);
@@ -119,8 +136,8 @@ test('moderation rejects stale changes and X settings persist without exposing s
   await expect(page.getByRole('alert')).toContainText('Post changed');
   await expect(card.getByText('Rejected',{ exact:true })).toBeVisible();
   await page.getByRole('link',{ name:'Settings',exact:true }).click();
-  await expect(page.getByRole('heading',{ name:'X social collector' })).toBeVisible();
-  const input=page.locator('form').filter({ has: page.getByRole('heading', { name: 'X social collector', exact: true }) }).getByLabel('Hashtags to query');
+  await expect(page.getByRole('heading',{ name:'X collector',exact:true })).toBeVisible();
+  const input=page.locator('form').filter({ has: page.getByRole('heading', { name: 'X collector', exact: true }) }).getByLabel('Hashtags to query');
   await input.fill('#junior2026');
   const save=page.waitForResponse(r => r.url().includes('/posts') && r.request().method()==='POST');
   await page.getByRole('button',{name:'Save queries',exact:true}).click();expect((await (await save).json()).status).toBe(200);
@@ -260,7 +277,7 @@ test('wall cogwheel and polling settings require a session for the matching even
 test('X query drafts survive blur, validation errors, conflicts and edits during a slow save', async ({ page }) => {
   const name = await setup(page), encoded = encodeURIComponent(name);
   await page.goto(`/app/${encoded}/settings`);
-  const tags = page.locator('form').filter({ has: page.getByRole('heading', { name: 'X social collector', exact: true }) }).getByLabel('Hashtags to query'), handles = page.getByLabel('Handles to follow');
+  const tags = page.locator('form').filter({ has: page.getByRole('heading', { name: 'X collector', exact: true }) }).getByLabel('Hashtags to query'), handles = page.getByLabel('Handles to follow');
   await expect(tags).toBeEnabled();
   await tags.fill('#junior #student, #nápad\n#junior');
   await handles.fill('@host @mentor, coach');
@@ -284,7 +301,7 @@ test('X query drafts survive blur, validation errors, conflicts and edits during
   expect((await (await conflict).json()).status).toBe(409);
   await expect(tags).toHaveValue('#draft'); await expect(handles).toHaveValue('@draft');
   await expect(page.getByText('Settings changed elsewhere.', {exact:false})).toBeVisible();
-  await page.locator('form').filter({ has: page.getByRole('heading', { name: 'X social collector', exact: true }) }).getByRole('button',{name:'Reload saved settings',exact:true}).click();
+  await page.locator('form').filter({ has: page.getByRole('heading', { name: 'X collector', exact: true }) }).getByRole('button',{name:'Reload saved settings',exact:true}).click();
   await expect(tags).toHaveValue('#elsewhere');
   let release; const gate = new Promise(resolve => { release = resolve; });
   await page.route(`**/api/wall/${encoded}/posts`, async route => {
@@ -316,7 +333,7 @@ test('default 100-character preview opens full article', async ({ page }) => {
   await expect(page.getByRole('dialog')).toContainText(text);
 });
 
-test('Stop X polling works during loading/saving and stale writes cannot switch it back on', async ({ page, browser }) => {
+test('X polling switch recovers from stop failures and stale saves cannot switch it back on', async ({ page, browser }) => {
   const name=await setup(page), encoded=encodeURIComponent(name), path=`/api/wall/${encoded}/posts`;
   expect((await(await page.request.post(path,{data:{action:'updateSettings',revision:0,settings:{xEnabled:true,xQueryHashtags:['#existing']}}})).json()).status).toBe(200);
   let releaseLoad;const loadGate=new Promise(resolve=>{releaseLoad=resolve});let failFirstStop=true;
@@ -328,18 +345,24 @@ test('Stop X polling works during loading/saving and stale writes cannot switch 
     await route.continue();
   });
   await page.goto(`/app/${encoded}/settings`);
-  const stop=page.getByRole('button',{name:'Stop X polling',exact:true});await expect(stop).toBeEnabled();
-  await stop.click();await expect(page.getByRole('alert')).toContainText('Could not confirm');
-  await expect(page.getByText('X polling is OFF — confirmed by the server.',{exact:false})).toHaveCount(0);
+  const form = page.locator('form').filter({ has: page.getByRole('heading', { name: 'X collector', exact: true }) });
+  const toggle=page.getByRole('switch',{name:'Automatic X polling'});
+  await expect(toggle).toBeDisabled();
+  await expect(page.getByRole('button',{name:'Stop X polling',exact:true})).toHaveCount(0);
+  releaseLoad();await expectSwitchPosition(toggle,true);
+  await toggle.press('Space');await expect(page.getByRole('alert')).toContainText('Could not confirm');
+  await expectSwitchPosition(toggle,true);
+  await expect(form.getByText('Polling ON', { exact: true })).toBeVisible();
+  await expect(form.getByText('Polling OFF', { exact: true })).toHaveCount(0);
   expect((await(await page.request.get(path)).json()).data.wall.xEnabled).toBe(true);
-  await changed(page,()=>stop.click());
-  await expect(page.getByText('X polling is OFF — confirmed by the server.',{exact:false})).toBeVisible();
-  const loadFinished=page.waitForResponse(r=>r.url().includes(path)&&r.request().method()==='GET');
-  releaseLoad();await loadFinished;await page.unroute(`**${path}`);
-  const tags=page.locator('form').filter({ has: page.getByRole('heading', { name: 'X social collector', exact: true }) }).getByLabel('Hashtags to query');await expect(tags).toHaveValue('#existing');
+  await changed(page,()=>toggle.press('Space'));
+  await expectSwitchPosition(toggle,false);
+  await expect(form.getByText('Polling OFF', { exact: true })).toBeVisible();
+  await page.unroute(`**${path}`);
+  const tags=form.getByLabel('Hashtags to query');await expect(tags).toHaveValue('#existing');
   const stopped=(await(await page.request.get(path)).json()).data.wall;
   expect((await(await page.request.post(path,{data:{action:'updateSettings',revision:stopped.revision,settings:{xEnabled:true}}})).json()).status).toBe(200);
-  await page.reload();await expect(page.getByRole('checkbox',{name:'Automatic X polling'})).toBeChecked();
+  await page.reload();await expectSwitchPosition(toggle,true);
   // Hold an already-completed query save response containing ON until after STOP confirms OFF.
   let releaseSave,serverSaved;
   const responseGate=new Promise(resolve=>{releaseSave=resolve}),serverGate=new Promise(resolve=>{serverSaved=resolve});
@@ -348,16 +371,15 @@ test('Stop X polling works during loading/saving and stale writes cannot switch 
     const response=await route.fetch();serverSaved();await responseGate;await route.fulfill({response});
   });
   await tags.fill('#draft');await page.getByRole('button',{name:'Save queries',exact:true}).click();await serverGate;
-  await expect(page.getByRole('button',{name:'Saving…',exact:true})).toBeDisabled();await expect(stop).toBeEnabled();
-  const toggle=page.getByRole('checkbox',{name:'Automatic X polling'});
+  await expect(page.getByRole('button',{name:'Saving…',exact:true})).toBeDisabled();
   await expect(toggle).toBeEnabled();
-  await changed(page,()=>toggle.uncheck());releaseSave();
+  await changed(page,()=>toggle.press('Space'));releaseSave();
   await expect(page.getByRole('button',{name:'Save queries',exact:true})).toBeEnabled();
-  await expect(page.getByRole('checkbox',{name:'Automatic X polling'})).not.toBeChecked();
+  await expectSwitchPosition(toggle,false);
   await expect(tags).toHaveValue('#draft');
   const result=(await(await page.request.get(path)).json()).data.wall;expect(result.xEnabled).toBe(false);
   const guest=await browser.newContext();try{expect((await(await guest.request.post(path,{data:{action:'pauseX'}})).json()).status).toBe(401);}finally{await guest.close();}
-  await page.reload();await expect(page.getByRole('checkbox',{name:'Automatic X polling'})).not.toBeChecked();
+  await page.reload();await expect(toggle).not.toBeChecked();
 });
 
 
