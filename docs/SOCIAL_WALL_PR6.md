@@ -222,3 +222,9 @@ Collector now classifies safe provider errors, exposes the support request ID, p
 Removed our added visible Open on X/Instagram footer. A keyboard-accessible whole-card source anchor remains, alongside independent hashtag/URL links, reader and video controls. Original URLs in imported captions remain original content, not an appended source footer.
 
 Validation: 123 unit tests / 903 assertions; production build/native packaging; direct Chromium checks of visually hidden source label, whole-card/hashtag navigation, URL safety and full-post reader. Provider outage remains external; only existing scheduled requests may be used for live follow-up.
+
+## Public display controls and matching hashtag size — 2026-11-12
+
+The wall cogwheel is visible to every visitor, including guests and sessions for another event. Guest layout and speed changes apply locally until page reload and survive stored-feed refreshes. Theme, auto-scroll, fullscreen and QR controls remain available. Matching authenticated event sessions still save shared layout/speed with the existing revision checks; moderation, collectors and all server write permissions are unchanged.
+
+The event's #atthack label uses the title's exact responsive font size, weight and tracking (36px desktop, 24px phone, 20px short landscape). The title reserves more vertical space for the larger hashtag. Other events do not receive this label. Feed cap, QR presentation and mosaic behavior are preserved.

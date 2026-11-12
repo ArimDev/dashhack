@@ -82,7 +82,7 @@
       </section>
 
       <PublicWallDisplayControls
-        v-if="canEdit"
+        :can-save="canEdit"
         :scrolling-enabled="isScrollingEnabled"
         :fullscreen="isFullscreen"
         :dark-theme="isDarkTheme"
@@ -133,6 +133,8 @@ const timestampNow = ref(new Date());
 const renderedPosts = computed(() => posts.value.slice(0, renderedCount.value));
 const columnCount = ref(1);
 const layout = reactive({ ...WALL_LAYOUT_DEFAULTS });
+let localSpeed = false;
+const localLayoutKeys = new Set();
 const layoutSaving = ref(false), layoutError = ref('');
 const effectiveColumns = computed(() => columnCount.value === 1 ? 1 : layout.panelColumns || columnCount.value);
 const mosaicStyle = computed(() => ({
@@ -270,9 +272,11 @@ function applySettings(wall) {
   const revision = wall.revision || 0;
   if (revision < wallRevision.value) return;
   wallRevision.value = revision;
-  if (!speedSaving.value) scrollSpeed.value = wall.scrollSpeed || 40;
+  if (!speedSaving.value && (canEdit.value || !localSpeed)) scrollSpeed.value = wall.scrollSpeed || 40;
   if (!layoutSaving.value) {
-    for (const key of Object.keys(WALL_LAYOUT_DEFAULTS)) layout[key] = wall[key] ?? WALL_LAYOUT_DEFAULTS[key];
+    for (const key of Object.keys(WALL_LAYOUT_DEFAULTS)) {
+      if (canEdit.value || !localLayoutKeys.has(key)) layout[key] = wall[key] ?? WALL_LAYOUT_DEFAULTS[key];
+    }
   }
   idleWaitSeconds.value = wall.idleWaitSeconds;
   uploadsEnabled.value = wall.publicUploadEnabled;
@@ -285,7 +289,8 @@ function applyPosts(incoming) {
   revealMore();
 }
 async function saveSpeed(speed) {
-  if (!canEdit.value || speedSaving.value || layoutSaving.value) return;
+  if (speedSaving.value || layoutSaving.value) return;
+  if (!canEdit.value) { localSpeed = true; scrollSpeed.value = speed; return; }
   const previous = scrollSpeed.value;
   speedSaving.value = true; speedError.value = ''; scrollSpeed.value = speed;
   try {
@@ -300,7 +305,13 @@ async function saveSpeed(speed) {
   } finally { speedSaving.value = false; }
 }
 async function saveLayout(patch) {
-  if (!canEdit.value || layoutSaving.value || speedSaving.value) return;
+  if (layoutSaving.value || speedSaving.value) return;
+  if (!canEdit.value) {
+    for (const key of Object.keys(WALL_LAYOUT_DEFAULTS)) {
+      if (Object.hasOwn(patch, key)) { localLayoutKeys.add(key); layout[key] = patch[key]; }
+    }
+    return;
+  }
   layoutSaving.value = true; layoutError.value = '';
   try {
     const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}/posts`, {

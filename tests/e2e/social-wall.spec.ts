@@ -86,7 +86,7 @@ test('public photo submission stays private until approved and remains subject t
     const approved=await guest.request.get(url);expect(approved.headers()['content-type']).toContain('image/webp');const stored=await approved.body();expect(stored.toString('ascii',8,12)).toBe('WEBP');
     const range=await guest.request.get(url,{ headers:{ Range:'bytes=0-7' } });expect(range.status()).toBe(206);expect(await range.body()).toEqual(stored.subarray(0,8));
     await upload.goto(`/${encodeURIComponent(name)}/wall`);
-    await expect(upload.getByRole('button',{ name:'Wall display settings', exact:true })).toHaveCount(0);
+    await expect(upload.getByRole('button',{ name:'Wall display settings', exact:true })).toBeVisible();
     await expect(upload.getByText('Náš první prototyp!',{ exact:true }).first()).toBeVisible();
     await expect(upload.getByRole('button',{ name:/Switch to .* mode/ })).toHaveCount(0);
     await card.getByRole('button',{ name:'Post actions' }).click();
@@ -244,7 +244,7 @@ test('projector wall shows a bare top-right QR without widening the feed', async
 });
 
 
-test('wall cogwheel and polling settings require a session for the matching event', async ({ page, browser }) => {
+test('wall cogwheel is public while polling settings require a session for the matching event', async ({ page, browser }) => {
   const name = await setup(page), encoded = encodeURIComponent(name);
   await page.goto(`/${encoded}/wall`);
   await expect(page.getByRole('button', { name: 'Wall display settings', exact: true })).toBeVisible();
@@ -252,7 +252,7 @@ test('wall cogwheel and polling settings require a session for the matching even
   try {
     const visitor = await guest.newPage();
     await visitor.goto(`/${encoded}/wall`);
-    await expect(visitor.getByRole('button', { name: 'Wall display settings', exact: true })).toHaveCount(0);
+    await expect(visitor.getByRole('button', { name: 'Wall display settings', exact: true })).toBeVisible();
     expect((await (await guest.request.get(`/api/wall/${encoded}`)).json()).canEdit).toBe(false);
     const patch = { username:name, setting:'wall.xCollector', revision:0, value:{ enabled:true, intervalMinutes:5, hashtags:['#test'], handles:[] } };
     expect((await (await guest.request.post('/api/auth/update', { data:patch })).json()).status).toBe(401);
@@ -260,7 +260,7 @@ test('wall cogwheel and polling settings require a session for the matching even
     await guest.request.post('/api/auth/create', { data:{ username:other, password } });
     await guest.request.post('/api/auth/login', { data:{ username:other, password } });
     await visitor.reload();
-    await expect(visitor.getByRole('button', { name: 'Wall display settings', exact: true })).toHaveCount(0);
+    await expect(visitor.getByRole('button', { name: 'Wall display settings', exact: true })).toBeVisible();
     expect((await (await guest.request.post('/api/auth/update', { data:patch })).json()).status).toBe(403);
     // A valid event session can enable and pause collection; no token means no external calls.
     expect((await (await page.request.post('/api/auth/update', { data:patch })).json()).status).toBe(200);
@@ -270,7 +270,7 @@ test('wall cogwheel and polling settings require a session for the matching even
     expect(settings.xEnabled).toBe(false); expect(settings.xPollIntervalMinutes).toBe(5);
     await page.context().clearCookies();
     await page.reload();
-    await expect(page.getByRole('button', { name: 'Wall display settings', exact: true })).toHaveCount(0);
+    await expect(page.getByRole('button', { name: 'Wall display settings', exact: true })).toBeVisible();
   } finally { await guest.close(); }
 });
 

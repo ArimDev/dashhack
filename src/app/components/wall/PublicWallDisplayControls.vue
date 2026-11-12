@@ -3,6 +3,7 @@
     <section v-if="open" id="wall-display-settings" aria-label="Wall display settings"
       class="mb-2 flex max-h-[calc(100dvh-5rem)] w-72 max-w-[calc(100vw-1.5rem)] flex-col gap-3 overflow-y-auto rounded-2xl border border-slate-300 bg-white p-4 shadow-xl dark:border-white/15 dark:bg-slate-900">
       <h2 class="text-sm font-bold">Wall display settings</h2>
+      <p v-if="!canSave" class="text-xs text-slate-500 dark:text-slate-400">Changes apply to this screen until you reload.</p>
       <WallLayoutControls :settings="layout" :disabled="layoutSaving || speedSaving" @change="$emit('set-layout', $event)" />
       <p v-if="layoutSaving" role="status" class="text-xs text-slate-500">Saving layout…</p>
       <p v-if="layoutError" role="alert" class="text-xs text-red-600 dark:text-red-400">{{ layoutError }}</p>
@@ -48,6 +49,7 @@
 <script setup>
 import { WALL_SPEED_PRESETS as presets } from "../../../shared/wallDisplay.js";
 defineProps({
+  canSave: Boolean,
   layout: { type: Object, required: true },
   layoutSaving: Boolean,
   layoutError: { type: String, default: '' },
