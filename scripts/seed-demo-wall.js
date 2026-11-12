@@ -42,7 +42,7 @@ export function seedDemoWall(filename,{ apply=false, now=Date.now() }={}) {
     const db=new Database(filename,{ create:false,readwrite:true,strict:true });
     try {
         db.exec('PRAGMA foreign_keys=ON; PRAGMA busy_timeout=5000;');
-        if(![8,9,10,11,12,13,14,15,16].includes(db.query('PRAGMA user_version').get().user_version)) throw new Error('Seed requires a supported deployed schema (8-16); it never migrates a database.');
+        if(![8,9,10,11,12,13,14,15,16,17].includes(db.query('PRAGMA user_version').get().user_version)) throw new Error('Seed requires a supported deployed schema (8-17); it never migrates a database.');
         const event=db.query('SELECT id FROM events WHERE name=?').get(EVENT);
         if(!event) throw new Error('Existing Student Hackathon Demo event not found; no event or credentials will be created.');
         const teams=db.query('SELECT COUNT(*) AS n FROM teams WHERE event_id=?').get(event.id).n;

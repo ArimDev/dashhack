@@ -105,9 +105,10 @@ const navigation = [
     { path: 'teams', label: 'Teams', icon: 'heroicons:user-group' },
     { path: 'kanban', label: 'Kanban', icon: 'heroicons:view-columns' },
     { path: 'matice', label: 'Matice', icon: 'heroicons:table-cells' },
+    { path: 'github-metrics', label: 'GitHub metrics', icon: 'heroicons:chart-bar' },
     { path: 'social-wall', label: 'Social Wall', icon: 'heroicons:photo' },
     { path: 'mentors', label: 'Mentors', icon: 'heroicons:academic-cap' },
-    { path: 'log', label: 'Log', icon: 'heroicons:document-text' },
+    { path: 'worknotes', label: 'Worknotes', icon: 'heroicons:clipboard-document-list' },
     { path: 'settings', label: 'Settings', icon: 'heroicons:cog-6-tooth' },
 ];
 watch(() => route.fullPath, () => { mobileMenu.value = false; });

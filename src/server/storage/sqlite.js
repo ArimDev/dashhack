@@ -121,7 +121,7 @@ export class SqliteStore {
             PRAGMA mmap_size = 0;
         `);
         const version = this.db.query('PRAGMA user_version').get().user_version;
-        if (version > 16) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
+        if (version > 17) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
         if (version === 0) this.db.transaction(() => {
             this.db.exec(`
                 CREATE TABLE events (
@@ -328,9 +328,61 @@ export class SqliteStore {
             if (!this.db.query('PRAGMA table_info(notes)').all().some(column => column.name === 'assignee_id')) this.db.exec('ALTER TABLE notes ADD COLUMN assignee_id TEXT REFERENCES mentors(id)');
             this.db.exec('PRAGMA user_version = 16');
         })();
+        if (version < 17) this.db.transaction(() => {
+            this.db.exec(`CREATE TABLE IF NOT EXISTS activity_log (
+                id INTEGER PRIMARY KEY AUTOINCREMENT, event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE,
+                team_id TEXT, team_name TEXT NOT NULL DEFAULT '', entity_id TEXT, kind TEXT NOT NULL,
+                actor TEXT NOT NULL, source TEXT NOT NULL, details TEXT NOT NULL, created_at TEXT NOT NULL
+            );
+            CREATE INDEX IF NOT EXISTS activity_event ON activity_log(event_id,id DESC);
+            CREATE INDEX IF NOT EXISTS activity_team ON activity_log(event_id,team_id,id DESC);
+            CREATE TABLE IF NOT EXISTS github_metrics_cache (
+                event_id TEXT NOT NULL REFERENCES events(id) ON DELETE CASCADE, repository TEXT NOT NULL,
+                scope TEXT NOT NULL, data TEXT NOT NULL, PRIMARY KEY(event_id,repository)
+            );
+            PRAGMA user_version=17;`);
+        })();
     }
 
     close() { this.db.close(); }
+    recordActivity(eventId, {teamId=null,teamName='',entityId=null,kind,details={},actor='Shared event login',source='dashboard'}) {
+        this.db.query('INSERT INTO activity_log(event_id,team_id,team_name,entity_id,kind,actor,source,details,created_at) VALUES(?,?,?,?,?,?,?,?,?)')
+            .run(eventId,teamId,teamName,entityId,kind,actor,source,JSON.stringify(details),this.timestamp());
+        // Keep the private event footprint bounded; entries are append-only to clients.
+        this.db.query('DELETE FROM activity_log WHERE event_id=? AND id <= COALESCE((SELECT id FROM activity_log WHERE event_id=? ORDER BY id DESC LIMIT 1 OFFSET 10000),0)').run(eventId,eventId);
+    }
+    activity(sessionId,name,{teamId='',before,limit=30}={}) {
+        const eventId=this.authorize(sessionId,name);
+        if(typeof teamId!=='string'||teamId.length>100)throw new StorageError(400,'Invalid team filter');
+        const cursor=before===undefined?Number.MAX_SAFE_INTEGER:Number(before);
+        if(!Number.isSafeInteger(cursor)||cursor<1)throw new StorageError(400,'Invalid history cursor');
+        limit=Number(limit);if(!Number.isInteger(limit)||limit<1||limit>100)throw new StorageError(400,'Invalid history limit');
+        const rows=this.db.query(`SELECT id,team_id AS teamId,team_name AS teamName,entity_id AS entityId,kind,actor,source,details,created_at AS createdAt
+            FROM activity_log WHERE event_id=? AND (?='' OR team_id=?) AND id<? ORDER BY id DESC LIMIT ?`).all(eventId,teamId,teamId,cursor,limit+1);
+        return {entries:rows.slice(0,limit).map(row=>({...row,details:JSON.parse(row.details)})),hasMore:rows.length>limit};
+    }
+    addWorknote(sessionId,name,input) {
+        const eventId=this.authorize(sessionId,name),content=text(input.content,'worknote',5000,true).trim();
+        return this.db.transaction(()=>{
+            const team=input.teamId?this.findTeam(eventId,input):null;
+            this.recordActivity(eventId,{teamId:team?.id,teamName:team?.name,kind:'worknote.added',details:{content}});
+            this.touch(eventId);
+        })();
+    }
+    recordNoteChanges(eventId,team,before,after,actor) {
+        const old=new Map(before.map(note=>[note.id,note])),next=new Map(after.map(note=>[note.id,note]));
+        for(const id of new Set([...old.keys(),...next.keys()])) {
+            const a=old.get(id),b=next.get(id);
+            const fields=['content','priority','status','type','creatorId','assigneeId','inKanban','color'].filter(key=>JSON.stringify(a?.[key])!==JSON.stringify(b?.[key]));
+            if(!fields.length)continue;
+            const display=(note,key)=> key==='content'?String(note?.[key]||'').slice(0,500):['creatorId','assigneeId'].includes(key)?this.db.query('SELECT name FROM mentors WHERE id=? AND event_id=?').get(note?.[key]||'',eventId)?.name||null:note?.[key]??null;
+            const changes=fields.map(field=>({field,from:display(a,field),to:display(b,field),...(field==='content'?{excerpt:true}:{})}));
+            this.recordActivity(eventId,{teamId:team.id,teamName:team.name,entityId:id,kind:!a?'note.created':!b?'note.deleted':'note.updated',details:{changes,notePreview:String((b||a).content||'').slice(0,160)},...actor});
+        }
+    }
+    teamNotes(teamId) {
+        return this.db.query('SELECT id,content,color,priority,status,type,creator_id AS creatorId,assignee_id AS assigneeId,in_kanban AS inKanban FROM notes WHERE team_id=? ORDER BY position,id').all(teamId).map(n=>({...n,inKanban:!!n.inKanban}));
+    }
     timestamp() { return new Date(this.now()).toISOString(); }
     exists(name) { return typeof name === 'string' && !!this.db.query('SELECT 1 FROM events WHERE name = ?').get(name); }
 
@@ -370,6 +422,7 @@ export class SqliteStore {
             const id = randomUUID(), now = this.timestamp();
             this.db.query('INSERT INTO events (id, name, password_hash, created_at, updated_at) VALUES (?, ?, ?, ?, ?)')
                 .run(id, name, hash, now, now);
+            this.recordActivity(id,{kind:'event.created',details:{name}});
             return id;
         })();
     }
@@ -414,6 +467,7 @@ export class SqliteStore {
             return this.db.transaction(() => {
                 this.authorize(sessionId, name);
                 this.db.query('UPDATE events SET password_hash = ?, updated_at = ? WHERE id = ?').run(hash, this.timestamp(), id);
+                this.recordActivity(id,{kind:'event.updated',details:{fields:['password']}});
                 this.db.query('DELETE FROM sessions WHERE event_id = ?').run(id);
                 return this.createSession(id);
             })();
@@ -431,6 +485,7 @@ export class SqliteStore {
                 this.db.query('UPDATE events SET logo = ?, updated_at = ? WHERE id = ?')
                     .run(text(value, 'logo URL', 2000), this.timestamp(), id);
             } else throw new StorageError(400, 'Unknown setting');
+            this.recordActivity(id,{kind:'event.updated',details:{fields:[setting]}});
             return null;
         })();
     }
@@ -446,6 +501,7 @@ export class SqliteStore {
             this.db.query('INSERT INTO teams (id, event_id, name, color, github, description, position, originality, project_abstract) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)')
                 .run(id, eventId, team.name, team.color, team.github, team.description, position, team.originality, JSON.stringify(team.projectAbstract));
             this.touch(eventId);
+            this.recordActivity(eventId,{teamId:id,teamName:team.name,entityId:id,kind:'team.created'});
             return id;
         })();
     }
@@ -492,14 +548,19 @@ export class SqliteStore {
                 .run(flow.event_id, choice.id, choice.account, choice.type, String(appId));
             this.db.query('DELETE FROM github_oauth_flows WHERE id=?').run(selectionId);
             this.touch(flow.event_id);
+            this.recordActivity(flow.event_id,{kind:'event.updated',details:{fields:['GitHub App connection']}});
             return flow.event;
         })();
     }
 
     disconnectGitHub(sessionId, name) {
         const eventId = this.authorize(sessionId, name);
-        this.db.query('DELETE FROM github_connections WHERE event_id=?').run(eventId);
-        this.touch(eventId);
+        this.db.transaction(()=>{
+            this.db.query('DELETE FROM github_connections WHERE event_id=?').run(eventId);
+            this.db.query('DELETE FROM github_metrics_cache WHERE event_id=?').run(eventId);
+            this.recordActivity(eventId,{kind:'event.updated',details:{fields:['GitHub App disconnected']}});
+            this.touch(eventId);
+        })();
     }
 
     addMentor(sessionId, name, input) {
@@ -511,6 +572,7 @@ export class SqliteStore {
             }
             const mentor = { id: randomUUID(), name: mentorName };
             this.db.query('INSERT INTO mentors (id, event_id, name) VALUES (?, ?, ?)').run(mentor.id, eventId, mentor.name);
+            this.recordActivity(eventId,{kind:'event.updated',details:{fields:['Mentor roster'],name:mentor.name}});
             this.touch(eventId);
             return mentor;
         })();
@@ -556,6 +618,7 @@ export class SqliteStore {
         }
         return this.db.transaction(() => {
             const team = this.findTeam(eventId, input);
+            const beforeNotes=this.teamNotes(team.id);
             const fields = teamFields({ ...input,
                 teamOriginality: input.teamOriginality === undefined ? team.originality : input.teamOriginality,
                 teamProjectAbstract: input.teamProjectAbstract === undefined ? JSON.parse(team.project_abstract) : input.teamProjectAbstract });
@@ -584,6 +647,10 @@ export class SqliteStore {
                 for (const note of notes) if (!oldIds.has(note.id)) this.queueHelpNotification(eventId,team.id,note);
             }
             this.touch(eventId);
+            const changed=Object.entries({name:fields.name,color:fields.color,github:fields.github,description:fields.description,originality:fields.originality,project_abstract:JSON.stringify(fields.projectAbstract)}).filter(([key,value])=>team[key]!==value).map(([key])=>key);
+            if(changed.length)this.recordActivity(eventId,{teamId:team.id,teamName:fields.name,entityId:team.id,kind:'team.updated',details:{fields:changed}});
+            if(changed.includes('github'))this.db.query('DELETE FROM github_metrics_cache WHERE event_id=?').run(eventId);
+            if(notes)this.recordNoteChanges(eventId,{...team,name:fields.name},beforeNotes,notes);
             return team.revision + 1;
         })();
     }
@@ -604,6 +671,8 @@ export class SqliteStore {
             this.db.query('UPDATE teams SET startup_matrix = ?, matrix_mentor_id = ?, revision = revision + 1 WHERE id = ?')
                 .run(JSON.stringify(startupMatrix), mentorId, team.id);
             this.touch(eventId);
+            const changed=Object.keys(patch).filter(key=>JSON.stringify(JSON.parse(team.startup_matrix)[key]||[])!==JSON.stringify(patch[key]));
+            if(changed.length||mentorId!==team.matrix_mentor_id)this.recordActivity(eventId,{teamId:team.id,teamName:team.name,entityId:team.id,kind:'matrix.updated',details:{fields:changed,mentorChanged:mentorId!==team.matrix_mentor_id}});
             return { startupMatrix, matrixMentorId: mentorId, revision: team.revision + 1 };
         })();
     }
@@ -623,6 +692,7 @@ export class SqliteStore {
         return this.db.transaction(() => {
             const team = this.findTeam(eventId, input);
             const existing = this.db.query('SELECT * FROM notes WHERE id = ? AND team_id = ?').get(input.noteId, team.id);
+            const beforeNotes=this.teamNotes(team.id);
             if (!existing) throw new StorageError(404, 'Note not found');
             if (!Number.isInteger(input.revision) || input.revision !== team.revision) {
                 throw new StorageError(409, 'Team changed. Reload before saving again.');
@@ -644,6 +714,7 @@ export class SqliteStore {
             }
             this.db.query('UPDATE teams SET revision = revision + 1 WHERE id = ?').run(team.id);
             this.touch(eventId);
+            this.recordNoteChanges(eventId,team,beforeNotes,this.teamNotes(team.id));
             return { revision: team.revision + 1, ...(note ? { note: { ...note, _id: note.id } } : {}) };
         })();
     }
@@ -652,6 +723,8 @@ export class SqliteStore {
         const eventId = this.authorize(sessionId, name);
         this.db.transaction(() => {
             const team = this.findTeam(eventId, input);
+            this.recordActivity(eventId,{teamId:team.id,teamName:team.name,entityId:team.id,kind:'team.deleted'});
+            this.db.query('DELETE FROM github_metrics_cache WHERE event_id=?').run(eventId);
             this.db.query('DELETE FROM teams WHERE id = ?').run(team.id);
             this.touch(eventId);
         })();

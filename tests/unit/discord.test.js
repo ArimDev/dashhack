@@ -21,7 +21,7 @@ test('schema 8 upgrades to 12 without changing event, team, matrix, notes or act
  const id=await store.createEvent('Migration','password123'),session=store.createSession(id),teamId=store.addTeam(session,'Migration',{teamName:'Keep',teamColor:'#123456'});
  store.editStartupMatrix(session,'Migration',{teamId,revision:0,answers:{problem:answer('Keep answer')}});const before=store.getEvent('Migration');
  store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; PRAGMA user_version=8;');store.close();const reopened=new SqliteStore(file);stores.push(reopened);
- expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(16);expect(reopened.getEvent('Migration')).toEqual(before);expect(reopened.getSession(session).eventId).toBe(id);expect(reopened.db.query('SELECT COUNT(*) n FROM discord_settings').get().n).toBe(0);
+ expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(17);expect(reopened.getEvent('Migration')).toEqual(before);expect(reopened.getSession(session).eventId).toBe(id);expect(reopened.db.query('SELECT COUNT(*) n FROM discord_settings').get().n).toBe(0);
 });
 test('Discord settings are owner-only, revision checked, unique and omit private link keys',async()=>{
  const c=await setup();expect(()=>c.discord.owner(null,'Discord event')).toThrow();const other=await c.store.createEvent('Other','password123');expect(()=>c.discord.owner(c.store.createSession(other),'Discord event')).toThrow();
@@ -37,6 +37,8 @@ test('Ed25519 verification rejects modified bodies, invalid keys and expired/fut
 test('mentor requests use verified team scope, are idempotent and keep all existing project/matrix data',async()=>{
  const c=await setup();c.store.editStartupMatrix(c.session,'Discord event',{teamId:c.teamId,revision:0,answers:{problem:answer('Original answer')}});const before=c.store.getEvent('Discord event').teams[0];
  const payload=c.payload({type:5});const created=c.discord.help(payload,'Pomoc s API','high');expect(c.discord.help(payload,'Retry must not overwrite','medium')).toEqual(created);
+ expect(c.store.activity(c.session,'Discord event',{teamId:c.teamId}).entries.filter(e=>e.kind==='note.created')).toHaveLength(1);
+ expect(c.store.activity(c.session,'Discord event',{teamId:c.teamId}).entries[0]).toMatchObject({actor:'Verified student',source:'discord',kind:'note.created',entityId:created.noteId});
  const after=c.store.getEvent('Discord event').teams[0];expect(after.revision).toBe(before.revision+1);expect(after.startupMatrix).toEqual(before.startupMatrix);expect(after.stickyNotes).toHaveLength(1);expect(after.stickyNotes[0]).toMatchObject({type:'help_request',inKanban:true,status:'To Do',priority:'high',creatorId:null,color:'#1565c0'});expect(after.stickyNotes[0].content).toContain('Verified student');
  expect(()=>c.discord.help(c.payload({guild_id:'999456789012345678'}),'Denied')).toThrow();expect(()=>c.discord.help(c.payload({channel_id:'999456789012345678'}),'Denied')).toThrow();expect(()=>c.discord.help(c.payload(),'Not allowed','critical')).toThrow();
  expect(c.store.getEvent('Discord event').teams[1].stickyNotes).toHaveLength(0);

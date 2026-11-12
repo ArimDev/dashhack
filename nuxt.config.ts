@@ -55,6 +55,8 @@ export default defineNuxtConfig({
 			icons: [
                 'heroicons:bars-3',
                 'heroicons:table-cells',
+                'heroicons:chart-bar',
+                'heroicons:clipboard-document-list',
                 'heroicons:chevron-up',
                 'heroicons:chevron-down',
                 'heroicons:user-group',

@@ -286,7 +286,7 @@ test('activity chart loads on demand', async ({ page }) => {
   } }));
   const card = await addTeam(page, 'Chart', 'https://github.com/mock/repo');
   await card.getByTestId('toggle-graph-btn').click();
-  await expect(card.locator('.apexcharts-canvas')).toBeVisible();
+  await expect(page.locator('.apexcharts-canvas')).toHaveCount(2);
 });
 
 for (const [status, message] of [[404, 'Repository not found'], [401, 'GitHub Token is missing or invalid']] as const) {
@@ -294,7 +294,7 @@ for (const [status, message] of [[404, 'Repository not found'], [401, 'GitHub To
     await page.route('**/api/github/series?**', route => route.fulfill({ json: { status, message } }));
     const card = await addTeam(page, 'Chart', 'https://github.com/mock/repo');
     await card.getByTestId('toggle-graph-btn').click();
-    await expect(card.getByText(message, { exact: true })).toBeVisible();
+    await expect(page.getByText(message, { exact: true })).toBeVisible();
   });
 }
 

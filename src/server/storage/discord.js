@@ -24,6 +24,7 @@ export class DiscordStore{
             if(this.db.query('SELECT 1 FROM discord_settings WHERE event_id<>? AND (application_id=? OR guild_id=?)').get(id,input.applicationId,input.guildId))fail('Aplikace nebo server už jsou připojené k jiné události.');
             this.db.query(`INSERT INTO discord_settings(event_id,application_id,public_key,guild_id,channels,enabled,link_secret,revision) VALUES(?,?,?,?,?,?,?,1) ON CONFLICT(event_id) DO UPDATE SET application_id=excluded.application_id,public_key=excluded.public_key,guild_id=excluded.guild_id,channels=excluded.channels,enabled=excluded.enabled,link_secret=excluded.link_secret,revision=discord_settings.revision+1`).run(id,input.applicationId,input.publicKey.toLowerCase(),input.guildId,JSON.stringify(channels),Number(input.enabled),randomBytes(32).toString('hex'));
             this.db.query('DELETE FROM discord_matrix_flows WHERE event_id=?').run(id);
+            this.store.recordActivity(id,{kind:'event.updated',details:{fields:['Discord configuration']}});
             return this.owner(session,name);
         })();
     }
@@ -50,6 +51,7 @@ export class DiscordStore{
         const noteId=randomUUID(),position=this.db.query('SELECT COALESCE(MAX(position),-1)+1 n FROM notes WHERE team_id=?').get(ctx.team.id).n;
         this.db.query(`INSERT INTO notes(id,team_id,content,color,priority,status,position,type,creator_id,in_kanban) VALUES(?,?,?,?,?,'To Do',?,'help_request',NULL,1)`).run(noteId,ctx.team.id,text.trim()+`\n\nDiscord: ${ctx.userName}`,ctx.team.color,priority,position);
         this.store.queueHelpNotification(ctx.settings.event_id,ctx.team.id,{id:noteId,type:'help_request',inKanban:true},ctx.userName);
+        this.store.recordActivity(ctx.settings.event_id,{teamId:ctx.team.id,teamName:ctx.team.name,entityId:noteId,kind:'note.created',actor:ctx.userName,source:'discord',details:{fields:['content','priority','status']}});
         this.db.query('UPDATE teams SET revision=revision+1 WHERE id=?').run(ctx.team.id);this.store.touch(ctx.settings.event_id);
         const result={noteId,teamName:ctx.team.name};this.record(ctx,'help',result);return result;
     })();}
@@ -73,6 +75,7 @@ export class DiscordStore{
         const status=MENTOR_STATUSES[match[3]];
         if(status!==note.status){
             this.db.query('UPDATE notes SET status=? WHERE id=? AND team_id=?').run(status,note.id,team.id);
+            this.store.recordActivity(settings.event_id,{teamId:team.id,teamName:team.name,entityId:note.id,kind:'note.updated',actor:ctx.userName,source:'discord',details:{changes:[{field:'status',from:note.status,to:status}]}});
             this.db.query('UPDATE teams SET revision=revision+1 WHERE id=?').run(team.id);this.store.touch(settings.event_id);
         }
         const result={noteId:note.id,from:note.status,status};this.record(ctx,'status',result);return result;
@@ -117,6 +120,7 @@ export class DiscordStore{
         return this.db.transaction(()=>{const {flow,settings,team}=this.session(cookie);if(input.revision!==team.revision)fail('Tým mezitím někdo změnil. Rozepsané odpovědi zůstaly zachované.',409);
             const ctx={settings,team,userId:flow.user_id,userName:flow.user_name,interactionId:'web-'+randomUUID()};this.rate(ctx,'matrix_save');
             const matrix={...JSON.parse(team.startup_matrix),...patch};this.db.query('UPDATE teams SET startup_matrix=?,revision=revision+1 WHERE id=?').run(JSON.stringify(matrix),team.id);this.store.touch(flow.event_id);
+            this.store.recordActivity(flow.event_id,{teamId:team.id,teamName:team.name,entityId:team.id,kind:'matrix.updated',actor:flow.user_name,source:'discord',details:{fields:Object.keys(patch)}});
             this.record(ctx,'matrix_save',{fields:Object.keys(patch)});return this.matrix(cookie);
         })();
     }

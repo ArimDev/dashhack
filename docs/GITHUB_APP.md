@@ -1,5 +1,15 @@
 # GitHub App and event organization
 
+## Metrics workspace and persistent cache — 2026-11-12
+
+GitHub metrics now live at `/app/[event]/github-metrics`, linked from the sidebar and each team card. Expanding a team loads its default-branch activity: separate hourly commit/line charts, additions/deletions, unique contributor count, last commit and cache timestamps, plus an accessible table. Times render in the browser's timezone. There are 24 hourly buckets, including the current partial hour. Graphs no longer mount inside team cards.
+
+Schema 17 adds one SQLite cache row per event/repository, scoped to the current App installation/App ID or a hash of the fallback PAT. Every server request first checks current event/repository assignment and credentials. Client state is separated by event and expires at the server's next-check time; it cannot cache success indefinitely. Disconnecting GitHub or changing/removing team repositories clears affected event caches. No webhook, worker, dependency or App permission change.
+
+Open, visible team graphs check at most every two minutes. Provider requests are serialized and same-repository requests coalesce. Commit-list requests use ETags and pagination (100/page, maximum 1,000); unchanged pages reuse cached lists. Immutable SHA statistics are fetched only for uncached commits. At most 20 detail requests are made per refresh, with a time budget; remaining statistics continue on later refreshes. Partial/truncated/stale results are explicitly labelled. Changes count additions plus deletions, including merges, and are activity measurements rather than a quality score. Source code, file patches, email addresses and raw credentials are never cached. Old out-of-window details are pruned on successful refreshes.
+
+Rate limits honor safe Retry-After/reset headers with bounded backoff. Failed refreshes show a warning with previous data when appropriate; 401/403/404 access failures return an error instead of old success. A credential-scope change cannot reuse another scope's metrics. See [GitHub's conditional-request guidance](https://docs.github.com/en/rest/using-the-rest-api/best-practices-for-using-the-rest-api#use-conditional-requests) and [commit pagination/statistics](https://docs.github.com/en/rest/commits/commits).
+
 Organization: [AT&T Hackathon Junior 2026](https://github.com/AT-T-Hackathon-Junior-2026), handle `AT-T-Hackathon-Junior-2026`, organization ID `354027972`. Its existence and display name were verified through GitHub's public API on 2026-11-08. App registration is still pending; no live GitHub credentials have been configured or verified yet.
 
 ## 1. Student repository creation

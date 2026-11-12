@@ -37,7 +37,7 @@
                 </button>
             </div>
             <div v-if="!visibleIds.size" class="py-12 text-center text-gray-500 dark:text-gray-400">No teams match your search.</div>
-            <div data-testid="teams-grid" class="grid grid-cols-1 items-start gap-3 lg:grid-cols-2 xl:grid-cols-3 2xl:grid-cols-4">
+            <div data-testid="teams-grid" class="grid grid-cols-1 items-stretch gap-3 lg:grid-cols-3">
                 <div v-for="team in data.teams" :key="team._id" v-show="visibleIds.has(team._id)" :id="`team-${team._id}`" tabindex="-1" class="team-anchor min-w-0 rounded-xl focus-visible:outline-2 focus-visible:outline-bluey-500">
                     <Team
                         :team="team"
@@ -81,6 +81,7 @@ const { showToast } = useToast();
 const canEdit = useState('eventCanEdit', () => false);
 
 const search = ref('');
+const teamsRoute=useRoute();
 // Accent-insensitive matching also accepts Czech names typed without diacritics.
 const normalizeSearch = value => String(value || '').normalize('NFD').replace(/[\u0300-\u036f]/g, '').toLocaleLowerCase();
 const visibleIds = computed(() => {
@@ -99,6 +100,11 @@ async function jumpToTeam(event) {
     target?.focus({ preventScroll: true });
     target?.scrollIntoView({ block: 'start', behavior: 'instant' });
 }
+async function openLinkedTeam() {
+    const id=teamsRoute.hash.replace(/^#team-/,'');
+    if(data.value.teams.some(team=>team._id===id))await jumpToTeam({target:{value:id}});
+}
+watch(()=>teamsRoute.hash,openLinkedTeam);
 
 const openAddTeam = ref(false),
     openConfirm = ref(false),
@@ -166,6 +172,7 @@ async function refreshTeams(manual = false) {
     } finally { if (refreshController === controller) { refreshingTeams.value = false; refreshController = null; } }
 }
 onMounted(() => {
+    openLinkedTeam();
     refreshTimer = setInterval(() => {
         if (document.visibilityState === 'visible' && document.querySelector('details[open] > [data-testid="startup-matrix"]')) refreshTeams(false);
     }, 15000);

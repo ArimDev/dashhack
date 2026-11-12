@@ -152,6 +152,8 @@ export class WallStore {
                 ON CONFLICT(event_id) DO UPDATE SET settings=excluded.settings,revision=excluded.revision`)
                 .run(id, JSON.stringify(settings), revision + 1);
             this.store.touch(id);
+            const changed=Object.keys(validated).filter(key=>JSON.stringify(validated[key])!==JSON.stringify(old[key]));
+            if(changed.length)this.store.recordActivity(id,{kind:'event.updated',details:{fields:changed.map(key=>`Wall: ${key}`)}});
             return this.config(id);
         })();
     }
