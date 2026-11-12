@@ -29,6 +29,13 @@
                 </select>
             </label>
         </div>
+        <label v-if="editableInKanban" class="mt-2 block min-w-0 text-xs font-medium text-gray-700 dark:text-gray-200">Assignee
+            <select v-model="editableAssignee" :disabled="readOnly || saving" aria-label="Note assignee" @change="updateNote"
+                class="mt-1 block min-h-11 w-full min-w-0 max-w-full rounded bg-black/5 px-2 py-1 text-xs text-gray-900 dark:bg-gray-800 dark:text-gray-100">
+                <option value="">Unassigned</option>
+                <option v-for="mentor in mentors" :key="mentor.id" :value="mentor.id">{{ mentor.name }}</option>
+            </select>
+        </label>
         <div class="mt-2 flex flex-wrap items-center justify-between gap-2 text-xs text-gray-700 dark:text-gray-200">
             <label class="flex min-w-0 items-center gap-2">
                 <input type="checkbox" v-model="editableInKanban" :disabled="readOnly || saving" @change="updateNote" aria-label="Track in Kanban" class="accent-bluey-500">
@@ -64,18 +71,19 @@ import { NOTE_STATUSES } from '~~/shared/noteStatuses.js';
 const props = defineProps({ note: { type: Object, required: true }, teamColor: { type: String, default: '#ffeb3b' }, readOnly: { type: Boolean, default: false }, mentors: { type: Array, default: () => [] } });
 const emit = defineEmits(['update', 'delete']);
 const textarea = ref(null), saving = ref(false), saved = ref(false), saveError = ref('');
-const normalize = note => ({ content: note.content || '', priority: note.priority || 'medium', status: note.status || 'To Do', type: note.type || 'mentor_note', creatorId: note.creatorId || '', inKanban: note.inKanban !== false });
+const normalize = note => ({ content: note.content || '', priority: note.priority || 'medium', status: note.status || 'To Do', type: note.type || 'mentor_note', creatorId: note.creatorId || '', assigneeId: note.assigneeId || '', inKanban: note.inKanban !== false });
 const acknowledged = ref(normalize(props.note));
 const editableContent = ref(acknowledged.value.content), editablePriority = ref(acknowledged.value.priority), editableStatus = ref(acknowledged.value.status);
 const editableType = ref(acknowledged.value.type), editableCreator = ref(acknowledged.value.creatorId), editableInKanban = ref(acknowledged.value.inKanban);
-const draft = () => ({ content: editableContent.value, priority: editablePriority.value, status: editableStatus.value, type: editableType.value, creatorId: editableCreator.value, inKanban: editableInKanban.value });
+const editableAssignee = ref(acknowledged.value.assigneeId);
+const draft = () => ({ content: editableContent.value, priority: editablePriority.value, status: editableStatus.value, type: editableType.value, creatorId: editableCreator.value, assigneeId: editableAssignee.value, inKanban: editableInKanban.value });
 const hasChanges = computed(() => JSON.stringify(draft()) !== JSON.stringify(acknowledged.value));
 const priorityLabel = computed(() => ({ low: 'Low', medium: 'Medium', high: 'High', critical: 'Critical' }[editablePriority.value] || 'Medium'));
 const priorityClass = computed(() => ({ low: 'bg-slate-200 text-slate-800 dark:bg-slate-700 dark:text-slate-100', medium: 'bg-blue-100 text-blue-900 dark:bg-blue-950 dark:text-blue-100', high: 'bg-amber-300 text-amber-950 dark:bg-amber-800 dark:text-amber-50', critical: 'bg-[#dc2626] text-white uppercase tracking-wide' }[editablePriority.value]));
 function applyNote(note) {
     const value = normalize(note); acknowledged.value = value;
     editableContent.value = value.content; editablePriority.value = value.priority; editableStatus.value = value.status;
-    editableType.value = value.type; editableCreator.value = value.creatorId; editableInKanban.value = value.inKanban;
+    editableType.value = value.type; editableCreator.value = value.creatorId; editableAssignee.value = value.assigneeId; editableInKanban.value = value.inKanban;
     nextTick(autoResize);
 }
 watch(() => props.note, note => { if (!saving.value && !hasChanges.value) applyNote(note); }, { deep: true });
@@ -89,7 +97,7 @@ function updateNote(event) {
     if (props.readOnly || saving.value || !hasChanges.value) return;
     const submitted = draft(), textChanged = submitted.content !== acknowledged.value.content;
     saving.value = true; saved.value = false; saveError.value = '';
-    emit('update', { ...props.note, ...submitted, creatorId: submitted.creatorId || null }, (ok, message) => {
+    emit('update', { ...props.note, ...submitted, creatorId: submitted.creatorId || null, assigneeId: submitted.assigneeId || null }, (ok, message) => {
         if (ok) { acknowledged.value = submitted; saved.value = true; }
         else {
             // Reloaded server fields remain authoritative; retain unsaved issue text for an explicit retry.

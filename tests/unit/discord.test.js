@@ -21,7 +21,7 @@ test('schema 8 upgrades to 12 without changing event, team, matrix, notes or act
  const id=await store.createEvent('Migration','password123'),session=store.createSession(id),teamId=store.addTeam(session,'Migration',{teamName:'Keep',teamColor:'#123456'});
  store.editStartupMatrix(session,'Migration',{teamId,revision:0,answers:{problem:answer('Keep answer')}});const before=store.getEvent('Migration');
  store.db.exec('DROP TABLE IF EXISTS discord_message_cleanup; DROP TABLE IF EXISTS discord_notifications; DROP TABLE discord_matrix_flows; DROP TABLE discord_actions; DROP TABLE discord_settings; PRAGMA user_version=8;');store.close();const reopened=new SqliteStore(file);stores.push(reopened);
- expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(15);expect(reopened.getEvent('Migration')).toEqual(before);expect(reopened.getSession(session).eventId).toBe(id);expect(reopened.db.query('SELECT COUNT(*) n FROM discord_settings').get().n).toBe(0);
+ expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(16);expect(reopened.getEvent('Migration')).toEqual(before);expect(reopened.getSession(session).eventId).toBe(id);expect(reopened.db.query('SELECT COUNT(*) n FROM discord_settings').get().n).toBe(0);
 });
 test('Discord settings are owner-only, revision checked, unique and omit private link keys',async()=>{
  const c=await setup();expect(()=>c.discord.owner(null,'Discord event')).toThrow();const other=await c.store.createEvent('Other','password123');expect(()=>c.discord.owner(c.store.createSession(other),'Discord event')).toThrow();

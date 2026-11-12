@@ -165,7 +165,7 @@ async function refreshBoard(force = false) {
 
 async function editNote(item, note, done) {
     const patch = {};
-    for (const key of ['content', 'color', 'priority', 'status', 'type', 'creatorId', 'inKanban']) {
+    for (const key of ['content', 'color', 'priority', 'status', 'type', 'creatorId', 'assigneeId', 'inKanban']) {
         if (note[key] !== item.note[key]) patch[key] = note[key];
     }
     const ok = Object.keys(patch).length ? await saveNote(item, patch) : true;

@@ -1,0 +1,27 @@
+import {test,expect} from '@playwright/test';
+import {randomUUID} from 'node:crypto';
+test('assignee persists independently through Kanban, Teams, status moves and phone/read-only views',async({page,browser})=>{
+ const username='Assignment '+randomUUID(),password='password123',noteId=randomUUID();
+ const post=async(url,data)=>(await(await page.request.post(url,{data})).json());
+ expect((await post('/api/auth/create',{username,password})).status).toBe(200);
+ expect((await post('/api/auth/login',{username,password})).status).toBe(200);
+ const creator=(await post('/api/mentor/add',{username,name:'Author'})).mentor;
+ const assignee=(await post('/api/mentor/add',{username,name:'Responsible mentor'})).mentor;
+ const teamId=(await post('/api/team/add',{username,teamName:'Team A',teamColor:'#3081e0'})).teamId;
+ expect((await(await page.request.put('/api/team/edit',{data:{username,teamId,revision:0,teamName:'Team A',teamColor:'#3081e0',stickyNotes:[{id:noteId,content:'Issue',priority:'high',color:'#3081e0',status:'To Do',type:'help_request',creatorId:creator.id,inKanban:true}]}})).json()).status).toBe(200);
+ const path=`/app/${encodeURIComponent(username)}`;await page.goto(path+'/kanban');
+ const card=page.getByTestId(`kanban-note-${noteId}`),select=card.getByLabel('Note assignee',{exact:true});
+ await expect(select).toHaveValue('');
+ const save=page.waitForResponse(r=>r.url().endsWith('/api/note/edit')&&r.request().method()==='PATCH');
+ await select.selectOption(assignee.id);expect((await(await save).json()).status).toBe(200);
+ await page.reload();await expect(select).toHaveValue(assignee.id);await expect(card.getByLabel('Note creator')).toHaveValue(creator.id);
+ await card.getByLabel('Note status',{exact:true}).selectOption('In Progress');await expect(page.getByRole('status').filter({hasText:'Note saved.'})).toBeVisible();
+ await page.goto(path+'/teams');await page.getByTestId('toggle-notes-btn').click();await expect(page.getByLabel('Note assignee',{exact:true})).toHaveValue(assignee.id);
+ await page.getByTestId('note-content').fill('Edited in Teams');await page.getByTestId('save-note-btn').click();await expect(page.getByTestId('save-note-btn')).toHaveText('Saved');
+ await page.goto(path+'/kanban');await expect(select).toHaveValue(assignee.id);
+ await page.setViewportSize({width:390,height:844});await page.getByRole('navigation',{name:'Kanban columns'}).getByRole('button',{name:/In Progress/}).click();
+ await expect(select).toBeVisible();expect(await select.evaluate(e=>e.getBoundingClientRect().height)).toBeGreaterThanOrEqual(44);
+ const guest=await browser.newContext({ignoreHTTPSErrors:true});const view=await guest.newPage();await view.goto(new URL(path+'/kanban',page.url()).href);
+ await expect(view.getByLabel('Note assignee',{exact:true})).toHaveValue(assignee.id);await expect(view.getByLabel('Note assignee',{exact:true})).toBeDisabled();await guest.close();
+ await select.selectOption('');await expect(page.getByRole('status').filter({hasText:'Note saved.'})).toBeVisible();await page.reload();await expect(select).toHaveValue('');
+});

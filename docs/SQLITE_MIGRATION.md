@@ -1,5 +1,11 @@
 # SQLite migration and resource reduction
 
+## Kanban assignees — 2026-11-12
+
+Schema 16 adds nullable `notes.assignee_id` referencing the existing event mentor roster. Existing notes start unassigned; creator attribution remains independent. Tracked notes expose an Assignee selector in Kanban and Teams, including Unassigned, using the existing acknowledged note-save flow. Public views show the assignment read-only. No individual account or notification is created by assigning a mentor.
+
+Both single-note patches and whole-team saves validate event ownership, team revision and assignee membership. Status/text changes retain assignment; older whole-team payloads omitting it retain the stored value, while explicit null clears it. Backups include assigneeId. Upgrade tests cover populated schema 15, sessions/content preservation, cross-event rejection, conflicts, reopen persistence and older clients. No dependencies or services are added. Schema-15-only app versions cannot run against schema 16; retain a consistent volume snapshot before deployment.
+
 ## Wall presentation follow-up — 2026-11-12
 
 Schema 14 adds wall_posts.media_layout JSON with an empty default, and schema 15 adds independent text_display JSON with an empty default. Startup applies each migration transactionally. Existing post text/media/moderation/revisions remain unchanged. Photo framing stores a selected aspect ratio and bounded horizontal/vertical focal point; optional article previews store a boolean and 1–5000 character limit. Missing settings use original photo proportions and a 100-character preview, except pinned manual organizer posts show complete text. Authenticated revision-checked post edits accept all three platforms; framing and preview changes share the post-edit transaction. Event layout controls remain in existing wall-settings JSON and require no additional table/service.

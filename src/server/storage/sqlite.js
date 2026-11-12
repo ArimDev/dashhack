@@ -78,6 +78,7 @@ function noteFields(note) {
     if (typeof inKanban !== 'boolean') throw new StorageError(400, 'Invalid Kanban selection');
     return {
         type, creatorId, inKanban,
+        assigneeId: note.assigneeId == null || note.assigneeId === '' ? null : text(note.assigneeId, 'assignee ID', 100, true),
         id: text(note.id, 'note ID', 100, true),
         content: text(note.content ?? '', 'note content', 50000), color,
         priority: note.priority ?? 'medium', status: text(note.status ?? 'To Do', 'note status', 100),
@@ -120,7 +121,7 @@ export class SqliteStore {
             PRAGMA mmap_size = 0;
         `);
         const version = this.db.query('PRAGMA user_version').get().user_version;
-        if (version > 15) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
+        if (version > 16) { this.db.close(); throw new Error('SQLite schema is newer than this app supports'); }
         if (version === 0) this.db.transaction(() => {
             this.db.exec(`
                 CREATE TABLE events (
@@ -323,6 +324,10 @@ export class SqliteStore {
             if (!this.db.query('PRAGMA table_info(wall_posts)').all().some(column => column.name === 'text_display')) this.db.exec("ALTER TABLE wall_posts ADD COLUMN text_display TEXT NOT NULL DEFAULT '{}' ");
             this.db.exec('PRAGMA user_version = 15');
         })();
+        if (version < 16) this.db.transaction(() => {
+            if (!this.db.query('PRAGMA table_info(notes)').all().some(column => column.name === 'assignee_id')) this.db.exec('ALTER TABLE notes ADD COLUMN assignee_id TEXT REFERENCES mentors(id)');
+            this.db.exec('PRAGMA user_version = 16');
+        })();
     }
 
     close() { this.db.close(); }
@@ -341,7 +346,7 @@ export class SqliteStore {
             if (!grouped.has(note.team_id)) grouped.set(note.team_id, []);
             grouped.get(note.team_id).push({ _id: note.id, id: note.id, content: note.content,
                 color: note.color, priority: note.priority, status: note.status,
-                type: note.type, creatorId: note.creator_id, inKanban: !!note.in_kanban });
+                type: note.type, creatorId: note.creator_id, assigneeId: note.assignee_id, inKanban: !!note.in_kanban });
         }
         return {
             _id: row.id, event: row.name, logo: row.logo, color: row.color,
@@ -517,6 +522,12 @@ export class SqliteStore {
         }
     }
 
+    validateAssignee(eventId, assigneeId) {
+        if (assigneeId && !this.db.query('SELECT 1 FROM mentors WHERE id = ? AND event_id = ?').get(assigneeId, eventId)) {
+            throw new StorageError(400, 'Assignee must be a mentor in this event');
+        }
+    }
+
     findTeam(eventId, input) {
         const team = typeof input.teamId === 'string'
             ? this.db.query('SELECT * FROM teams WHERE id = ? AND event_id = ?').get(input.teamId, eventId)
@@ -555,18 +566,21 @@ export class SqliteStore {
                 throw new StorageError(400, 'Team name already exists');
             }
             // Validate all cross-team IDs before touching either rows or the existing notes.
-            if (notes) for (const note of notes) {
+            if (notes) for (const [index, note] of notes.entries()) {
                 this.validateCreator(eventId, note.creatorId);
-                const owner = this.db.query('SELECT team_id FROM notes WHERE id = ?').get(note.id);
+                const owner = this.db.query('SELECT team_id, assignee_id FROM notes WHERE id = ?').get(note.id);
                 if (owner && owner.team_id !== team.id) throw new StorageError(400, 'Note ID belongs to another team');
+                // Older tabs omit assignment; preserve it rather than silently clearing it.
+                if (input.stickyNotes[index].assigneeId === undefined) note.assigneeId = owner?.assignee_id ?? null;
+                this.validateAssignee(eventId, note.assigneeId);
             }
             this.db.query('UPDATE teams SET name = ?, color = ?, github = ?, description = ?, originality = ?, project_abstract = ?, revision = revision + 1 WHERE id = ?')
                 .run(fields.name, fields.color, fields.github, fields.description, fields.originality, JSON.stringify(fields.projectAbstract), team.id);
             if (notes) {
                 const oldIds = new Set(this.db.query('SELECT id FROM notes WHERE team_id=?').all(team.id).map(note=>note.id));
                 this.db.query('DELETE FROM notes WHERE team_id = ?').run(team.id);
-                const insert = this.db.query('INSERT INTO notes (id, team_id, content, color, priority, status, position, type, creator_id, in_kanban) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
-                notes.forEach((note, position) => insert.run(note.id, team.id, note.content, note.color, note.priority, note.status, position, note.type, note.creatorId, Number(note.inKanban)));
+                const insert = this.db.query('INSERT INTO notes (id, team_id, content, color, priority, status, position, type, creator_id, in_kanban, assignee_id) VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)');
+                notes.forEach((note, position) => insert.run(note.id, team.id, note.content, note.color, note.priority, note.status, position, note.type, note.creatorId, Number(note.inKanban), note.assigneeId));
                 for (const note of notes) if (!oldIds.has(note.id)) this.queueHelpNotification(eventId,team.id,note);
             }
             this.touch(eventId);
@@ -618,14 +632,15 @@ export class SqliteStore {
                 this.db.query('DELETE FROM notes WHERE id = ? AND team_id = ?').run(existing.id, team.id);
             } else {
                 const patch = input.patch;
-                const fields = ['content', 'color', 'priority', 'status', 'type', 'creatorId', 'inKanban'];
+                const fields = ['content', 'color', 'priority', 'status', 'type', 'creatorId', 'assigneeId', 'inKanban'];
                 if (!patch || typeof patch !== 'object' || Array.isArray(patch) || !Object.keys(patch).length ||
                     Object.keys(patch).some(key => !fields.includes(key))) throw new StorageError(400, 'Invalid note update');
                 if ('status' in patch && !NOTE_STATUSES.includes(patch.status)) throw new StorageError(400, 'Invalid note status');
-                note = noteFields({ ...existing, creatorId: existing.creator_id, inKanban: !!existing.in_kanban, ...patch });
+                note = noteFields({ ...existing, creatorId: existing.creator_id, assigneeId: existing.assignee_id, inKanban: !!existing.in_kanban, ...patch });
                 this.validateCreator(eventId, note.creatorId);
-                this.db.query('UPDATE notes SET content = ?, color = ?, priority = ?, status = ?, type = ?, creator_id = ?, in_kanban = ? WHERE id = ? AND team_id = ?')
-                    .run(note.content, note.color, note.priority, note.status, note.type, note.creatorId, Number(note.inKanban), note.id, team.id);
+                this.validateAssignee(eventId, note.assigneeId);
+                this.db.query('UPDATE notes SET content = ?, color = ?, priority = ?, status = ?, type = ?, creator_id = ?, in_kanban = ?, assignee_id = ? WHERE id = ? AND team_id = ?')
+                    .run(note.content, note.color, note.priority, note.status, note.type, note.creatorId, Number(note.inKanban), note.assigneeId, note.id, team.id);
             }
             this.db.query('UPDATE teams SET revision = revision + 1 WHERE id = ?').run(team.id);
             this.touch(eventId);

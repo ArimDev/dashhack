@@ -499,7 +499,7 @@ test('schema 12 migration keeps existing wall content, media, sessions and moder
  const before=c.wall.moderationFeed(c.session,c.name).posts;
  c.store.db.exec('ALTER TABLE wall_posts DROP COLUMN rich_text; PRAGMA user_version=12;');c.store.close();
  const reopened=new SqliteStore(c.filename);stores.push(reopened);const wall=new WallStore(reopened);
- expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(15);
+ expect(reopened.db.query('PRAGMA user_version').get().user_version).toBe(16);
  expect(wall.moderationFeed(c.session,c.name).posts).toEqual(before);
  expect(wall.media(c.session,c.name,p.id).data).toEqual(media.data);
 });
