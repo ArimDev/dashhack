@@ -1,5 +1,15 @@
 # DashHack on Railway
 
+## Mentor Teams drawer and responsive navigation — 2026-11-12
+
+Reviewed source `735e0f9` is committed/pushed on `feat_alby_design` and deployed as `0d93d680-e4a0-4099-9224-1a95a4c72c38` (**SUCCESS**). Teams now opens notes in a desktop side drawer / full-screen phone dialog, with Issues, Notes and Done sections, retained drafts, acknowledgement-safe moves, confirmation in both conversion directions, full abstracts above Originalita, numeric phone ordering, compact one-row search/navigation and responsive sidebar sizing. The Bluey palette, full-height fold rail, reduced-motion-aware animation and shaded/blurred background are the reviewed local design. See MENTOR_UI.md. New visual rules stay scoped to mentor Teams/drawer; Social Wall behavior/presentation is preserved.
+
+Validation: **145 unit tests / 1136 assertions**, pinned Bun 1.3.2 production build/native image packaging, and **28 Chromium production-HTTPS scenarios** pass. Coverage includes real isolated persistence, conversion/cancellation, delayed saves, conflict/draft recovery, focus/read-only access, mobile/long text, assignment/Kanban, matrix/History/metrics and wall regressions. Initial broader checks exposed old selectors, a hardcoded test callback origin and the static Editing badge's unnecessary live-status role; corrected before the final passing run. Live health, actual 15-team/35-note public view, guest read-only drawer, compact header, numeric phone order and phone/menu presentation pass with zero browser errors. Confirmation UI uses browser-only synthetic note/permission fixtures and cancels both directions; **zero production content writes or real login requests** were sent.
+
+Consistent private on-volume snapshot: `/data/backups/before-mentor-ui-20261112-1794519265843.sqlite`; baseline `/data/backups/mentor-ui-20261112-baseline.json`. Post-release schema remains **17**, integrity **ok**, zero foreign-key violations. Every recorded table fingerprint matches, including all 15 teams, 35 notes, eight mentors, credentials, 32 sessions, matrices, invitations, history, GitHub cache/connections, Discord configuration/bindings, 36 wall posts and 28 media records. Only `wall_settings.last_poll_at` advanced normally; wall-settings JSON is identical. X/Instagram stay **ON**, Instagram **20 minutes**. No reseed/restore, schema, dependency, runtime configuration, replica, service or volume change.
+
+Clean committed-source archive SHA-256: `15a3f90c4c6dbef1cae569f979ebfa030e20401f3a1ff82890844c8ba9d368d8`. Runtime source matches the tested clean build, with only Git line-ending normalization on five Vue files. CLI upload used explicit DashHack project/environment/service IDs and `--no-gitignore` only on the clean 231-file source archive. Unrelated staged student-project submodules, ignore-file changes and untracked reviews remain untouched.
+
 ## Organizer Subway Surfers GIF post — 2026-11-12
 
 The user explicitly selected the **live event wall** for a Subway Surfers GIF. Added one approved, unpinned **manual organizer** post, `33dd1d10-914b-4f61-b86d-930f40535692`, to event `97c87fe6-f510-4117-9558-1e2380fdaa6a`, caption `Subway Surfers 🎮`, author `Pořadatelé`. Source attribution links to [SYBO's GIPHY post](https://giphy.com/gifs/SYBOGAMES-gaming-mobile-games-subway-surfers-dkUtjuBEdICST5zG7p). The inspected downsized GIF is 480×270, 45 looping frames, 1,766,744 bytes; SHA-256 `f11a84e8b020ab8e3e0ec457c1454d4d6c926505bc5bfaf302e22c46cc9fa95f`.
@@ -125,7 +135,7 @@ Updated 2026-11-10 for schema 9 and Discord setup. This project is separate from
 | Dashboard | [DashHack project](https://railway.com/project/712b21fd-3995-473e-b0e5-c2b37feddc3d) |
 | Git branch | `feat_alby_design`, rebased onto `master` release 1.0 |
 | First deployment | `0fd0cc09-af75-4ae6-9059-28d71190aa1e` — historical SUCCESS |
-| Latest verified deployment | `014d6328-e2dc-4c2f-b54a-497d445bf533` — SUCCESS, mentor notification cards / schema 10 |
+| Latest verified deployment | `0d93d680-e4a0-4099-9224-1a95a4c72c38` — SUCCESS, mentor Teams drawer / schema 17 |
 | Public domain | [dashhack-production.up.railway.app](https://dashhack-production.up.railway.app) → port 1020 |
 
 The folder is linked to this project/environment/service. The web service uses the root `Dockerfile`, `PORT=1020`, `HOST=0.0.0.0`, and `NUXT_SQLITE_PATH=/data/dashhack.sqlite`. Healthcheck: `/api/health`, which opens/checks SQLite. Settings and the attached volume were read back after preparation. There is one web replica and no database service. The school project was not modified.
