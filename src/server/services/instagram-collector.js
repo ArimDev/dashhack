@@ -1,5 +1,20 @@
 import { WallStore } from '../storage/wall.js';
 
+function instagramFailureReason(error) {
+    if (error.providerFailure || error.message === 'Captapi returned an invalid search response.') return error.message;
+    if (['TimeoutError', 'AbortError'].includes(error.name)) return 'Captapi Instagram request timed out. Automatic retries will back off.';
+    // Preserve useful transport diagnostics without persisting arbitrary request URLs/headers/keys.
+    const certificateErrors = [
+        [/unable to verify (?:the )?first certificate/i, 'Unable to verify the first certificate'],
+        [/certificate has expired/i, 'Certificate has expired'],
+        [/self[- ]signed certificate/i, 'Self-signed certificate in the certificate chain'],
+    ];
+    for (const [pattern, message] of certificateErrors) if (pattern.test(error.message || '')) return message;
+    const code = error.code || error.cause?.code;
+    if (['ENOTFOUND', 'EAI_AGAIN', 'ECONNREFUSED', 'ECONNRESET', 'ETIMEDOUT'].includes(code)) return `Captapi connection failed (${code}). Automatic retries will back off.`;
+    return 'Instagram collection failed. Check API access or available wall storage.';
+}
+
 async function captapiFailure(response) {
     // Never retain the raw provider body: it can contain URLs or credentials.
     const payload = await response.json().catch(() => null);
@@ -107,9 +122,7 @@ export class InstagramCollector {
             this.record(event.id, '');
             return { imported };
         } catch (error) {
-            const reason = (error.providerFailure || error.message === 'Captapi returned an invalid search response.') ? error.message
-                : ['TimeoutError','AbortError'].includes(error.name) ? 'Captapi Instagram request timed out. Automatic retries will back off.'
-                : 'Instagram collection failed. Check API access or available wall storage.';
+            const reason = instagramFailureReason(error);
             const retry = this.record(event.id, reason, error);
             this.logger.warn('[Instagram collector] Fetch failed', { eventId: event.id, hashtag: activeHashtag, imported,
                 error: reason, requestId: retry.requestId, nextPollAt: retry.nextPollAt });

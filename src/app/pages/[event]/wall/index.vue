@@ -59,6 +59,7 @@
               v-for="post in textAnnouncements"
               :key="`${copy}-announcement-${post.id}`"
               :post="post"
+              :timestamp-now="timestampNow"
               :decorative="copy > 1"
               class="col-span-full"
               :style="postRowStyle(post)"
@@ -70,6 +71,7 @@
               <WallPostCard
                 :key="`${copy}-${post.id}`"
                 :post="post"
+                :timestamp-now="timestampNow"
                 :decorative="copy > 1"
                 @height="recordPostHeight"
                 @read="openPost"
@@ -103,7 +105,7 @@
       />
     </div>
     <DialogShell v-if="readingPost" title="Full article" @close="closePost">
-      <WallPostCard :post="readingPost" full-text />
+      <WallPostCard :post="readingPost" :timestamp-now="timestampNow" full-text />
     </DialogShell>
     <DialogShell v-if="qrExpanded" title="Share a moment" centered-title fullscreen @close="closeQr">
       <div class="flex max-w-full flex-col items-center gap-4 text-center">
@@ -127,6 +129,7 @@ const route = useRoute();
 const colorMode = useColorMode();
 const eventName = computed(() => route.params.event || "event");
 const posts = ref([]), renderedCount = ref(12), totalPosts = ref(0);
+const timestampNow = ref(new Date());
 const renderedPosts = computed(() => posts.value.slice(0, renderedCount.value));
 const columnCount = ref(1);
 const layout = reactive({ ...WALL_LAYOUT_DEFAULTS });
@@ -311,6 +314,8 @@ async function saveLayout(patch) {
   } finally { layoutSaving.value = false; }
 }
 async function loadWall() {
+  const now = new Date();
+  if (now.toDateString() !== timestampNow.value.toDateString()) timestampNow.value = now;
   if (loading || disposed) return;
   loading = true;
   loadController = new AbortController();

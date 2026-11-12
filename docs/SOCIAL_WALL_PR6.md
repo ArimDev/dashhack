@@ -1,5 +1,13 @@
 # Social Wall — PR #6 integration
 
+## PR #8 integration — 2026-11-12
+
+Merged `collector_settings` PR #8 through head `017f5304a8577b598446d37c55d44564f0805a5d` into feat_alby_design, retaining both Matej-V commits. Collector settings use the accessible UiSwitch and server-confirmed ON/OFF badges, with no redundant Stop button once status is known. A Stop fallback remains only during initial loading/load failure, when the switch cannot safely infer its current state. OFF remains available during pending query saves and stale responses cannot re-enable polling. Headers wrap on narrow phones. Saved-query drafts and the local Last attempt formatter are retained.
+
+Public post headers show local time for today, Yesterday for the previous local day and localized dates for older posts. The existing feed refresh advances a shared date reference at local midnight without adding timers or replacing cards. Long handles truncate before the timestamp. Useful certificate and network diagnostics are preserved; arbitrary exception text/provider bodies/credentials remain redacted, rather than adopting the PR's unrestricted raw-error exposure. Existing backoff and request-ID behavior is retained.
+
+Validation: clean production build with pinned Bun 1.3.2/Sharp packaging; 131 unit tests / 991 assertions; nine production HTTPS Chromium scenarios covering both collectors' loading/OFF/stale-response behavior, 320px/390px layout and keyboard focus, timestamp midnight rollover, photo focus/wide tiles, compact text and 24-hour/two-tab sessions. No dependency/schema/service changes; schema stays 15. Backup branch: backup/feat-alby-before-pr8-20261112. Production deployment details are in RAILWAY.md.
+
 ## Compact paragraph spacing — 2026-11-12
 
 WallPostText omits empty/whitespace-only blocks from the rendered view, for every platform, so pinned organizer posts do not reserve blank lines between paragraphs or before their photos. Saved rich text and editor drafts remain unchanged. Formatted paragraphs inherit the same line-height as plain cards; pinned full-text behavior and the existing projector text sizing remain. Production build and two HTTPS Chromium scenarios pass organizer/X spacing equality, a bounded photo gap and retained full formatting/optional-media behavior. The shared browser helper now waits for loaded storage/settings before saving to avoid a stale initial revision race.

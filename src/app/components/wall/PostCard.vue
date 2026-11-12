@@ -27,8 +27,9 @@
           <p class="truncate text-sm font-semibold" :class="isBlueCard ? 'text-white' : 'text-slate-900 dark:text-white'">
             {{ post.authorName || "Anonymous" }}
           </p>
-          <p class="truncate text-xs" :class="isBlueCard ? 'text-slate-200' : 'text-slate-500'">
-            {{ post.handle || wallPlatformMeta[post.platform]?.label || "Community post" }}
+          <p class="flex min-w-0 gap-1 text-xs" :class="isBlueCard ? 'text-slate-200' : 'text-slate-500'">
+            <span class="truncate">{{ post.handle || wallPlatformMeta[post.platform]?.label || "Community post" }}</span>
+            <span v-if="timestamp" class="shrink-0 whitespace-nowrap opacity-80">· <time :datetime="post.createdAt" :title="post.createdAt">{{ timestamp }}</time></span>
           </p>
         </div>
       </div>
@@ -87,6 +88,7 @@
 import { wallTextDisplay } from '../../../shared/wallTextDisplay.js';
 import { wallTextPreview } from '../../../shared/wallText.js';
 import { wallMediaStyle } from '../../../shared/wallMediaLayout.js';
+import { formatWallTimestamp } from '../../../shared/wallTimestamp.js';
 import { observeWallMedia } from "../../utils/lazyWallMedia.js";
 import Badge from "../ui/Badge.vue";
 import { wallPlatformMeta } from "../../utils/wallPlatforms";
@@ -96,6 +98,7 @@ const props = defineProps({
   projectorAnnouncement: Boolean,
   fullText: Boolean,
   decorative: Boolean,
+  timestampNow: { type: Date, default: () => new Date() },
   post: {
     type: /** @type {import('vue').PropType<import('../../../shared/wallPost').WallPost>} */ (Object),
     required: true,
@@ -104,6 +107,7 @@ const props = defineProps({
 
 const mediaContainer = ref(null), mediaReady = ref(props.fullText);
 const textDisplay = computed(() => wallTextDisplay(props.post));
+const timestamp = computed(() => formatWallTimestamp(props.post.createdAt, props.timestampNow));
 const shortened = computed(() => !props.fullText && textDisplay.value.enabled && (props.post.text || '').length > textDisplay.value.limit);
 const textOnly = computed(() => !props.post.imageUrl && !props.post.videoUrl);
 const cardElement = ref(null);

@@ -103,6 +103,8 @@ Use the Railway skill/MCP and explicit DashHack IDs. Never act on the sibling sc
 
 ## Wall QR placement and layout
 
+PR #8 collector UI uses accessible switches with server-confirmed Polling ON/OFF badges. Redundant Stop buttons are gone after loading; a Stop fallback must remain available while the initial status is unknown or failed. OFF during pending saves, stale-enable fencing and draft retention remain required. Preserve useful Instagram certificate/network diagnostics without persisting arbitrary exception text, provider bodies or credentials. Public post timestamps use browser-local calendar days and must roll over at midnight using the existing wall refresh, without per-card timers.
+
 Keep the public wall's 1800px feed cap and existing one/two/three/four-column breakpoints. Latest user request (2026-11-12) places a bare sharing QR at the top right: transparent wrapper, no card/border/shadow or visible label, white only behind the QR square. Retain gutter-filling width, 16px safe-area-aware top/right spacing, a 186px narrower-desktop fallback and a viewport-height cap. Phones retain an accessible icon-only upload link. The left vertical event header retains its title size and shows #atthack for the canonical ATT event only. This supersedes the earlier vertically centered sharing-card presentation. The user-approved centered, viewport-sized full-screen QR modal stays unchanged. Do not widen the feed or add ultrawide columns in response to QR sizing requests. The upload-page header remains centered.
 
 

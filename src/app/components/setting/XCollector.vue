@@ -1,16 +1,19 @@
 <template>
   <form @submit.prevent="saveQuery" class="rounded-3xl shadow-md bg-white text-black dark:bg-gray-800 dark:text-white min-h-[360px] p-5 flex flex-col justify-between transition-colors duration-500">
     <div class="flex flex-wrap items-center justify-between gap-3 mb-4">
-      <h1 class="text-xl sm:text-2xl font-bold">X social collector</h1>
-      <label class="inline-flex items-center gap-2 cursor-pointer">
-        <input :disabled="pausing || (!savedEnabled && (!loaded || saving || !configured))" v-model="enabled" type="checkbox" @change="savePolling" class="h-4 w-4" />
-        <span class="font-semibold">Automatic X polling</span>
-      </label>
+      <h1 class="min-w-0 break-words text-xl sm:text-2xl font-bold">X collector</h1>
+      <div class="flex shrink-0 items-center gap-2">
+        <Badge :variant="!loaded ? 'amber' : savedEnabled ? 'cyan' : 'slate'" size="md" role="status" aria-live="polite">
+          {{ !loaded ? 'Checking...' : savedEnabled ? 'Polling ON' : 'Polling OFF' }}
+        </Badge>
+        <UiSwitch v-model="enabled" :disabled="pausing || (!enabled && (!loaded || saving || !configured))" @update:model-value="savePolling">
+          <span class="sr-only">Automatic X polling</span>
+        </UiSwitch>
+      </div>
     </div>
 
-    <button type="button" :disabled="pausing" @click="pausePolling" class="mb-4 min-h-11 rounded-xl border border-red-400 px-4 font-semibold text-red-700 dark:text-red-300 disabled:opacity-50">{{ pausing ? 'Stopping X polling…' : 'Stop X polling' }}</button>
+    <button v-if="!loaded" type="button" :disabled="pausing" class="mb-3 min-h-11 rounded-xl border px-4 text-sm disabled:opacity-50" @click="pausePolling">Stop X polling</button>
     <p v-if="pauseError" role="alert" class="mb-3 text-sm text-red-600">{{ pauseError }}</p>
-    <p v-if="pauseConfirmed" role="status" class="mb-3 text-sm font-semibold">X polling is OFF — confirmed by the server. No new automatic X API requests.</p>
     <fieldset :disabled="!loaded" class="relative flex-1 min-w-0">
       <p class="mb-3 text-sm">{{ configured ? 'X API token configured.' : 'X API token is not configured. Ask the event host to set it.' }}</p>
       <p class="mb-3 text-sm" role="status">{{ !loaded ? 'Checking polling status…' : savedEnabled ? `Automatic X polling is on: every ${savedInterval} minutes while the wall is enabled.` : 'Automatic X polling is paused. Existing posts remain on the wall.' }}</p>
@@ -59,11 +62,10 @@ const enabled = ref(false), intervalMinutes = ref(5), hashtags = ref(''), handle
 const revision = ref(0), configured = ref(false), lastPoll = ref(null), pollError = ref('');
 const savedEnabled = ref(false), savedInterval = ref(5);
 const error = ref(''), success = ref(false), saving = ref(false), loaded = ref(false);
-const pausing = ref(false), pauseConfirmed = ref(false), pauseError = ref('');
+const pausing = ref(false), pauseError = ref('');
 let operationVersion = 0;
 function markEdited() { success.value = false; }
 function apply(wall) {
-  pauseConfirmed.value = false;
   savedEnabled.value = wall.xEnabled; savedInterval.value = wall.xPollIntervalMinutes;
   enabled.value = wall.xEnabled; intervalMinutes.value = wall.xPollIntervalMinutes;
   hashtags.value = wall.xQueryHashtags.join(', '); handles.value = wall.xQueryHandles.join(', ');
@@ -86,7 +88,6 @@ function queryPatch() { return { xPollIntervalMinutes: intervalMinutes.value, xQ
 async function save(patch) {
   if (saving.value || pausing.value || !loaded.value) return;
   const version = operationVersion;
-  pauseConfirmed.value = false;
   saving.value = true; error.value = ''; success.value = false;
   try {
     const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}/posts`, { method: 'POST', body: {
@@ -106,7 +107,7 @@ async function save(patch) {
 async function pausePolling() {
   if (pausing.value) return;
   ++operationVersion;
-  pausing.value = true; pauseError.value = ''; pauseConfirmed.value = false;
+  pausing.value = true; pauseError.value = '';
   try {
     const response = await $fetch(`/api/wall/${encodeURIComponent(eventName.value)}/posts`, {
       method: 'POST', body: { action: 'pauseX' }, timeout: 10000,
@@ -117,11 +118,10 @@ async function pausePolling() {
     revision.value = wall.revision; savedEnabled.value = enabled.value = false;
     savedInterval.value = wall.xPollIntervalMinutes;
     lastPoll.value = wall.xLastPollAt; pollError.value = wall.xLastPollError;
-    pauseConfirmed.value = true;
   } catch (failure) { pauseError.value = `Could not confirm that X polling stopped. ${failure.message || 'Retry or log in again.'}`; }
   finally { enabled.value = savedEnabled.value; pausing.value = false; }
 }
 function saveQuery() { return save(queryPatch()); }
-function savePolling() { return enabled.value ? save({ xEnabled: true }) : pausePolling(); }
+function savePolling(value) { return value ? save({ xEnabled: true }) : pausePolling(); }
 onMounted(load);
 </script>

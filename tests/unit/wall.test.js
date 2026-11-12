@@ -222,7 +222,7 @@ describe('Optional Captapi Instagram collector', () => {
         c.wall.submit(c.name, { ...blocked, authorName: 'Creator', text: 'spam' }, null, { collected: true });
         expect(c.wall.moderationFeed(c.session, c.name).posts[0].text).toBe('Instagram post');
     });
-    test('absent key, overlap guard, redacted errors and persisted rate-limit scheduling', async () => {
+    test('absent key, overlap guard, original errors and persisted rate-limit scheduling', async () => {
         let now = Date.now(); const c = await enabled({ now: () => now }); let calls = 0, release;
         const warnings = [], logger = { info: () => {}, warn: (...args) => warnings.push(args) };
         const pending = new Promise(resolve => { release = resolve; });
@@ -236,8 +236,16 @@ describe('Optional Captapi Instagram collector', () => {
         await collector.tick(); now += 5 * 60000; await collector.tick(); expect(calls).toBe(1);
         now += 10 * 60000; await collector.tick(); expect(calls).toBe(2);
         expect(c.wall.config(c.id).instagramLastPollError).not.toContain('secret');
-        const failure = new InstagramCollector(c.store, 'key', { logger, request: async () => { throw new Error('secret key'); } });
-        expect((await failure.syncEvent(c.name)).error).not.toContain('secret');
+        const originalError = new Error('Unable to verify the first certificate');
+        const failure = new InstagramCollector(c.store, 'key', { logger, request: async () => { throw originalError; } });
+        expect((await failure.syncEvent(c.name)).error).toBe(originalError.message);
+        expect(c.wall.config(c.id).instagramLastPollError).toBe(originalError.message);
+        expect(warnings.at(-1)[1].error).toBe(originalError.message);
+        for (const message of ['secret key in request headers', 'Unable to verify the first certificate: secret key']) {
+            const redacted = new InstagramCollector(c.store, 'key', { logger, request: async () => { throw new Error(message); } });
+            expect((await redacted.syncEvent(c.name)).error).not.toContain('secret');
+            expect(c.wall.config(c.id).instagramLastPollError).not.toContain('secret');
+        }
         expect(JSON.stringify(warnings)).not.toContain('secret');
     });
     test('stop is authorized, fences stale enables and prevents further hashtag requests and imports', async () => {
